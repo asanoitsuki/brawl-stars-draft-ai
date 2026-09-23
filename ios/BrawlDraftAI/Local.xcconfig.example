@@ -1,0 +1,21 @@
+// 署名まわりのローカル設定のひな形。
+// scripts/setup_ios.sh が Local.xcconfig として複製する（Local.xcconfig は .gitignore 済み）。
+//
+// ここに置く理由:
+//   * チーム ID やバンドル ID を GitHub に載せたくない
+//   * project.yml に書かないと、xcodegen generate のたびに
+//     Xcode の Signing & Capabilities で選んだチームが消えてしまう
+
+// Apple Developer のチーム ID（10 文字）。
+// 確認方法: security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject
+DEVELOPMENT_TEAM = CHANGEME
+
+// バンドル ID は Apple 全体で一意。com.example.* は他人に取られている可能性があるので、
+// 自分のドメインや GitHub ユーザー名に置き換えること。
+PRODUCT_BUNDLE_IDENTIFIER = com.example.brawldraftai
+
+// 実機ビルドで
+//   "Provisioning profile doesn't support the Time Sensitive Notifications capability"
+// と言われたら、Sources/BrawlDraftAI.entitlements から
+// com.apple.developer.usernotifications.time-sensitive を削除する。
+// （通知は出るが、ゲーム中の割り込み度が下がる）

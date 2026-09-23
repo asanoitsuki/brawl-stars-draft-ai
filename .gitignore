@@ -25,3 +25,6 @@ xcuserdata/
 
 # install_cron.sh が生成する実行スクリプト
 scripts/run_update.sh
+
+# 署名のローカル設定（チーム ID を含むのでコミットしない）
+ios/BrawlDraftAI/Local.xcconfig

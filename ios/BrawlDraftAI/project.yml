@@ -19,9 +19,15 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+    # 署名まわり（DEVELOPMENT_TEAM / バンドル ID）は Local.xcconfig に置く。
+    # project.yml に書くと GitHub に載ってしまい、ここに書かないと
+    # xcodegen generate のたびに Xcode 上の設定が消えるため。
+    # Local.xcconfig は scripts/setup_ios.sh が作る（.gitignore 済み）。
+    configFiles:
+      Debug: Local.xcconfig
+      Release: Local.xcconfig
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.brawldraftai
         PRODUCT_NAME: BrawlDraftAI
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"

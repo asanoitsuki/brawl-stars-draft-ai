@@ -1,0 +1,1207 @@
+{
+  "schema": 1,
+  "count": 109,
+  "variants": [
+    "borders",
+    "borderless"
+  ],
+  "iconsUnavailable": [
+    "Cosmo",
+    "Vince"
+  ],
+  "brawlers": [
+    {
+      "id": 16000000,
+      "name": "Shelly",
+      "hash": "Shelly",
+      "rarity": "Common",
+      "tip": "Counter Tanks And Assassins With Burst Damage.",
+      "files": {
+        "borders": "borders/16000000.png",
+        "borderless": "borderless/16000000.png"
+      }
+    },
+    {
+      "id": 16000001,
+      "name": "Colt",
+      "hash": "Colt",
+      "rarity": "Rare",
+      "tip": "Long Range Consistent Damage.",
+      "files": {
+        "borders": "borders/16000001.png",
+        "borderless": "borderless/16000001.png"
+      }
+    },
+    {
+      "id": 16000002,
+      "name": "Bull",
+      "hash": "Bull",
+      "rarity": "Rare",
+      "tip": "Super To Break Walls And Close The Distance",
+      "files": {
+        "borders": "borders/16000002.png",
+        "borderless": "borderless/16000002.png"
+      }
+    },
+    {
+      "id": 16000003,
+      "name": "Brock",
+      "hash": "Brock",
+      "rarity": "Rare",
+      "tip": "Explode Brawlers And Walls",
+      "files": {
+        "borders": "borders/16000003.png",
+        "borderless": "borderless/16000003.png"
+      }
+    },
+    {
+      "id": 16000004,
+      "name": "Rico",
+      "hash": "Rico",
+      "rarity": "Super Rare",
+      "tip": "Bounce Shots For Extra Range",
+      "files": {
+        "borders": "borders/16000004.png",
+        "borderless": "borderless/16000004.png"
+      }
+    },
+    {
+      "id": 16000005,
+      "name": "Spike",
+      "hash": "Spike",
+      "rarity": "Legendary",
+      "tip": "Zone Enemies With A Super And Spikes.",
+      "files": {
+        "borders": "borders/16000005.png",
+        "borderless": "borderless/16000005.png"
+      }
+    },
+    {
+      "id": 16000006,
+      "name": "Barley",
+      "hash": "Barley",
+      "rarity": "Rare",
+      "tip": "Deny Space By Throwing Fiery Bottles.",
+      "files": {
+        "borders": "borders/16000006.png",
+        "borderless": "borderless/16000006.png"
+      }
+    },
+    {
+      "id": 16000007,
+      "name": "Jessie",
+      "hash": "Jessie",
+      "rarity": "Super Rare",
+      "tip": "Place Your Turret To Dominate The Map",
+      "files": {
+        "borders": "borders/16000007.png",
+        "borderless": "borderless/16000007.png"
+      }
+    },
+    {
+      "id": 16000008,
+      "name": "Nita",
+      "hash": "Nita",
+      "rarity": "Rare",
+      "tip": "Pressure With Bruce The Bear",
+      "files": {
+        "borders": "borders/16000008.png",
+        "borderless": "borderless/16000008.png"
+      }
+    },
+    {
+      "id": 16000009,
+      "name": "Dynamike",
+      "hash": "Dynamike",
+      "rarity": "Super Rare",
+      "tip": "Bombard Safely From Behind Walls.",
+      "files": {
+        "borders": "borders/16000009.png",
+        "borderless": "borderless/16000009.png"
+      }
+    },
+    {
+      "id": 16000010,
+      "name": "El Primo",
+      "hash": "El-Primo",
+      "rarity": "Rare",
+      "tip": "Jump In But Stay Away From Crowds.",
+      "files": {
+        "borders": "borders/16000010.png",
+        "borderless": "borderless/16000010.png"
+      }
+    },
+    {
+      "id": 16000011,
+      "name": "Mortis",
+      "hash": "Mortis",
+      "rarity": "Mythic",
+      "tip": "Jump In On Weak Or Isolated Enemies.",
+      "files": {
+        "borders": "borders/16000011.png",
+        "borderless": "borderless/16000011.png"
+      }
+    },
+    {
+      "id": 16000012,
+      "name": "Crow",
+      "hash": "Crow",
+      "rarity": "Legendary",
+      "tip": "Poison Enemies From A Distance.",
+      "files": {
+        "borders": "borders/16000012.png",
+        "borderless": "borderless/16000012.png"
+      }
+    },
+    {
+      "id": 16000013,
+      "name": "Poco",
+      "hash": "Poco",
+      "rarity": "Rare",
+      "tip": "Instant Heals Keep Your Team Fighting",
+      "files": {
+        "borders": "borders/16000013.png",
+        "borderless": "borderless/16000013.png"
+      }
+    },
+    {
+      "id": 16000014,
+      "name": "Bo",
+      "hash": "Bo",
+      "rarity": "Epic",
+      "tip": "Control Space With Hidden Traps.",
+      "files": {
+        "borders": "borders/16000014.png",
+        "borderless": "borderless/16000014.png"
+      }
+    },
+    {
+      "id": 16000015,
+      "name": "Piper",
+      "hash": "Piper",
+      "rarity": "Epic",
+      "tip": "Poke From Range And Escape With A Super",
+      "files": {
+        "borders": "borders/16000015.png",
+        "borderless": "borderless/16000015.png"
+      }
+    },
+    {
+      "id": 16000016,
+      "name": "Pam",
+      "hash": "Pam",
+      "rarity": "Epic",
+      "tip": "Hold Ground And Heal Teammates.",
+      "files": {
+        "borders": "borders/16000016.png",
+        "borderless": "borderless/16000016.png"
+      }
+    },
+    {
+      "id": 16000017,
+      "name": "Tara",
+      "hash": "Tara",
+      "rarity": "Mythic",
+      "tip": "Punish Grouped Enemies.",
+      "files": {
+        "borders": "borders/16000017.png",
+        "borderless": "borderless/16000017.png"
+      }
+    },
+    {
+      "id": 16000018,
+      "name": "Darryl",
+      "hash": "Darryl",
+      "rarity": "Super Rare",
+      "tip": "Roll In And Burst Damage Targets.",
+      "files": {
+        "borders": "borders/16000018.png",
+        "borderless": "borderless/16000018.png"
+      }
+    },
+    {
+      "id": 16000019,
+      "name": "Penny",
+      "hash": "Penny",
+      "rarity": "Super Rare",
+      "tip": "Use Your Cannon To Take Over The Map",
+      "files": {
+        "borders": "borders/16000019.png",
+        "borderless": "borderless/16000019.png"
+      }
+    },
+    {
+      "id": 16000020,
+      "name": "Frank",
+      "hash": "Frank",
+      "rarity": "Epic",
+      "tip": "Control Space With Stuns And High Health.",
+      "files": {
+        "borders": "borders/16000020.png",
+        "borderless": "borderless/16000020.png"
+      }
+    },
+    {
+      "id": 16000021,
+      "name": "Gene",
+      "hash": "Gene",
+      "rarity": "Mythic",
+      "tip": "Single Out Enemies With Long Range Pulls",
+      "files": {
+        "borders": "borders/16000021.png",
+        "borderless": "borderless/16000021.png"
+      }
+    },
+    {
+      "id": 16000022,
+      "name": "Tick",
+      "hash": "Tick",
+      "rarity": "Super Rare",
+      "tip": "Control Space From Safety.",
+      "files": {
+        "borders": "borders/16000022.png",
+        "borderless": "borderless/16000022.png"
+      }
+    },
+    {
+      "id": 16000023,
+      "name": "Leon",
+      "hash": "Leon",
+      "rarity": "Legendary",
+      "tip": "Sneak In And Assassinate.",
+      "files": {
+        "borders": "borders/16000023.png",
+        "borderless": "borderless/16000023.png"
+      }
+    },
+    {
+      "id": 16000024,
+      "name": "Rosa",
+      "hash": "Rosa",
+      "rarity": "Rare",
+      "tip": "Use Bushes Whenever Possible",
+      "files": {
+        "borders": "borders/16000024.png",
+        "borderless": "borderless/16000024.png"
+      }
+    },
+    {
+      "id": 16000025,
+      "name": "Carl",
+      "hash": "Carl",
+      "rarity": "Super Rare",
+      "tip": "Boomerang Your Pickaxe For More Damage",
+      "files": {
+        "borders": "borders/16000025.png",
+        "borderless": "borderless/16000025.png"
+      }
+    },
+    {
+      "id": 16000026,
+      "name": "Bibi",
+      "hash": "Bibi",
+      "rarity": "Epic",
+      "tip": "Charge In And Knock Em Back",
+      "files": {
+        "borders": "borders/16000026.png",
+        "borderless": "borderless/16000026.png"
+      }
+    },
+    {
+      "id": 16000027,
+      "name": "8-Bit",
+      "hash": "8-Bit",
+      "rarity": "Super Rare",
+      "tip": "Hold Ground And Boost Your Team",
+      "files": {
+        "borders": "borders/16000027.png",
+        "borderless": "borderless/16000027.png"
+      }
+    },
+    {
+      "id": 16000028,
+      "name": "Sandy",
+      "hash": "Sandy",
+      "rarity": "Legendary",
+      "tip": "Use Sandstorm To Control Objectives",
+      "files": {
+        "borders": "borders/16000028.png",
+        "borderless": "borderless/16000028.png"
+      }
+    },
+    {
+      "id": 16000029,
+      "name": "Bea",
+      "hash": "Bea",
+      "rarity": "Epic",
+      "tip": "Land Hits Then Punish",
+      "files": {
+        "borders": "borders/16000029.png",
+        "borderless": "borderless/16000029.png"
+      }
+    },
+    {
+      "id": 16000030,
+      "name": "Emz",
+      "hash": "Emz",
+      "rarity": "Epic",
+      "tip": "Control The Map With Large Attacks.",
+      "files": {
+        "borders": "borders/16000030.png",
+        "borderless": "borderless/16000030.png"
+      }
+    },
+    {
+      "id": 16000031,
+      "name": "Mr. P",
+      "hash": "Mr-P",
+      "rarity": "Mythic",
+      "tip": "Use Porters To Control The Map.",
+      "files": {
+        "borders": "borders/16000031.png",
+        "borderless": "borderless/16000031.png"
+      }
+    },
+    {
+      "id": 16000032,
+      "name": "Max",
+      "hash": "Max",
+      "rarity": "Mythic",
+      "tip": "Buff Your Team With Tons Of Speed",
+      "files": {
+        "borders": "borders/16000032.png",
+        "borderless": "borderless/16000032.png"
+      }
+    },
+    {
+      "id": 16000034,
+      "name": "Jacky",
+      "hash": "Jacky",
+      "rarity": "Super Rare",
+      "tip": "Get Close To Deal Large Area Damage.",
+      "files": {
+        "borders": "borders/16000034.png",
+        "borderless": "borderless/16000034.png"
+      }
+    },
+    {
+      "id": 16000035,
+      "name": "Gale",
+      "hash": "Gale",
+      "rarity": "Epic",
+      "tip": "Push Enemies Away To Control The Map.",
+      "files": {
+        "borders": "borders/16000035.png",
+        "borderless": "borderless/16000035.png"
+      }
+    },
+    {
+      "id": 16000036,
+      "name": "Nani",
+      "hash": "Nani",
+      "rarity": "Epic",
+      "tip": "Poke With Outside Shots Or Burst With All",
+      "files": {
+        "borders": "borders/16000036.png",
+        "borderless": "borderless/16000036.png"
+      }
+    },
+    {
+      "id": 16000037,
+      "name": "Sprout",
+      "hash": "Sprout",
+      "rarity": "Mythic",
+      "tip": "Make Walls And Bounce Projectiles Off Of Them.",
+      "files": {
+        "borders": "borders/16000037.png",
+        "borderless": "borderless/16000037.png"
+      }
+    },
+    {
+      "id": 16000038,
+      "name": "Surge",
+      "hash": "Surge",
+      "rarity": "Legendary",
+      "tip": "Use Supers To Level Up Or Dive In",
+      "files": {
+        "borders": "borders/16000038.png",
+        "borderless": "borderless/16000038.png"
+      }
+    },
+    {
+      "id": 16000039,
+      "name": "Colette",
+      "hash": "Colette",
+      "rarity": "Epic",
+      "tip": "Shred High-Health Enemies And Objectives.",
+      "files": {
+        "borders": "borders/16000039.png",
+        "borderless": "borderless/16000039.png"
+      }
+    },
+    {
+      "id": 16000040,
+      "name": "Amber",
+      "hash": "Amber",
+      "rarity": "Legendary",
+      "tip": "Destroy Bushes And Control Space With Fire.",
+      "files": {
+        "borders": "borders/16000040.png",
+        "borderless": "borderless/16000040.png"
+      }
+    },
+    {
+      "id": 16000041,
+      "name": "Lou",
+      "hash": "Lou",
+      "rarity": "Mythic",
+      "tip": "Control The Map With A Huge Freeze.",
+      "files": {
+        "borders": "borders/16000041.png",
+        "borderless": "borderless/16000041.png"
+      }
+    },
+    {
+      "id": 16000042,
+      "name": "Byron",
+      "hash": "Byron",
+      "rarity": "Mythic",
+      "tip": "Heal Teammates Or Snipe With Poison.",
+      "files": {
+        "borders": "borders/16000042.png",
+        "borderless": "borderless/16000042.png"
+      }
+    },
+    {
+      "id": 16000043,
+      "name": "Edgar",
+      "hash": "Edgar",
+      "rarity": "Epic",
+      "tip": "Jump To Take Out Isolated Enemies.",
+      "files": {
+        "borders": "borders/16000043.png",
+        "borderless": "borderless/16000043.png"
+      }
+    },
+    {
+      "id": 16000044,
+      "name": "Ruffs",
+      "hash": "Ruffs",
+      "rarity": "Mythic",
+      "tip": "Buff Teammates And Poke Enemies.",
+      "files": {
+        "borders": "borders/16000044.png",
+        "borderless": "borderless/16000044.png"
+      }
+    },
+    {
+      "id": 16000045,
+      "name": "Stu",
+      "hash": "Stu",
+      "rarity": "Epic",
+      "tip": "Use Your Dash To Get Close Or Dodge.",
+      "files": {
+        "borders": "borders/16000045.png",
+        "borderless": "borderless/16000045.png"
+      }
+    },
+    {
+      "id": 16000046,
+      "name": "Belle",
+      "hash": "Belle",
+      "rarity": "Epic",
+      "tip": "Snipe With Bouncing Bullets.",
+      "files": {
+        "borders": "borders/16000046.png",
+        "borderless": "borderless/16000046.png"
+      }
+    },
+    {
+      "id": 16000047,
+      "name": "Squeak",
+      "hash": "Squeak",
+      "rarity": "Mythic",
+      "tip": "Hit Enemies Through Walls With Explosions",
+      "files": {
+        "borders": "borders/16000047.png",
+        "borderless": "borderless/16000047.png"
+      }
+    },
+    {
+      "id": 16000048,
+      "name": "Grom",
+      "hash": "Grom",
+      "rarity": "Epic",
+      "tip": "Bombard Safely From Behind Walls.",
+      "files": {
+        "borders": "borders/16000048.png",
+        "borderless": "borderless/16000048.png"
+      }
+    },
+    {
+      "id": 16000049,
+      "name": "Buzz",
+      "hash": "Buzz",
+      "rarity": "Mythic",
+      "tip": "Travel Around The Map And Stun Enemies.",
+      "files": {
+        "borders": "borders/16000049.png",
+        "borderless": "borderless/16000049.png"
+      }
+    },
+    {
+      "id": 16000050,
+      "name": "Griff",
+      "hash": "Griff",
+      "rarity": "Epic",
+      "tip": "Burst Down Enemies From Mid-Range.",
+      "files": {
+        "borders": "borders/16000050.png",
+        "borderless": "borderless/16000050.png"
+      }
+    },
+    {
+      "id": 16000051,
+      "name": "Ash",
+      "hash": "Ash",
+      "rarity": "Epic",
+      "tip": "Unleash An Army Of Rats",
+      "files": {
+        "borders": "borders/16000051.png",
+        "borderless": "borderless/16000051.png"
+      }
+    },
+    {
+      "id": 16000052,
+      "name": "Meg",
+      "hash": "Meg",
+      "rarity": "Legendary",
+      "tip": "Use The Mecha For Space Then Run",
+      "files": {
+        "borders": "borders/16000052.png",
+        "borderless": "borderless/16000052.png"
+      }
+    },
+    {
+      "id": 16000053,
+      "name": "Lola",
+      "hash": "Lola",
+      "rarity": "Epic",
+      "tip": "Control Multiple Lanes With Ego",
+      "files": {
+        "borders": "borders/16000053.png",
+        "borderless": "borderless/16000053.png"
+      }
+    },
+    {
+      "id": 16000054,
+      "name": "Fang",
+      "hash": "Fang",
+      "rarity": "Mythic",
+      "tip": "Poke With Range Then Jump In To Finish.",
+      "files": {
+        "borders": "borders/16000054.png",
+        "borderless": "borderless/16000054.png"
+      }
+    },
+    {
+      "id": 16000056,
+      "name": "Eve",
+      "hash": "Eve",
+      "rarity": "Mythic",
+      "tip": "Walk Over Water And Spawn Hatchlings",
+      "files": {
+        "borders": "borders/16000056.png",
+        "borderless": "borderless/16000056.png"
+      }
+    },
+    {
+      "id": 16000057,
+      "name": "Janet",
+      "hash": "Janet",
+      "rarity": "Mythic",
+      "tip": "Super To Drop Bombs Safely From Above",
+      "files": {
+        "borders": "borders/16000057.png",
+        "borderless": "borderless/16000057.png"
+      }
+    },
+    {
+      "id": 16000058,
+      "name": "Bonnie",
+      "hash": "Bonnie",
+      "rarity": "Epic",
+      "tip": "Snipe Then Jump In For Big Damage.",
+      "files": {
+        "borders": "borders/16000058.png",
+        "borderless": "borderless/16000058.png"
+      }
+    },
+    {
+      "id": 16000059,
+      "name": "Otis",
+      "hash": "Otis",
+      "rarity": "Mythic",
+      "tip": "Burst Tanks And Silence Threats.",
+      "files": {
+        "borders": "borders/16000059.png",
+        "borderless": "borderless/16000059.png"
+      }
+    },
+    {
+      "id": 16000060,
+      "name": "Sam",
+      "hash": "Sam",
+      "rarity": "Epic",
+      "tip": "Throw Fists Reclaim Repeat.",
+      "files": {
+        "borders": "borders/16000060.png",
+        "borderless": "borderless/16000060.png"
+      }
+    },
+    {
+      "id": 16000061,
+      "name": "Gus",
+      "hash": "Gus",
+      "rarity": "Super Rare",
+      "tip": "Buff Teammates And Snipe Enemies.",
+      "files": {
+        "borders": "borders/16000061.png",
+        "borderless": "borderless/16000061.png"
+      }
+    },
+    {
+      "id": 16000062,
+      "name": "Buster",
+      "hash": "Buster",
+      "rarity": "Mythic",
+      "tip": "Reflect Enemy Projectiles For Big Damage.",
+      "files": {
+        "borders": "borders/16000062.png",
+        "borderless": "borderless/16000062.png"
+      }
+    },
+    {
+      "id": 16000063,
+      "name": "Chester",
+      "hash": "Chester",
+      "rarity": "Legendary",
+      "tip": "Master Randomness To Control The Map.",
+      "files": {
+        "borders": "borders/16000063.png",
+        "borderless": "borderless/16000063.png"
+      }
+    },
+    {
+      "id": 16000064,
+      "name": "Gray",
+      "hash": "Gray",
+      "rarity": "Mythic",
+      "tip": "Get Your Team Into The Action With Portals",
+      "files": {
+        "borders": "borders/16000064.png",
+        "borderless": "borderless/16000064.png"
+      }
+    },
+    {
+      "id": 16000065,
+      "name": "Mandy",
+      "hash": "Mandy",
+      "rarity": "Epic",
+      "tip": "Hold Your Ground For Huge Range.",
+      "files": {
+        "borders": "borders/16000065.png",
+        "borderless": "borderless/16000065.png"
+      }
+    },
+    {
+      "id": 16000066,
+      "name": "R-T",
+      "hash": "R-T",
+      "rarity": "Mythic",
+      "tip": "Mark Targets Then Deal Burst Damage",
+      "files": {
+        "borders": "borders/16000066.png",
+        "borderless": "borderless/16000066.png"
+      }
+    },
+    {
+      "id": 16000067,
+      "name": "Willow",
+      "hash": "Willow",
+      "rarity": "Mythic",
+      "tip": "Turn Enemies Against Themselves",
+      "files": {
+        "borders": "borders/16000067.png",
+        "borderless": "borderless/16000067.png"
+      }
+    },
+    {
+      "id": 16000068,
+      "name": "Maisie",
+      "hash": "Maisie",
+      "rarity": "Epic",
+      "tip": "Punish Advancing Enemies.",
+      "files": {
+        "borders": "borders/16000068.png",
+        "borderless": "borderless/16000068.png"
+      }
+    },
+    {
+      "id": 16000069,
+      "name": "Hank",
+      "hash": "Hank",
+      "rarity": "Epic",
+      "tip": "Charge Up Your Attack Then Engage.",
+      "files": {
+        "borders": "borders/16000069.png",
+        "borderless": "borderless/16000069.png"
+      }
+    },
+    {
+      "id": 16000070,
+      "name": "Cordelius",
+      "hash": "Cordelius",
+      "rarity": "Legendary",
+      "tip": "Use The Shadow Realm To Isolate Targets",
+      "files": {
+        "borders": "borders/16000070.png",
+        "borderless": "borderless/16000070.png"
+      }
+    },
+    {
+      "id": 16000071,
+      "name": "Doug",
+      "hash": "Doug",
+      "rarity": "Mythic",
+      "tip": "Big Close Range Damage And Self-Revival",
+      "files": {
+        "borders": "borders/16000071.png",
+        "borderless": "borderless/16000071.png"
+      }
+    },
+    {
+      "id": 16000072,
+      "name": "Pearl",
+      "hash": "Pearl",
+      "rarity": "Epic",
+      "tip": "Build Up Heat For Burst Damage",
+      "files": {
+        "borders": "borders/16000072.png",
+        "borderless": "borderless/16000072.png"
+      }
+    },
+    {
+      "id": 16000073,
+      "name": "Chuck",
+      "hash": "Chuck",
+      "rarity": "Mythic",
+      "tip": "Lay Down Tracks For Offense And Retreats.",
+      "files": {
+        "borders": "borders/16000073.png",
+        "borderless": "borderless/16000073.png"
+      }
+    },
+    {
+      "id": 16000074,
+      "name": "Charlie",
+      "hash": "Charlie",
+      "rarity": "Mythic",
+      "tip": "Cocoon Enemies To Remove Them From Play",
+      "files": {
+        "borders": "borders/16000074.png",
+        "borderless": "borderless/16000074.png"
+      }
+    },
+    {
+      "id": 16000075,
+      "name": "Mico",
+      "hash": "Mico",
+      "rarity": "Mythic",
+      "tip": "Leap Over Walls And Enemy Attacks",
+      "files": {
+        "borders": "borders/16000075.png",
+        "borderless": "borderless/16000075.png"
+      }
+    },
+    {
+      "id": 16000076,
+      "name": "Kit",
+      "hash": "Kit",
+      "rarity": "Legendary",
+      "tip": "Heal Teammates Or Assassinate Enemies",
+      "files": {
+        "borders": "borders/16000076.png",
+        "borderless": "borderless/16000076.png"
+      }
+    },
+    {
+      "id": 16000077,
+      "name": "Larry & Lawrie",
+      "hash": "Larry-&-Lawrie",
+      "rarity": "Epic",
+      "tip": "Overwhelm With Teamwork",
+      "files": {
+        "borders": "borders/16000077.png",
+        "borderless": "borderless/16000077.png"
+      }
+    },
+    {
+      "id": 16000078,
+      "name": "Melodie",
+      "hash": "Melodie",
+      "rarity": "Mythic",
+      "tip": "Build Up Notes Then Dive In",
+      "files": {
+        "borders": "borders/16000078.png",
+        "borderless": "borderless/16000078.png"
+      }
+    },
+    {
+      "id": 16000079,
+      "name": "Angelo",
+      "hash": "Angelo",
+      "rarity": "Epic",
+      "tip": "Use Charged Attacks To Snipe",
+      "files": {
+        "borders": "borders/16000079.png",
+        "borderless": "borderless/16000079.png"
+      }
+    },
+    {
+      "id": 16000080,
+      "name": "Draco",
+      "hash": "Draco",
+      "rarity": "Legendary",
+      "tip": "Poke Transform Then Dominate",
+      "files": {
+        "borders": "borders/16000080.png",
+        "borderless": "borderless/16000080.png"
+      }
+    },
+    {
+      "id": 16000081,
+      "name": "Lily",
+      "hash": "Lily",
+      "rarity": "Mythic",
+      "tip": "Use Bushes And A Super To Get Close.",
+      "files": {
+        "borders": "borders/16000081.png",
+        "borderless": "borderless/16000081.png"
+      }
+    },
+    {
+      "id": 16000082,
+      "name": "Berry",
+      "hash": "Berry",
+      "rarity": "Epic",
+      "tip": "Control Space And Heal Teammates.",
+      "files": {
+        "borders": "borders/16000082.png",
+        "borderless": "borderless/16000082.png"
+      }
+    },
+    {
+      "id": 16000083,
+      "name": "Clancy",
+      "hash": "Clancy",
+      "rarity": "Mythic",
+      "tip": "Poke To Level Up And Take Over",
+      "files": {
+        "borders": "borders/16000083.png",
+        "borderless": "borderless/16000083.png"
+      }
+    },
+    {
+      "id": 16000084,
+      "name": "Moe",
+      "hash": "Moe",
+      "rarity": "Mythic",
+      "tip": "Chase Down Enemies With The Drill.",
+      "files": {
+        "borders": "borders/16000084.png",
+        "borderless": "borderless/16000084.png"
+      }
+    },
+    {
+      "id": 16000085,
+      "name": "Kenji",
+      "hash": "Kenji",
+      "rarity": "Legendary",
+      "tip": "Stay Aggressive And Heal With Attacks.",
+      "files": {
+        "borders": "borders/16000085.png",
+        "borderless": "borderless/16000085.png"
+      }
+    },
+    {
+      "id": 16000086,
+      "name": "Shade",
+      "hash": "Shade",
+      "rarity": "Epic",
+      "tip": "Use Walls To Avoid Damage And Get Close.",
+      "files": {
+        "borders": "borders/16000086.png",
+        "borderless": "borderless/16000086.png"
+      }
+    },
+    {
+      "id": 16000087,
+      "name": "Juju",
+      "hash": "Juju",
+      "rarity": "Mythic",
+      "tip": "Use Terrain Unleash Gris-Gris",
+      "files": {
+        "borders": "borders/16000087.png",
+        "borderless": "borderless/16000087.png"
+      }
+    },
+    {
+      "id": 16000088,
+      "name": "Buzz Lightyear",
+      "hash": "Buzz-Lightyear",
+      "rarity": "Legendary",
+      "tip": "Unknown",
+      "files": {
+        "borders": "borders/16000088.png",
+        "borderless": "borderless/16000088.png"
+      }
+    },
+    {
+      "id": 16000089,
+      "name": "Meeple",
+      "hash": "Meeple",
+      "rarity": "Epic",
+      "tip": "Shoot Through Walls And Control The Map",
+      "files": {
+        "borders": "borders/16000089.png",
+        "borderless": "borderless/16000089.png"
+      }
+    },
+    {
+      "id": 16000090,
+      "name": "Ollie",
+      "hash": "Ollie",
+      "rarity": "Mythic",
+      "tip": "Soak Up Damage Then Hypnotize.",
+      "files": {
+        "borders": "borders/16000090.png",
+        "borderless": "borderless/16000090.png"
+      }
+    },
+    {
+      "id": 16000091,
+      "name": "Lumi",
+      "hash": "Lumi",
+      "rarity": "Mythic",
+      "tip": "Recall Weapons To Create New Angles Of Attack.",
+      "files": {
+        "borders": "borders/16000091.png",
+        "borderless": "borderless/16000091.png"
+      }
+    },
+    {
+      "id": 16000092,
+      "name": "Finx",
+      "hash": "Finx",
+      "rarity": "Mythic",
+      "tip": "Slow Enemy Projectiles To Take Space.",
+      "files": {
+        "borders": "borders/16000092.png",
+        "borderless": "borderless/16000092.png"
+      }
+    },
+    {
+      "id": 16000093,
+      "name": "Jae-Yong",
+      "hash": "Jae-Yong",
+      "rarity": "Mythic",
+      "tip": "Use Speed For Aggression And Heal For Safety.",
+      "files": {
+        "borders": "borders/16000093.png",
+        "borderless": "borderless/16000093.png"
+      }
+    },
+    {
+      "id": 16000094,
+      "name": "Kaze",
+      "hash": "Kaze",
+      "rarity": "Ultra Legendary",
+      "tip": "Zone As Geisha Strike As Ninja.",
+      "files": {
+        "borders": "borders/16000094.png",
+        "borderless": "borderless/16000094.png"
+      }
+    },
+    {
+      "id": 16000095,
+      "name": "Alli",
+      "hash": "Alli",
+      "rarity": "Mythic",
+      "tip": "Ambush From Bushes And Water",
+      "files": {
+        "borders": "borders/16000095.png",
+        "borderless": "borderless/16000095.png"
+      }
+    },
+    {
+      "id": 16000096,
+      "name": "Trunk",
+      "hash": "Trunk",
+      "rarity": "Epic",
+      "tip": "Use Ants For Speed And Charge In",
+      "files": {
+        "borders": "borders/16000096.png",
+        "borderless": "borderless/16000096.png"
+      }
+    },
+    {
+      "id": 16000097,
+      "name": "Mina",
+      "hash": "Mina",
+      "rarity": "Mythic",
+      "tip": "Combo Your Super With Main Attacks.",
+      "files": {
+        "borders": "borders/16000097.png",
+        "borderless": "borderless/16000097.png"
+      }
+    },
+    {
+      "id": 16000098,
+      "name": "Ziggy",
+      "hash": "Ziggy",
+      "rarity": "Mythic",
+      "tip": "Call Lightning To Control Space.",
+      "files": {
+        "borders": "borders/16000098.png",
+        "borderless": "borderless/16000098.png"
+      }
+    },
+    {
+      "id": 16000099,
+      "name": "Pierce",
+      "hash": "Pierce",
+      "rarity": "Legendary",
+      "tip": "The Last Shot Is Key For Damage.",
+      "files": {
+        "borders": "borders/16000099.png",
+        "borderless": "borderless/16000099.png"
+      }
+    },
+    {
+      "id": 16000100,
+      "name": "Gigi",
+      "hash": "Gigi",
+      "rarity": "Mythic",
+      "tip": "Dodge Enemies Then Jump In To Finish Them.",
+      "files": {
+        "borders": "borders/16000100.png",
+        "borderless": "borderless/16000100.png"
+      }
+    },
+    {
+      "id": 16000101,
+      "name": "Glowy",
+      "hash": "Glowy",
+      "rarity": "Mythic",
+      "tip": "Heal Teammates And Fear Enemies.",
+      "files": {
+        "borders": "borders/16000101.png",
+        "borderless": "borderless/16000101.png"
+      }
+    },
+    {
+      "id": 16000102,
+      "name": "Sirius",
+      "hash": "Sirius",
+      "rarity": "Ultra Legendary",
+      "tip": "Use Shadows To Control The Map.",
+      "files": {
+        "borders": "borders/16000102.png",
+        "borderless": "borderless/16000102.png"
+      }
+    },
+    {
+      "id": 16000103,
+      "name": "Najia",
+      "hash": "Najia",
+      "rarity": "Mythic",
+      "tip": "Massive Range With Added Poison",
+      "files": {
+        "borders": "borders/16000103.png",
+        "borderless": "borderless/16000103.png"
+      }
+    },
+    {
+      "id": 16000104,
+      "name": "Damian",
+      "hash": "Damian",
+      "rarity": "Mythic",
+      "tip": "Jump In To Unleash Chaos",
+      "files": {
+        "borders": "borders/16000104.png",
+        "borderless": "borderless/16000104.png"
+      }
+    },
+    {
+      "id": 16000105,
+      "name": "Starr Nova",
+      "hash": "Starr-Nova",
+      "rarity": "Mythic",
+      "tip": "Poke Then Transform And Strike",
+      "files": {
+        "borders": "borders/16000105.png",
+        "borderless": "borderless/16000105.png"
+      }
+    },
+    {
+      "id": 16000106,
+      "name": "Bolt",
+      "hash": "Bolt",
+      "rarity": "Epic",
+      "tip": "Avoid Walls And Sharp Turns For Speed",
+      "files": {
+        "borders": "borders/16000106.png",
+        "borderless": "borderless/16000106.png"
+      }
+    },
+    {
+      "id": 16000107,
+      "name": "Nori",
+      "hash": "Nori",
+      "rarity": "Legendary",
+      "tip": "Jump Around The Map And Cause Chaos",
+      "files": {
+        "borders": "borders/16000107.png",
+        "borderless": "borderless/16000107.png"
+      }
+    },
+    {
+      "id": 16000108,
+      "name": "Wendy",
+      "hash": "Wendy",
+      "rarity": "Mythic",
+      "tip": "Shield Teammates And Hold Ground.",
+      "files": {
+        "borders": "borders/16000108.png",
+        "borderless": "borderless/16000108.png"
+      }
+    },
+    {
+      "id": 16000109,
+      "name": "Cosmo",
+      "hash": "Cosmo",
+      "rarity": "Mythic",
+      "tip": "Use Gravity To Target Enemies",
+      "files": {}
+    },
+    {
+      "id": 16000110,
+      "name": "Vince",
+      "hash": "Vince",
+      "rarity": "Mythic",
+      "tip": "Collect Caterpillars To Become More Powerful",
+      "files": {}
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+name: daily-meta-update
+
+# ブロスタのデイリーリセットは 08:00 UTC（17:00 JST）。
+# その 40 分後に回して、マップローテーションと勝率データを取り込む。
+on:
+  schedule:
+    - cron: "40 8 * * *"
+  workflow_dispatch:
+    inputs:
+      require_stats:
+        description: "実測勝率が取れなかったら失敗させる"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-meta-update
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 依存をインストール
+        run: pip install -r requirements.txt
+
+      - name: キャラアイコンを更新（新キャラ追加ぶんだけ差分取得）
+        run: python scripts/download_icons.py
+
+      - name: ルールデータを生成
+        run: |
+          python scripts/update_meta.py \
+            --rotation-out rules/rules_rotation.json \
+            ${{ inputs.require_stats && '--require-stats' || '' }}
+
+      - name: 生成物を検証
+        run: python scripts/validate_rules.py rules/rules.json
+
+      - name: 変更があればコミット
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A assets rules data
+          if git diff --cached --quiet; then
+            echo "変更なし。コミットをスキップします。"
+            exit 0
+          fi
+          STAMP=$(date -u '+%Y-%m-%d %H:%M UTC')
+          git commit -m "chore(meta): ルールデータを自動更新 ($STAMP)"
+          git push
+
+      - name: サマリーを出力
+        if: always()
+        run: |
+          {
+            echo "### ガチバトルピックAI / メタ更新"
+            echo ""
+            python - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("rules/rules.json")
+          if not p.exists():
+              print("rules.json が生成されていません")
+              raise SystemExit
+          d = json.loads(p.read_text(encoding="utf-8"))
+          q = d["dataQuality"]
+          print(f"- 生成時刻: `{d['generatedAt']}`")
+          print(f"- マップ数: **{len(d['maps'])}**")
+          print(f"- 実測勝率: **{'あり' if q['liveStats'] else 'なし（役割適性のみ）'}**"
+                f" ({q['mapsWithLiveStats']} マップ)")
+          print(f"- ローテ判明: **{'はい' if q['rotationKnown'] else 'いいえ'}**")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"

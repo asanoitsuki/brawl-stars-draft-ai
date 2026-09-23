@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "_comment": "アーキタイプ定義・相性表・モード補正。手で調整して良いファイル（update_meta.py が読むだけで上書きしない）。",
+
+  "archetypes": {
+    "tank":       { "ja": "タンク",         "desc": "高耐久・近距離・前線を押し上げる" },
+    "assassin":   { "ja": "アサシン",       "desc": "飛び込んで低耐久を1体落とす" },
+    "marksman":   { "ja": "スナイパー",     "desc": "長射程・低耐久・開けた地形で強い" },
+    "thrower":    { "ja": "投擲",           "desc": "壁越しに撃つ・密集地形とキャンプに強い" },
+    "controller": { "ja": "コントローラー", "desc": "スタン/スロー/設置でエリアを支配" },
+    "support":    { "ja": "サポート",       "desc": "回復・バフ・味方の生存を伸ばす" },
+    "damage":     { "ja": "アタッカー",     "desc": "中射程の汎用火力・器用貧乏になりにくい" }
+  },
+
+  "_advantage_comment": "advantage[A][B] = A が B に対してどれだけ有利か (-2 〜 +2)。反対称 (A→B = -(B→A)) であることを update_meta.py が検証する。",
+  "advantage": {
+    "tank":       { "tank":  0, "assassin":  1, "marksman": -2, "thrower": -2, "controller": -1, "support":  1, "damage":  0 },
+    "assassin":   { "tank": -1, "assassin":  0, "marksman":  2, "thrower":  1, "controller": -1, "support":  2, "damage":  0 },
+    "marksman":   { "tank":  2, "assassin": -2, "marksman":  0, "thrower":  1, "controller":  1, "support":  1, "damage":  1 },
+    "thrower":    { "tank":  2, "assassin": -1, "marksman": -1, "thrower":  0, "controller":  0, "support":  1, "damage": -1 },
+    "controller": { "tank":  1, "assassin":  1, "marksman": -1, "thrower":  0, "controller":  0, "support":  0, "damage":  0 },
+    "support":    { "tank": -1, "assassin": -2, "marksman": -1, "thrower": -1, "controller":  0, "support":  0, "damage": -1 },
+    "damage":     { "tank":  0, "assassin":  0, "marksman": -1, "thrower":  1, "controller":  0, "support":  1, "damage":  0 }
+  },
+
+  "_synergy_comment": "同じチームに並べたときの噛み合い (-1 〜 +1)。対称行列。",
+  "synergy": {
+    "tank":       { "tank": -0.5, "assassin":  0.0, "marksman":  0.8, "thrower":  0.8, "controller":  0.6, "support":  1.0, "damage":  0.4 },
+    "assassin":   { "tank":  0.0, "assassin": -0.5, "marksman":  0.6, "thrower":  0.4, "controller":  0.8, "support":  0.4, "damage":  0.3 },
+    "marksman":   { "tank":  0.8, "assassin":  0.6, "marksman": -0.6, "thrower":  0.2, "controller":  0.5, "support":  0.6, "damage":  0.2 },
+    "thrower":    { "tank":  0.8, "assassin":  0.4, "marksman":  0.2, "thrower": -0.8, "controller":  0.3, "support":  0.5, "damage":  0.3 },
+    "controller": { "tank":  0.6, "assassin":  0.8, "marksman":  0.5, "thrower":  0.3, "controller": -0.3, "support":  0.4, "damage":  0.4 },
+    "support":    { "tank":  1.0, "assassin":  0.4, "marksman":  0.6, "thrower":  0.5, "controller":  0.4, "support": -0.8, "damage":  0.5 },
+    "damage":     { "tank":  0.4, "assassin":  0.3, "marksman":  0.2, "thrower":  0.3, "controller":  0.4, "support":  0.5, "damage": -0.2 }
+  },
+
+  "_modes_comment": "ガチバトル（ランク）で回る 3v3 モード。weights はアーキタイプ別の素点補正。",
+  "modes": {
+    "Gem Grab":     { "ja": "エメラルドハント", "ranked": true,
+      "weights": { "tank": 0.6, "assassin": 0.2, "marksman": 0.3, "thrower": 0.7, "controller": 1.0, "support": 0.8, "damage": 0.3 } },
+    "Brawl Ball":   { "ja": "ブロールボール",   "ranked": true,
+      "weights": { "tank": 1.0, "assassin": 0.8, "marksman": -0.3, "thrower": 0.0, "controller": 0.5, "support": 0.6, "damage": 0.5 } },
+    "Heist":        { "ja": "強奪",             "ranked": true,
+      "weights": { "tank": 0.8, "assassin": 0.7, "marksman": -0.4, "thrower": 0.2, "controller": 0.0, "support": -0.3, "damage": 1.0 } },
+    "Knockout":     { "ja": "ノックアウト",     "ranked": true,
+      "weights": { "tank": -0.6, "assassin": -0.4, "marksman": 1.0, "thrower": 0.8, "controller": 0.6, "support": 0.2, "damage": 0.4 } },
+    "Bounty":       { "ja": "ブロストライカー", "ranked": true,
+      "weights": { "tank": -1.0, "assassin": -0.5, "marksman": 1.2, "thrower": 0.5, "controller": 0.4, "support": 0.0, "damage": 0.3 } },
+    "Hot Zone":     { "ja": "ホットゾーン",     "ranked": true,
+      "weights": { "tank": 0.3, "assassin": -0.3, "marksman": 0.2, "thrower": 0.9, "controller": 1.2, "support": 0.7, "damage": 0.2 } },
+    "Brawl Hockey": { "ja": "ブロールホッケー", "ranked": true,
+      "weights": { "tank": 0.9, "assassin": 0.8, "marksman": -0.2, "thrower": -0.2, "controller": 0.7, "support": 0.4, "damage": 0.5 } }
+  },
+
+  "_ban_comment": "BAN 推奨のしきい値。score はアーキタイプ適性 + 実測勝率から合成される。",
+  "ban": { "count": 6, "minScore": 0.0 },
+
+  "_draft_comment": "ガチバトル（ランク）のドラフト順。A=先攻チーム, B=後攻チーム。6手。",
+  "draftOrder": ["A1", "B1", "B2", "A2", "A3", "B3"]
+}

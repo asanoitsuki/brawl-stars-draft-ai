@@ -1,0 +1,958 @@
+{
+  "schema": 1,
+  "_comment": "role を直したいときは該当エントリの role を書き換え、\"source\" を \"manual\" にしてください。以後の自動更新で上書きされません。",
+  "archetypes": [
+    "tank",
+    "assassin",
+    "marksman",
+    "thrower",
+    "controller",
+    "support",
+    "damage"
+  ],
+  "count": 109,
+  "brawlers": [
+    {
+      "id": 16000000,
+      "name": "Shelly",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Counter Tanks And Assassins With Burst Damage."
+    },
+    {
+      "id": 16000001,
+      "name": "Colt",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Long Range Consistent Damage."
+    },
+    {
+      "id": 16000002,
+      "name": "Bull",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Super To Break Walls And Close The Distance"
+    },
+    {
+      "id": 16000003,
+      "name": "Brock",
+      "role": "marksman",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Explode Brawlers And Walls"
+    },
+    {
+      "id": 16000004,
+      "name": "Rico",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Bounce Shots For Extra Range"
+    },
+    {
+      "id": 16000005,
+      "name": "Spike",
+      "role": "controller",
+      "source": "heuristic",
+      "confidence": 0.825,
+      "tip": "Zone Enemies With A Super And Spikes.",
+      "matched": [
+        "controller:\\bzone\\b|zoning|zone enemies"
+      ]
+    },
+    {
+      "id": 16000006,
+      "name": "Barley",
+      "role": "thrower",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Deny Space By Throwing Fiery Bottles."
+    },
+    {
+      "id": 16000007,
+      "name": "Jessie",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Place Your Turret To Dominate The Map"
+    },
+    {
+      "id": 16000008,
+      "name": "Nita",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Pressure With Bruce The Bear"
+    },
+    {
+      "id": 16000009,
+      "name": "Dynamike",
+      "role": "thrower",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Bombard Safely From Behind Walls."
+    },
+    {
+      "id": 16000010,
+      "name": "El Primo",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Jump In But Stay Away From Crowds."
+    },
+    {
+      "id": 16000011,
+      "name": "Mortis",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Jump In On Weak Or Isolated Enemies."
+    },
+    {
+      "id": 16000012,
+      "name": "Crow",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Poison Enemies From A Distance."
+    },
+    {
+      "id": 16000013,
+      "name": "Poco",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Instant Heals Keep Your Team Fighting"
+    },
+    {
+      "id": 16000014,
+      "name": "Bo",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Control Space With Hidden Traps."
+    },
+    {
+      "id": 16000015,
+      "name": "Piper",
+      "role": "marksman",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Poke From Range And Escape With A Super"
+    },
+    {
+      "id": 16000016,
+      "name": "Pam",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Hold Ground And Heal Teammates."
+    },
+    {
+      "id": 16000017,
+      "name": "Tara",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Punish Grouped Enemies."
+    },
+    {
+      "id": 16000018,
+      "name": "Darryl",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Roll In And Burst Damage Targets."
+    },
+    {
+      "id": 16000019,
+      "name": "Penny",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Your Cannon To Take Over The Map"
+    },
+    {
+      "id": 16000020,
+      "name": "Frank",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Control Space With Stuns And High Health."
+    },
+    {
+      "id": 16000021,
+      "name": "Gene",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Single Out Enemies With Long Range Pulls"
+    },
+    {
+      "id": 16000022,
+      "name": "Tick",
+      "role": "thrower",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Control Space From Safety."
+    },
+    {
+      "id": 16000023,
+      "name": "Leon",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Sneak In And Assassinate."
+    },
+    {
+      "id": 16000024,
+      "name": "Rosa",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Bushes Whenever Possible"
+    },
+    {
+      "id": 16000025,
+      "name": "Carl",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Boomerang Your Pickaxe For More Damage"
+    },
+    {
+      "id": 16000026,
+      "name": "Bibi",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Charge In And Knock Em Back"
+    },
+    {
+      "id": 16000027,
+      "name": "8-Bit",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Hold Ground And Boost Your Team"
+    },
+    {
+      "id": 16000028,
+      "name": "Sandy",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Sandstorm To Control Objectives"
+    },
+    {
+      "id": 16000029,
+      "name": "Bea",
+      "role": "marksman",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Land Hits Then Punish"
+    },
+    {
+      "id": 16000030,
+      "name": "Emz",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Control The Map With Large Attacks."
+    },
+    {
+      "id": 16000031,
+      "name": "Mr. P",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Porters To Control The Map."
+    },
+    {
+      "id": 16000032,
+      "name": "Max",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Buff Your Team With Tons Of Speed"
+    },
+    {
+      "id": 16000034,
+      "name": "Jacky",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Get Close To Deal Large Area Damage."
+    },
+    {
+      "id": 16000035,
+      "name": "Gale",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Push Enemies Away To Control The Map."
+    },
+    {
+      "id": 16000036,
+      "name": "Nani",
+      "role": "marksman",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Poke With Outside Shots Or Burst With All"
+    },
+    {
+      "id": 16000037,
+      "name": "Sprout",
+      "role": "thrower",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Make Walls And Bounce Projectiles Off Of Them."
+    },
+    {
+      "id": 16000038,
+      "name": "Surge",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Supers To Level Up Or Dive In"
+    },
+    {
+      "id": 16000039,
+      "name": "Colette",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Shred High-Health Enemies And Objectives."
+    },
+    {
+      "id": 16000040,
+      "name": "Amber",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Destroy Bushes And Control Space With Fire."
+    },
+    {
+      "id": 16000041,
+      "name": "Lou",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Control The Map With A Huge Freeze."
+    },
+    {
+      "id": 16000042,
+      "name": "Byron",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Heal Teammates Or Snipe With Poison."
+    },
+    {
+      "id": 16000043,
+      "name": "Edgar",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Jump To Take Out Isolated Enemies."
+    },
+    {
+      "id": 16000044,
+      "name": "Ruffs",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Buff Teammates And Poke Enemies."
+    },
+    {
+      "id": 16000045,
+      "name": "Stu",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Your Dash To Get Close Or Dodge."
+    },
+    {
+      "id": 16000046,
+      "name": "Belle",
+      "role": "marksman",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Snipe With Bouncing Bullets."
+    },
+    {
+      "id": 16000047,
+      "name": "Squeak",
+      "role": "thrower",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Hit Enemies Through Walls With Explosions"
+    },
+    {
+      "id": 16000048,
+      "name": "Grom",
+      "role": "thrower",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Bombard Safely From Behind Walls."
+    },
+    {
+      "id": 16000049,
+      "name": "Buzz",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Travel Around The Map And Stun Enemies."
+    },
+    {
+      "id": 16000050,
+      "name": "Griff",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Burst Down Enemies From Mid-Range."
+    },
+    {
+      "id": 16000051,
+      "name": "Ash",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Unleash An Army Of Rats"
+    },
+    {
+      "id": 16000052,
+      "name": "Meg",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use The Mecha For Space Then Run"
+    },
+    {
+      "id": 16000053,
+      "name": "Lola",
+      "role": "controller",
+      "source": "heuristic",
+      "confidence": 1.0,
+      "tip": "Control Multiple Lanes With Ego",
+      "matched": [
+        "controller:control (space|the map|objectives|multiple lanes)",
+        "controller:\\bcontrol\\b"
+      ]
+    },
+    {
+      "id": 16000054,
+      "name": "Fang",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Poke With Range Then Jump In To Finish."
+    },
+    {
+      "id": 16000056,
+      "name": "Eve",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Walk Over Water And Spawn Hatchlings"
+    },
+    {
+      "id": 16000057,
+      "name": "Janet",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "Super To Drop Bombs Safely From Above",
+      "matched": []
+    },
+    {
+      "id": 16000058,
+      "name": "Bonnie",
+      "role": "marksman",
+      "source": "heuristic",
+      "confidence": 0.615,
+      "tip": "Snipe Then Jump In For Big Damage.",
+      "matched": [
+        "marksman:\\bsnipe",
+        "assassin:jump (in|to|around)",
+        "damage:big damage"
+      ]
+    },
+    {
+      "id": 16000059,
+      "name": "Otis",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Burst Tanks And Silence Threats."
+    },
+    {
+      "id": 16000060,
+      "name": "Sam",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Throw Fists Reclaim Repeat."
+    },
+    {
+      "id": 16000061,
+      "name": "Gus",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Buff Teammates And Snipe Enemies."
+    },
+    {
+      "id": 16000062,
+      "name": "Buster",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Reflect Enemy Projectiles For Big Damage."
+    },
+    {
+      "id": 16000063,
+      "name": "Chester",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Master Randomness To Control The Map."
+    },
+    {
+      "id": 16000064,
+      "name": "Gray",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Get Your Team Into The Action With Portals"
+    },
+    {
+      "id": 16000065,
+      "name": "Mandy",
+      "role": "marksman",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Hold Your Ground For Huge Range."
+    },
+    {
+      "id": 16000066,
+      "name": "R-T",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Mark Targets Then Deal Burst Damage"
+    },
+    {
+      "id": 16000067,
+      "name": "Willow",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Turn Enemies Against Themselves"
+    },
+    {
+      "id": 16000068,
+      "name": "Maisie",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "Punish Advancing Enemies.",
+      "matched": []
+    },
+    {
+      "id": 16000069,
+      "name": "Hank",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Charge Up Your Attack Then Engage."
+    },
+    {
+      "id": 16000070,
+      "name": "Cordelius",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use The Shadow Realm To Isolate Targets"
+    },
+    {
+      "id": 16000071,
+      "name": "Doug",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Big Close Range Damage And Self-Revival"
+    },
+    {
+      "id": 16000072,
+      "name": "Pearl",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Build Up Heat For Burst Damage"
+    },
+    {
+      "id": 16000073,
+      "name": "Chuck",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Lay Down Tracks For Offense And Retreats."
+    },
+    {
+      "id": 16000074,
+      "name": "Charlie",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Cocoon Enemies To Remove Them From Play"
+    },
+    {
+      "id": 16000075,
+      "name": "Mico",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Leap Over Walls And Enemy Attacks"
+    },
+    {
+      "id": 16000076,
+      "name": "Kit",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Heal Teammates Or Assassinate Enemies"
+    },
+    {
+      "id": 16000077,
+      "name": "Larry & Lawrie",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Overwhelm With Teamwork"
+    },
+    {
+      "id": 16000078,
+      "name": "Melodie",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Build Up Notes Then Dive In"
+    },
+    {
+      "id": 16000079,
+      "name": "Angelo",
+      "role": "marksman",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Charged Attacks To Snipe"
+    },
+    {
+      "id": 16000080,
+      "name": "Draco",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Poke Transform Then Dominate"
+    },
+    {
+      "id": 16000081,
+      "name": "Lily",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Bushes And A Super To Get Close."
+    },
+    {
+      "id": 16000082,
+      "name": "Berry",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Control Space And Heal Teammates."
+    },
+    {
+      "id": 16000083,
+      "name": "Clancy",
+      "role": "damage",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Poke To Level Up And Take Over"
+    },
+    {
+      "id": 16000084,
+      "name": "Moe",
+      "role": "assassin",
+      "source": "heuristic",
+      "confidence": 0.495,
+      "tip": "Chase Down Enemies With The Drill.",
+      "matched": [
+        "assassin:chase down"
+      ]
+    },
+    {
+      "id": 16000085,
+      "name": "Kenji",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Stay Aggressive And Heal With Attacks."
+    },
+    {
+      "id": 16000086,
+      "name": "Shade",
+      "role": "assassin",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Walls To Avoid Damage And Get Close."
+    },
+    {
+      "id": 16000087,
+      "name": "Juju",
+      "role": "controller",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Use Terrain Unleash Gris-Gris"
+    },
+    {
+      "id": 16000088,
+      "name": "Buzz Lightyear",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "Unknown",
+      "matched": []
+    },
+    {
+      "id": 16000089,
+      "name": "Meeple",
+      "role": "controller",
+      "source": "heuristic",
+      "confidence": 0.945,
+      "tip": "Shoot Through Walls And Control The Map",
+      "matched": [
+        "thrower:through walls",
+        "controller:control (space|the map|objectives|multiple lanes)",
+        "controller:\\bcontrol\\b"
+      ]
+    },
+    {
+      "id": 16000090,
+      "name": "Ollie",
+      "role": "tank",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Soak Up Damage Then Hypnotize."
+    },
+    {
+      "id": 16000091,
+      "name": "Lumi",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "Recall Weapons To Create New Angles Of Attack.",
+      "matched": []
+    },
+    {
+      "id": 16000092,
+      "name": "Finx",
+      "role": "controller",
+      "source": "heuristic",
+      "confidence": 1.0,
+      "tip": "Slow Enemy Projectiles To Take Space.",
+      "matched": [
+        "controller:take space",
+        "controller:\\bslow\\b"
+      ]
+    },
+    {
+      "id": 16000093,
+      "name": "Jae-Yong",
+      "role": "support",
+      "source": "heuristic",
+      "confidence": 0.33,
+      "tip": "Use Speed For Aggression And Heal For Safety.",
+      "matched": [
+        "support:\\bheal\\b"
+      ]
+    },
+    {
+      "id": 16000094,
+      "name": "Kaze",
+      "role": "controller",
+      "source": "heuristic",
+      "confidence": 0.675,
+      "tip": "Zone As Geisha Strike As Ninja.",
+      "matched": [
+        "assassin:strike",
+        "controller:\\bzone\\b|zoning|zone enemies"
+      ]
+    },
+    {
+      "id": 16000095,
+      "name": "Alli",
+      "role": "assassin",
+      "source": "heuristic",
+      "confidence": 0.825,
+      "tip": "Ambush From Bushes And Water",
+      "matched": [
+        "assassin:ambush"
+      ]
+    },
+    {
+      "id": 16000096,
+      "name": "Trunk",
+      "role": "tank",
+      "source": "heuristic",
+      "confidence": 0.825,
+      "tip": "Use Ants For Speed And Charge In",
+      "matched": [
+        "tank:charge in"
+      ]
+    },
+    {
+      "id": 16000097,
+      "name": "Mina",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "Combo Your Super With Main Attacks.",
+      "matched": []
+    },
+    {
+      "id": 16000098,
+      "name": "Ziggy",
+      "role": "controller",
+      "source": "heuristic",
+      "confidence": 1.0,
+      "tip": "Call Lightning To Control Space.",
+      "matched": [
+        "controller:control (space|the map|objectives|multiple lanes)",
+        "controller:\\bcontrol\\b"
+      ]
+    },
+    {
+      "id": 16000099,
+      "name": "Pierce",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "The Last Shot Is Key For Damage.",
+      "matched": []
+    },
+    {
+      "id": 16000100,
+      "name": "Gigi",
+      "role": "assassin",
+      "source": "heuristic",
+      "confidence": 0.825,
+      "tip": "Dodge Enemies Then Jump In To Finish Them.",
+      "matched": [
+        "assassin:jump (in|to|around)"
+      ]
+    },
+    {
+      "id": 16000101,
+      "name": "Glowy",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Heal Teammates And Fear Enemies."
+    },
+    {
+      "id": 16000102,
+      "name": "Sirius",
+      "role": "controller",
+      "source": "heuristic",
+      "confidence": 1.0,
+      "tip": "Use Shadows To Control The Map.",
+      "matched": [
+        "controller:control (space|the map|objectives|multiple lanes)",
+        "controller:\\bcontrol\\b"
+      ]
+    },
+    {
+      "id": 16000103,
+      "name": "Najia",
+      "role": "marksman",
+      "source": "heuristic",
+      "confidence": 0.825,
+      "tip": "Massive Range With Added Poison",
+      "matched": [
+        "marksman:(huge|massive|more|extra|for) range"
+      ]
+    },
+    {
+      "id": 16000104,
+      "name": "Damian",
+      "role": "assassin",
+      "source": "heuristic",
+      "confidence": 0.825,
+      "tip": "Jump In To Unleash Chaos",
+      "matched": [
+        "assassin:jump (in|to|around)"
+      ]
+    },
+    {
+      "id": 16000105,
+      "name": "Starr Nova",
+      "role": "assassin",
+      "source": "heuristic",
+      "confidence": 0.255,
+      "tip": "Poke Then Transform And Strike",
+      "matched": [
+        "assassin:strike",
+        "damage:\\bpoke\\b"
+      ]
+    },
+    {
+      "id": 16000106,
+      "name": "Bolt",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "Avoid Walls And Sharp Turns For Speed",
+      "matched": []
+    },
+    {
+      "id": 16000107,
+      "name": "Nori",
+      "role": "assassin",
+      "source": "heuristic",
+      "confidence": 0.825,
+      "tip": "Jump Around The Map And Cause Chaos",
+      "matched": [
+        "assassin:jump (in|to|around)"
+      ]
+    },
+    {
+      "id": 16000108,
+      "name": "Wendy",
+      "role": "support",
+      "source": "manual",
+      "confidence": 1.0,
+      "tip": "Shield Teammates And Hold Ground."
+    },
+    {
+      "id": 16000109,
+      "name": "Cosmo",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "Use Gravity To Target Enemies",
+      "matched": []
+    },
+    {
+      "id": 16000110,
+      "name": "Vince",
+      "role": "damage",
+      "source": "heuristic",
+      "confidence": 0.0,
+      "tip": "Collect Caterpillars To Become More Powerful",
+      "matched": []
+    }
+  ]
+}

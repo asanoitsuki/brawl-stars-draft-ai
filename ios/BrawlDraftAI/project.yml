@@ -1,0 +1,42 @@
+name: BrawlDraftAI
+
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    SWIFT_STRICT_CONCURRENCY: minimal
+
+targets:
+  BrawlDraftAI:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.brawldraftai
+        PRODUCT_NAME: BrawlDraftAI
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Sources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/BrawlDraftAI.entitlements
+        SWIFT_OPTIMIZATION_LEVEL: "-O"
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+    dependencies:
+      - sdk: AppIntents.framework
+      - sdk: Photos.framework
+      - sdk: AVFoundation.framework
+      - sdk: UserNotifications.framework
+      - sdk: Accelerate.framework

@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 一時ファイル
+*.tmp
+*.part
+logs/
+
+# macOS
+.DS_Store
+
+# Xcode（project.yml から xcodegen で再生成する）
+ios/BrawlDraftAI/BrawlDraftAI.xcodeproj/
+ios/BrawlDraftAI/*.xcworkspace/
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/

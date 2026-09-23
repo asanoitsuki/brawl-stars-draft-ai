@@ -24,11 +24,11 @@
     </dict>
   </array>
 
+  <!-- 空の dict のままだと起動画面が真っ黒になり、
+       起動が少しでも遅いと「アプリが真っ暗」に見える。背景色を明示しておく。 -->
   <key>UILaunchScreen</key>
-  <dict/>
-  <key>UIApplicationSceneManifest</key>
   <dict>
-    <key>UIApplicationSupportsMultipleScenes</key><false/>
+    <key>UIColorName</key><string>LaunchBackground</string>
   </dict>
   <key>UISupportedInterfaceOrientations</key>
   <array>

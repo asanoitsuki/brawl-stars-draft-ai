@@ -19,3 +19,9 @@ DerivedData/
 build/
 *.xcuserstate
 xcuserdata/
+
+# トークンを書くファイル（.env.example をコピーして使う）
+.env
+
+# install_cron.sh が生成する実行スクリプト
+scripts/run_update.sh

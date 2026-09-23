@@ -154,13 +154,24 @@ iOS 側はこれらを使って、実際の敵味方構成に合わせてスコ�
 ### ローカル cron（Mac の launchd）
 
 ```bash
+cp .env.example .env               # トークンを使うなら先に用意
 ./scripts/install_cron.sh          # 毎日 17:40 に実行するよう登録
 ./scripts/install_cron.sh 03 30    # 時刻指定
-./scripts/install_cron.sh --run-now
+./scripts/install_cron.sh --run-now   # 登録せずに 1 回だけ実行（動作確認）
 ./scripts/install_cron.sh --uninstall
 ```
 
 ログは `logs/meta_update.log`。
+
+**launchd はログインシェルを通さない**ので、`.zshrc` に書いた `export` は一切引き継がれない。
+トークンの類は `.env`（`.gitignore` 済み）に書くこと。生成されるランナーが自前で読み込み、
+PATH も Homebrew を含めて明示的に設定する。
+
+> ⚠️ **GitHub Actions とローカル cron を両方動かさないこと。**
+> どちらも同じ生成物（`rules/*.json`）をコミットするので、走るたびに枝分かれして衝突する。
+> ランナーは push 前に `git pull --rebase` を試みるが、生成物が両側で変わっていると
+> 解決できない。**公式 API でローテーションを取りたいならローカル cron に寄せ、
+> ワークフローの `schedule:` をコメントアウトする**のが素直。
 
 ---
 
@@ -367,6 +378,20 @@ BAN 推奨: Angelo 1.95 → Mandy 1.95 → Belle 1.70 → Charlie 1.05 → Surge
 スケールは `S=+1.5 / A=+1.0 / B=+0.5 / 中立=0 / D=-0.8 / F=-1.5`。
 実測勝率が入り始めると重みは 0.50 倍 → 0.20 倍に下がり、自動的に実測が主役になる。
 
+JSON を直接開かなくても、`scripts/tiers.py` で確認・編集できる:
+
+```bash
+python3 scripts/tiers.py list                # 役割別に一覧
+python3 scripts/tiers.py list --role marksman
+python3 scripts/tiers.py missing             # 未設定（中立扱い）のキャラ
+python3 scripts/tiers.py set Angelo 1.5      # 数値で指定
+python3 scripts/tiers.py set Edgar D         # S/A/B/C/D/F でも指定できる
+python3 scripts/tiers.py unset Edgar         # 中立に戻す
+```
+
+変更後に `python3 scripts/update_meta.py --rotation-out rules/rules_rotation.json`
+を回すと rules.json へ反映される。
+
 アプリ側の表示も 3 段階になっている:
 
 | 状態 | 表示 |
@@ -399,7 +424,9 @@ BAN 推奨: Angelo 1.95 → Mandy 1.95 → Belle 1.70 → Charlie 1.05 → Surge
 │   ├── install_cron.sh         ローカル launchd 登録
 │   ├── run_swift_e2e.sh        認識コアの結合テスト
 │   ├── calibrate_layout.sh     スクショから枠を自動検出
+│   ├── tiers.py                ティア補正の確認・編集
 │   └── run_all.sh              まとめて実行 + 全テスト
+├── .env.example                トークン置き場のひな形（.env は gitignore 済み）
 ├── data/                       手で調整するナレッジ（相性表・役割・ティア・カタカナ）
 ├── assets/
 │   ├── brawler_icons/          キャラアイコン PNG（214 枚）

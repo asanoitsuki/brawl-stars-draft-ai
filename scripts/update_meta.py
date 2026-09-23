@@ -549,6 +549,12 @@ def main() -> int:
     ]
 
     arch_ja = {k: v["ja"] for k, v in arch["archetypes"].items()}
+    # モード単位の重み付け。マップ情報が読めない画面（ブラインドピック等）でも
+    # 「モード名の OCR 結果」さえ分かればアーキタイプ適性を計算できるようにする。
+    modes_export = {
+        key: {"ja": cfg["ja"], "weights": cfg.get("weights", {})}
+        for key, cfg in arch["modes"].items()
+    }
     names_ja = (load_json(NAMES_JA_PATH, {}) or {}).get("names", {})
     missing_ja = [e["name"] for e in roles_doc["brawlers"] if e["name"] not in names_ja]
     if missing_ja:
@@ -570,6 +576,7 @@ def main() -> int:
             "note": quality_note(with_stats, len(tiers)),
         },
         "draftOrder": arch["draftOrder"],
+        "modes": modes_export,
         "archetypes": arch_ja,
         "advantage": arch["advantage"],
         "synergy": arch["synergy"],

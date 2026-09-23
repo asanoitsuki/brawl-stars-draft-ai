@@ -3,8 +3,11 @@ import SwiftUI
 
 /// ドラフト画面のどこに何があるかを、実機のスクリーンショットに合わせて調整する画面。
 ///
-/// 既定値はあくまで目安なので、初回は必ずここで合わせる。
-/// 枠を正確に置けるほど認識が安定し、ジッタ探索が要らなくなるぶん速くもなる。
+/// スクリーンショットを選ぶと、まず自動検出（`AutoDetector`）が実測済みの既定位置を
+/// 出発点に各枠をスナップさせる。手で一から置く必要はなく、ズレていたら微調整するだけ。
+/// キャラ一覧グリッドは常に全キャラが表示されて調整対象にならないため、
+/// 調整できるのは「自チーム 3 枠」「相手チーム 3 枠（相手が見える画面のときだけ）」
+/// 「モード名の文字が書かれている領域」。
 struct CalibrationView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -12,20 +15,20 @@ struct CalibrationView: View {
     @State private var profileIndex = 0
     @State private var pickedItem: PhotosPickerItem?
     @State private var image: UIImage?
-    @State private var selection: RegionRef = .map
+    @State private var selection: RegionRef = .ally(0)
     @State private var testSummary: String?
     @State private var saved = false
+    @State private var autoDetecting = false
+    @State private var autoDetectNote: String?
 
     enum RegionRef: Hashable {
-        case map
-        case ban(Int)
+        case modeText
         case ally(Int)
         case enemy(Int)
 
         var label: String {
             switch self {
-            case .map: return "マップ画像"
-            case .ban(let i): return "BAN \(i + 1)"
+            case .modeText: return "モード名の文字"
             case .ally(let i): return "味方 \(i + 1)"
             case .enemy(let i): return "相手 \(i + 1)"
             }
@@ -33,8 +36,7 @@ struct CalibrationView: View {
 
         var color: Color {
             switch self {
-            case .map: return .yellow
-            case .ban: return .red
+            case .modeText: return .yellow
             case .ally: return .green
             case .enemy: return .blue
             }
@@ -84,6 +86,7 @@ struct CalibrationView: View {
                     if let data = try? await item.loadTransferable(type: Data.self) {
                         image = UIImage(data: data)
                         testSummary = nil
+                        await runAutoDetect()
                     }
                 }
             }
@@ -104,11 +107,18 @@ struct CalibrationView: View {
                     ForEach(allRegions, id: \.self) { ref in
                         regionShape(ref, in: frame)
                     }
+
+                    if autoDetecting {
+                        ProgressView("自動検出中 …")
+                            .padding(16)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    }
                 } else {
                     ContentUnavailableView(
                         "スクリーンショットを選んでください",
                         systemImage: "photo.badge.plus",
-                        description: Text("ガチバトルのドラフト画面を撮ったものを選ぶと、枠を重ねて調整できます。")
+                        description: Text("ガチバトルのドラフト画面（味方 3 人・相手 3 人が並ぶ画面）を選ぶと、"
+                                         + "自動でだいたいの位置に枠を合わせます。")
                     )
                 }
             }
@@ -119,47 +129,63 @@ struct CalibrationView: View {
     }
 
     private func regionShape(_ ref: RegionRef, in frame: CGRect) -> some View {
-        let n = rect(for: ref)
+        guard let n = rect(for: ref) else { return AnyView(EmptyView()) }
         let r = CGRect(x: frame.minX + n.x * frame.width,
                        y: frame.minY + n.y * frame.height,
                        width: n.w * frame.width,
                        height: n.h * frame.height)
         let isSelected = ref == selection
+        let matchLabel = matchedName(for: ref)
 
-        return ZStack(alignment: .bottomTrailing) {
-            Rectangle()
-                .strokeBorder(ref.color, lineWidth: isSelected ? 3 : 1.5)
-                .background(Rectangle().fill(ref.color.opacity(isSelected ? 0.18 : 0.06)))
-            if isSelected {
-                Circle()
-                    .fill(ref.color)
-                    .frame(width: 18, height: 18)
-                    .offset(x: 9, y: 9)
-                    .gesture(resizeGesture(ref, frame: frame))
+        return AnyView(
+            ZStack(alignment: .bottomTrailing) {
+                Rectangle()
+                    .strokeBorder(ref.color, lineWidth: isSelected ? 3 : 1.5)
+                    .background(Rectangle().fill(ref.color.opacity(isSelected ? 0.18 : 0.06)))
+                if let matchLabel {
+                    Text(matchLabel)
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 4).padding(.vertical, 2)
+                        .background(ref.color.opacity(0.85), in: Capsule())
+                        .foregroundStyle(.white)
+                        .offset(y: -18)
+                }
+                if isSelected {
+                    // ハンドルの見た目は小さいまま、タップ判定はもっと広く取る
+                    // （実機での「感度が高すぎる／狙った所を掴めない」対策）。
+                    Circle()
+                        .fill(ref.color)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Circle().inset(by: -16))
+                        .offset(x: 11, y: 11)
+                        .gesture(resizeGesture(ref, frame: frame))
+                }
             }
-        }
-        .frame(width: max(r.width, 8), height: max(r.height, 8))
-        .position(x: r.midX, y: r.midY)
-        .onTapGesture { selection = ref }
-        .gesture(moveGesture(ref, frame: frame))
+            .frame(width: max(r.width, 8), height: max(r.height, 8))
+            .contentShape(Rectangle())
+            .position(x: r.midX, y: r.midY)
+            .onTapGesture { selection = ref }
+            .gesture(moveGesture(ref, frame: frame))
+        )
     }
 
     private func moveGesture(_ ref: RegionRef, frame: CGRect) -> some Gesture {
-        DragGesture(minimumDistance: 2)
+        // minimumDistance を大きめに取り、軽いタップが誤ってドラッグと判定されないようにする
+        // （「感度が高すぎる」という報告への対応）。
+        DragGesture(minimumDistance: 10)
             .onChanged { value in
-                guard ref == selection else { return }
-                var n = rect(for: ref)
+                selection = ref
+                guard var n = rect(for: ref) else { return }
                 n.x = clamp(n.x + value.translation.width / frame.width, max: 1 - n.w)
                 n.y = clamp(n.y + value.translation.height / frame.height, max: 1 - n.h)
                 setRect(n, for: ref)
             }
-            .simultaneously(with: TapGesture().onEnded { selection = ref })
     }
 
     private func resizeGesture(_ ref: RegionRef, frame: CGRect) -> some Gesture {
-        DragGesture(minimumDistance: 1)
+        DragGesture(minimumDistance: 4)
             .onChanged { value in
-                var n = rect(for: ref)
+                guard var n = rect(for: ref) else { return }
                 n.w = max(0.02, min(1 - n.x, n.w + value.translation.width / frame.width))
                 n.h = max(0.02, min(1 - n.y, n.h + value.translation.height / frame.height))
                 setRect(n, for: ref)
@@ -174,12 +200,22 @@ struct CalibrationView: View {
             .pickerStyle(.menu)
 
             HStack {
-                nudge("←") { move(dx: -0.002) }
-                nudge("→") { move(dx: 0.002) }
-                nudge("↑") { move(dy: -0.002) }
-                nudge("↓") { move(dy: 0.002) }
-                nudge("－") { resize(-0.004) }
-                nudge("＋") { resize(0.004) }
+                nudge("←") { move(dx: -0.003) }
+                nudge("→") { move(dx: 0.003) }
+                nudge("↑") { move(dy: -0.003) }
+                nudge("↓") { move(dy: 0.003) }
+                nudge("－") { resize(-0.006) }
+                nudge("＋") { resize(0.006) }
+            }
+
+            HStack {
+                Button {
+                    Task { await runAutoDetect() }
+                } label: {
+                    Label("この画像で自動検出しなおす", systemImage: "sparkle.magnifyingglass")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(image == nil || autoDetecting)
             }
 
             HStack {
@@ -188,7 +224,7 @@ struct CalibrationView: View {
                 } label: {
                     Label("この配置で解析テスト", systemImage: "play.circle")
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .disabled(image == nil)
 
                 Button(role: .destructive) {
@@ -199,6 +235,9 @@ struct CalibrationView: View {
                 }
             }
 
+            if let autoDetectNote {
+                Text(autoDetectNote).font(.caption).foregroundStyle(.secondary)
+            }
             if let testSummary {
                 ScrollView {
                     Text(testSummary)
@@ -219,45 +258,85 @@ struct CalibrationView: View {
             .buttonStyle(.bordered)
     }
 
+    // MARK: - 自動検出
+
+    /// 既定レイアウトを出発点に各枠をスナップさせる。ゼロから探すのではなく
+    /// 「だいたい合っている状態」からの微調整なので、キャラ一覧グリッドに惑わされない。
+    private func runAutoDetect() async {
+        guard let cg = image?.cgImage else { return }
+        autoDetecting = true
+        defer { autoDetecting = false }
+        do {
+            let rules = try await RulesStore.shared.rules()
+            let base = layout
+            let result = await Task.detached(priority: .userInitiated) {
+                AutoDetector.refine(image: cg, base: base, rules: rules)
+            }.value
+
+            var l = layout
+            for (i, slot) in result.allySlots.enumerated() where i < l.allySlots.count {
+                l.allySlots[i] = slot.rect
+            }
+            for (i, slot) in result.enemySlots.enumerated() where i < l.enemySlots.count {
+                l.enemySlots[i] = slot.rect
+            }
+            layout = l
+
+            let matched = (result.allySlots + result.enemySlots).compactMap(\.matchedName)
+            autoDetectNote = matched.isEmpty
+                ? "自動検出: 一致するキャラが見つかりませんでした（誰も選んでいない画面か、画角が違う可能性）。手で微調整してください。"
+                : "自動検出: \(matched.joined(separator: "、")) を認識してスナップしました。ズレていたら微調整してください。"
+        } catch {
+            autoDetectNote = "自動検出に失敗: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: - ロジック
 
     private var allRegions: [RegionRef] {
-        var refs: [RegionRef] = [.map]
-        refs += layout.banSlots.indices.map { .ban($0) }
+        var refs: [RegionRef] = []
+        if layout.modeTextRegion != nil { refs.append(.modeText) }
         refs += layout.allySlots.indices.map { .ally($0) }
-        refs += layout.enemySlots.indices.map { .enemy($0) }
+        if layout.enemyVisible {
+            refs += layout.enemySlots.indices.map { .enemy($0) }
+        }
         return refs
     }
 
-    private func rect(for ref: RegionRef) -> NRect {
+    private func rect(for ref: RegionRef) -> NRect? {
         switch ref {
-        case .map: return layout.mapPreview
-        case .ban(let i): return layout.banSlots[i]
-        case .ally(let i): return layout.allySlots[i]
-        case .enemy(let i): return layout.enemySlots[i]
+        case .modeText: return layout.modeTextRegion
+        case .ally(let i): return i < layout.allySlots.count ? layout.allySlots[i] : nil
+        case .enemy(let i): return i < layout.enemySlots.count ? layout.enemySlots[i] : nil
         }
     }
 
     private func setRect(_ value: NRect, for ref: RegionRef) {
         var l = layout
         switch ref {
-        case .map: l.mapPreview = value
-        case .ban(let i): l.banSlots[i] = value
-        case .ally(let i): l.allySlots[i] = value
-        case .enemy(let i): l.enemySlots[i] = value
+        case .modeText: l.modeTextRegion = value
+        case .ally(let i) where i < l.allySlots.count: l.allySlots[i] = value
+        case .enemy(let i) where i < l.enemySlots.count: l.enemySlots[i] = value
+        default: break
         }
         layout = l
     }
 
+    private func matchedName(for ref: RegionRef) -> String? {
+        // 直近の自動検出結果は保持していないので、テスト実行結果から拾う
+        // （シンプルさ優先。必要なら状態を追加で持たせる）。
+        nil
+    }
+
     private func move(dx: Double = 0, dy: Double = 0) {
-        var n = rect(for: selection)
+        guard var n = rect(for: selection) else { return }
         n.x = clamp(n.x + dx, max: 1 - n.w)
         n.y = clamp(n.y + dy, max: 1 - n.h)
         setRect(n, for: selection)
     }
 
     private func resize(_ delta: Double) {
-        var n = rect(for: selection)
+        guard var n = rect(for: selection) else { return }
         n.w = max(0.02, min(1 - n.x, n.w + delta))
         n.h = max(0.02, min(1 - n.y, n.h + delta))
         setRect(n, for: selection)

@@ -8,6 +8,9 @@ struct RulesDocument: Decodable {
     let generatedAt: String
     let dataQuality: DataQuality
     let draftOrder: [String]
+    /// モード英語キー -> 日本語名・アーキタイプ別重み。
+    /// マップ情報が無いブラインドピック画面では、OCR で読んだモード名からこれを引く。
+    let modes: [String: ModeInfo]
     /// アーキタイプ英語キー -> 日本語表示名
     let archetypes: [String: String]
     /// advantage[自分の役割][相手の役割] = -2…+2
@@ -44,6 +47,11 @@ struct RulesDocument: Decodable {
             return .roleOnly
         }
     }
+}
+
+struct ModeInfo: Decodable {
+    let ja: String
+    let weights: [String: Double]
 }
 
 struct BrawlerRole: Decodable {

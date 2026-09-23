@@ -23,6 +23,17 @@ struct NRect: Codable, Hashable {
     }
 }
 
+/// ドラフト画面の種類。ブロスタのガチバトルは段位によって UI がまったく違う。
+enum ScreenKind: String, Codable {
+    /// エリート未満: マップ画像も BAN も無く、自チーム 3 人が同時にブラインドで選ぶ。
+    /// 相手の選択は対戦開始まで常に「?」で伏せられている（実機スクショで確認済み）。
+    case blindPick
+    /// エリート以上: BAN フェーズの後、順番にピックが公開されていく。
+    /// ⚠️ この画面のレイアウトはまだ実機スクショで確認できていない。
+    /// 既定プロファイルは用意していないので、使うには枠合わせで自分の画面に合わせること。
+    case draftPick
+}
+
 /// ドラフト画面のどこに何が描かれているかの定義。
 ///
 /// 端末サイズ・言語・UI 更新で位置は変わるので、アプリ内のキャリブレーション画面から
@@ -32,16 +43,22 @@ struct ScreenLayout: Codable, Identifiable {
     var id: String { name }
 
     var name: String
+    var kind: ScreenKind = .blindPick
     /// この配置を合わせたスクリーンショットの縦横比（幅 / 高さ）。
     var aspectRatio: Double
-    /// マップのプレビュー画像
-    var mapPreview: NRect
-    /// BAN されたキャラのアイコン（自チーム・相手チームぶん）
-    var banSlots: [NRect]
+    /// モード名の文字が書かれている領域（Vision OCR で読む）。blindPick で使用。
+    var modeTextRegion: NRect?
+    /// マップのプレビュー画像。draftPick 画面にのみ存在する。
+    var mapPreview: NRect?
+    /// BAN されたキャラのアイコン（draftPick のみ）。
+    var banSlots: [NRect] = []
     /// 自チームのピック枠（左から順）
     var allySlots: [NRect]
-    /// 相手チームのピック枠（左から順）
+    /// 相手チームのピック枠（左から順）。
+    /// blindPick では対戦開始まで常に「?」で伏せられているため、認識対象にしない。
     var enemySlots: [NRect]
+    /// 相手の選択がこの画面で実際に見えるか。blindPick では常に false。
+    var enemyVisible: Bool = true
 
     /// 縦横比がどれだけ近いか（プロファイル自動選択に使う）
     func aspectDistance(for size: CGSize) -> Double {
@@ -100,53 +117,54 @@ enum LayoutStore {
 }
 
 extension ScreenLayout {
-    /// 既定値（横持ち 19.5:9 想定）。
+    /// 既定値（横持ち iPhone、エリート未満のブラインドピック画面）。
     ///
-    /// ⚠️ これは「だいたいこの辺」という出発点。実機のスクリーンショットは
-    /// 機種・ノッチ・UI バージョンで位置が変わるので、初回は必ずアプリ内の
-    /// 「枠合わせ」画面で調整すること。ズレていてもジッタ探索である程度は吸収する。
+    /// 実機スクショ（2622x1206）から黄色い選択枠・カード境界のピクセル座標を実測して
+    /// 比率化したもの。以下の構造:
+    ///   * 上部: キャラクター一覧グリッド（常に全キャラ表示。ここは選択状態を表さないので
+    ///     認識対象にしない — 全キャラがヒットしてしまい何の情報にもならない）
+    ///   * 下部: 自チーム 3 枠（ブルー）+ 相手チーム 3 枠（レッド、常に「?」で伏せられている）
+    ///
+    /// それでも実機ごとの余白・ノッチ差は残るので、初回は必ず枠合わせで確認すること。
     static let builtInLandscape = ScreenLayout(
-        name: "iPhone 横持ち (19.5:9)",
-        aspectRatio: 19.5 / 9.0,
-        mapPreview: NRect(x: 0.415, y: 0.045, w: 0.170, h: 0.300),
-        banSlots: [
-            NRect(x: 0.045, y: 0.055, w: 0.058, h: 0.105),
-            NRect(x: 0.113, y: 0.055, w: 0.058, h: 0.105),
-            NRect(x: 0.829, y: 0.055, w: 0.058, h: 0.105),
-            NRect(x: 0.897, y: 0.055, w: 0.058, h: 0.105)
-        ],
+        name: "iPhone 横持ち・ブラインドピック (19.5:9)",
+        kind: .blindPick,
+        aspectRatio: 2622.0 / 1206.0,
+        modeTextRegion: NRect(x: 0.0496, y: 0.0083, w: 0.2174, h: 0.1368),
+        mapPreview: nil,
+        banSlots: [],
         allySlots: [
-            NRect(x: 0.055, y: 0.560, w: 0.105, h: 0.190),
-            NRect(x: 0.175, y: 0.560, w: 0.105, h: 0.190),
-            NRect(x: 0.295, y: 0.560, w: 0.105, h: 0.190)
+            NRect(x: 0.1991, y: 0.7363, w: 0.0789, h: 0.1410),
+            NRect(x: 0.2979, y: 0.7363, w: 0.0797, h: 0.1410),
+            NRect(x: 0.3982, y: 0.7363, w: 0.0793, h: 0.1410)
         ],
         enemySlots: [
-            NRect(x: 0.600, y: 0.560, w: 0.105, h: 0.190),
-            NRect(x: 0.720, y: 0.560, w: 0.105, h: 0.190),
-            NRect(x: 0.840, y: 0.560, w: 0.105, h: 0.190)
-        ]
+            NRect(x: 0.5511, y: 0.7363, w: 0.0801, h: 0.1410),
+            NRect(x: 0.6373, y: 0.7363, w: 0.0801, h: 0.1410),
+            NRect(x: 0.7266, y: 0.7363, w: 0.0797, h: 0.1410)
+        ],
+        enemyVisible: false
     )
 
-    /// 縦持ちスクリーンショット（横持ち画面を縦のまま撮った場合など）の保険。
+    /// 縦持ちスクリーンショットの保険。
+    /// ⚠️ 横持ち版と違い実機で測っていない、比率からの概算値。ズレる前提で枠合わせを。
     static let builtInPortrait = ScreenLayout(
-        name: "iPhone 縦持ち (9:19.5)",
-        aspectRatio: 9.0 / 19.5,
-        mapPreview: NRect(x: 0.300, y: 0.180, w: 0.400, h: 0.140),
-        banSlots: [
-            NRect(x: 0.080, y: 0.150, w: 0.130, h: 0.055),
-            NRect(x: 0.230, y: 0.150, w: 0.130, h: 0.055),
-            NRect(x: 0.640, y: 0.150, w: 0.130, h: 0.055),
-            NRect(x: 0.790, y: 0.150, w: 0.130, h: 0.055)
-        ],
+        name: "iPhone 縦持ち・ブラインドピック (9:19.5, 未検証)",
+        kind: .blindPick,
+        aspectRatio: 1206.0 / 2622.0,
+        modeTextRegion: NRect(x: 0.10, y: 0.02, w: 0.55, h: 0.06),
+        mapPreview: nil,
+        banSlots: [],
         allySlots: [
-            NRect(x: 0.090, y: 0.600, w: 0.230, h: 0.100),
-            NRect(x: 0.385, y: 0.600, w: 0.230, h: 0.100),
-            NRect(x: 0.680, y: 0.600, w: 0.230, h: 0.100)
+            NRect(x: 0.09, y: 0.62, w: 0.24, h: 0.10),
+            NRect(x: 0.38, y: 0.62, w: 0.24, h: 0.10),
+            NRect(x: 0.67, y: 0.62, w: 0.24, h: 0.10)
         ],
         enemySlots: [
-            NRect(x: 0.090, y: 0.730, w: 0.230, h: 0.100),
-            NRect(x: 0.385, y: 0.730, w: 0.230, h: 0.100),
-            NRect(x: 0.680, y: 0.730, w: 0.230, h: 0.100)
-        ]
+            NRect(x: 0.09, y: 0.75, w: 0.24, h: 0.10),
+            NRect(x: 0.38, y: 0.75, w: 0.24, h: 0.10),
+            NRect(x: 0.67, y: 0.75, w: 0.24, h: 0.10)
+        ],
+        enemyVisible: false
     )
 }

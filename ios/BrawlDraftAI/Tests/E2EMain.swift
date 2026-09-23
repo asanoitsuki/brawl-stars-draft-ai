@@ -1,7 +1,11 @@
 // swiftlint:disable all
 // 認識コアの結合テスト。scripts/run_swift_e2e.sh から実行する。
+//
+// ブラインドピック画面（エリート未満、実機スクショの実測値に基づく既定レイアウト）を
+// 合成画像で再現し、切り出し→記述子→照合→フェーズ判定→提案 まで通しで検証する。
 import Foundation
 import CoreGraphics
+import CoreText
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -25,35 +29,13 @@ let t1 = CFAbsoluteTimeGetCurrent()
 let rules = try RulesStore.build(document: doc, pack: pack, origin: .bundled)
 let buildMs = (CFAbsoluteTimeGetCurrent() - t1) * 1000
 print(String(format: "rules.json デコード %.0f ms / インデックス構築 %.0f ms", decodeMs, buildMs))
-print("マップ \(doc.maps.count) / キャラ \(pack.templates.count) / 実測勝率 \(doc.dataQuality.liveStats)")
+print("マップ \(doc.maps.count) / キャラ \(pack.templates.count) / モード \(doc.modes.count) / 実測勝率 \(doc.dataQuality.liveStats)")
 
-// --- 合成スクリーンショットを作る ---
-// 正方形スロットの単純な配置。実機は必ずキャリブレーションが要るが、
-// 「切り出し → 記述子 → 照合 → 提案」の経路はこれで検証できる。
-let W = 2556, H = 1179
-func nrect(_ x: Double, _ y: Double, _ s: Double) -> NRect {
-    NRect(x: x, y: y, w: s, h: s * Double(W) / Double(H))
-}
-let slotS = 0.085
-let testLayout = ScreenLayout(
-    name: "synthetic",
-    aspectRatio: Double(W) / Double(H),
-    // マップ画像は縦長 (h/w ≒ 1.55)。引き伸ばすとテンプレートと形が変わってしまうので、
-    // 実際の縦横比のまま置く。
-    mapPreview: NRect(x: 0.435, y: 0.06, w: 0.13, h: 0.13 * 1.55 * Double(W) / Double(H)),
-    banSlots: [nrect(0.04, 0.06, 0.05), nrect(0.10, 0.06, 0.05),
-               nrect(0.85, 0.06, 0.05), nrect(0.91, 0.06, 0.05)],
-    allySlots: [nrect(0.06, 0.60, slotS), nrect(0.16, 0.60, slotS), nrect(0.26, 0.60, slotS)],
-    enemySlots: [nrect(0.60, 0.60, slotS), nrect(0.70, 0.60, slotS), nrect(0.80, 0.60, slotS)]
-)
+// --- 合成スクリーンショットを作る（実機スクショの実測比率で再現） ---
+let W = 2622, H = 1206
+let layout = ScreenLayout.builtInLandscape  // 実測済みの既定プロファイルをそのまま検証する
 
-// 適当なマップを 1 つ選んで、その画像とキャラを配置する
-guard let targetMap = doc.maps.first(where: { $0.mode == "Bounty" && $0.template != nil }) else {
-    fatalError("テスト用マップが見つかりません")
-}
-let allyNames = ["Piper", "Poco", "Bull"]
-let enemyNames = ["Mortis", "Barley"]           // 5 体埋まっている = 6 手目 (ラストピック)
-let banNames = ["Angelo", "Edgar", "Tick", "Max"]
+let allyNames = ["Piper", "Poco"]  // 3 枠中 2 人だけ決まっている状態（ブラインドピック途中）
 let idByName = Dictionary(uniqueKeysWithValues: doc.brawlers.map { ($0.name, $0.id) })
 
 let cs = CGColorSpaceCreateDeviceRGB()
@@ -74,42 +56,51 @@ func draw(_ image: CGImage, into n: NRect) {
     ctx.draw(image, in: flipped)
 }
 
-if let mapImg = loadPNG("\(root)/assets/map_thumbs/\(targetMap.id).png") {
-    draw(mapImg, into: testLayout.mapPreview)
+// モード名を実際のフォントで描画し、Vision OCR が現実に近い条件で読めるか検証する
+func drawText(_ text: String, into n: NRect) {
+    let r = n.rect(in: canvas)
+    let flipped = CGRect(x: r.minX, y: CGFloat(H) - r.maxY, width: r.width, height: r.height)
+    ctx.saveGState()
+    ctx.setFillColor(red: 0.9, green: 0.55, blue: 0.1, alpha: 1)  // オレンジ帯（実機同様の背景）
+    ctx.fill(flipped)
+    let font = CTFontCreateWithName("HiraginoSans-W7" as CFString, flipped.height * 0.55, nil)
+    let attrs: [CFString: Any] = [kCTFontAttributeName: font,
+                                   kCTForegroundColorAttributeName: CGColor(red: 1, green: 1, blue: 1, alpha: 1)]
+    let line = CTLineCreateWithAttributedString(
+        CFAttributedStringCreate(nil, text as CFString, attrs as CFDictionary)
+    )
+    ctx.textPosition = CGPoint(x: flipped.minX + 12, y: flipped.minY + flipped.height * 0.28)
+    CTLineDraw(line, ctx)
+    ctx.restoreGState()
+}
+
+if let region = layout.modeTextRegion {
+    drawText("ノックアウト", into: region)
 }
 for (i, name) in allyNames.enumerated() {
     if let id = idByName[name], let img = loadPNG("\(root)/assets/brawler_icons/borders/\(id).png") {
-        draw(img, into: testLayout.allySlots[i])
+        draw(img, into: layout.allySlots[i])
     }
 }
-for (i, name) in enemyNames.enumerated() {
-    if let id = idByName[name], let img = loadPNG("\(root)/assets/brawler_icons/borders/\(id).png") {
-        draw(img, into: testLayout.enemySlots[i])
-    }
-}
-for (i, name) in banNames.enumerated() {
-    if let id = idByName[name], let img = loadPNG("\(root)/assets/brawler_icons/borders/\(id).png") {
-        draw(img, into: testLayout.banSlots[i])
-    }
-}
+// 3 枠目はあえて空のまま（「?」プレースホルダ相当 = 何も描かない平坦な背景）
+// 相手枠も常に空のまま（実機同様、対戦開始まで非公開）
+
 guard let synthetic = ctx.makeImage() else { fatalError("image") }
 
-// 合成した画像は、アプリの「枠合わせ」を試すサンプルとして残しておく
 let outURL = URL(fileURLWithPath: "\(root)/assets/synthetic_draft_test.png")
 if let dest = CGImageDestinationCreateWithURL(outURL as CFURL, UTType.png.identifier as CFString, 1, nil) {
     CGImageDestinationAddImage(dest, synthetic, nil)
     CGImageDestinationFinalize(dest)
 }
 
-// --- 解析 ---
 print("\n=== 期待値 ===")
-print("マップ: \(targetMap.name) (\(targetMap.modeJa)) / 味方 \(allyNames) / 相手 \(enemyNames) / BAN \(banNames)")
+print("モード: ノックアウト / 味方: \(allyNames)（3枠目は未選択）/ 相手: 非公開")
 
 var times: [Double] = []
 var snapshot: DraftSnapshot!
 for _ in 0..<5 {
     let s = CFAbsoluteTimeGetCurrent()
-    snapshot = DraftAnalyzer.analyze(image: synthetic, rules: rules, layoutOverride: testLayout)
+    snapshot = DraftAnalyzer.analyze(image: synthetic, rules: rules, layoutOverride: layout)
     times.append((CFAbsoluteTimeGetCurrent() - s) * 1000)
 }
 
@@ -127,12 +118,24 @@ print("読み上げ: " + rec.speech.map(\.text).joined())
 
 // --- 判定 ---
 var failures: [String] = []
-if snapshot.map?.id != targetMap.id { failures.append("マップ誤判定: \(snapshot.map?.name ?? "nil")") }
-let gotAllies = Set(snapshot.allies.map(\.name)), gotEnemies = Set(snapshot.enemies.map(\.name))
-if gotAllies != Set(allyNames) { failures.append("味方: \(gotAllies.sorted())") }
-if gotEnemies != Set(enemyNames) { failures.append("相手: \(gotEnemies.sorted())") }
-if Set(snapshot.bans.map(\.name)) != Set(banNames) { failures.append("BAN: \(snapshot.bans.map(\.name))") }
-if snapshot.phase != .last { failures.append("フェーズ: \(snapshot.phase.label)") }
+let gotAllies = Set(snapshot.allies.map(\.name))
+if gotAllies != Set(allyNames) { failures.append("味方: \(gotAllies.sorted()) (期待: \(allyNames))") }
+if !snapshot.enemies.isEmpty { failures.append("相手が検出されてしまった（非公開のはず）: \(snapshot.enemies.map(\.name))") }
+if case .blind(let filled, let total) = snapshot.phase {
+    if filled != 2 || total != 3 { failures.append("フェーズ: \(filled)/\(total)（期待: 2/3）") }
+} else {
+    failures.append("フェーズが blind になっていない: \(snapshot.phase)")
+}
+if snapshot.mode != "Knockout" {
+    failures.append("モード誤判定またはOCR失敗: \(snapshot.mode ?? "nil")（期待: Knockout）")
+}
+if rec.advices.isEmpty { failures.append("推薦が空") }
+
+// ModeRecognizer の文字列マッチ単体（OCR 精度に依存しない部分の健全性チェック）
+let matched = ModeRecognizer.bestMatch(for: "ノックアウト オープンフィールド", in: doc.modes)
+if matched != "Knockout" { failures.append("ModeRecognizer.bestMatch が不正: \(matched ?? "nil")") }
+let fuzzyMatched = ModeRecognizer.bestMatch(for: "ノックアウト卜", in: doc.modes)  // 1文字誤読を想定
+if fuzzyMatched != "Knockout" { failures.append("ModeRecognizer のあいまい一致が不正: \(fuzzyMatched ?? "nil")") }
 
 print("\n=== 判定 ===")
 if failures.isEmpty {

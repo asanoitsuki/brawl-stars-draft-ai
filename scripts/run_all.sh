@@ -15,7 +15,14 @@ for a in "$@"; do
 done
 
 echo "═══ 1/5 キャラアイコン ═══"
-"$PY" scripts/download_icons.py ${ARGS[@]+"${ARGS[@]}"}
+# CDN の一時的な障害（特定キャラだけ・ドメイン単位のことが多い）で
+# パイプライン全体を止めたくない。既存キャッシュがあれば十分動くので、
+# 失敗した場合は警告だけ出して続行する（rules 生成側は欠けたキャラを
+# validate_rules.py がちゃんと警告してくれる）。
+if ! "$PY" scripts/download_icons.py ${ARGS[@]+"${ARGS[@]}"}; then
+  echo "  ⚠️ アイコン取得の一部が失敗しました（CDN の一時的な障害の可能性）。"
+  echo "     既存のキャッシュ済みアイコンで続行します。"
+fi
 
 echo
 echo "═══ 2/5 ルールデータ生成 ═══"

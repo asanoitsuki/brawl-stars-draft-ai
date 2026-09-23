@@ -19,7 +19,7 @@ mkdir -p "$BUILD"
 # 「ビルド中にファイルが変更された」と誤検出するため、必ず複製してから渡す。
 cp "$ROOT/ios/BrawlDraftAI/Tests/E2EMain.swift" "$BUILD/main.swift"
 for f in RulesModels RulesStore TemplateMatcher ImageDescriptor \
-         ScreenLayout DraftState DraftAnalyzer Recommender AppSettings; do
+         ScreenLayout DraftState DraftAnalyzer Recommender AppSettings ModeRecognizer; do
   cp "$SRC/Core/$f.swift" "$BUILD/$f.swift"
 done
 

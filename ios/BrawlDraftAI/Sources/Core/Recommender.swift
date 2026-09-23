@@ -41,6 +41,7 @@ enum Recommender {
     /// フェーズごとの重み。ラストピックはカウンターをほぼ最優先にする。
     private static func weights(for phase: DraftPhase) -> (synergy: Double, advantage: Double) {
         switch phase {
+        case .blind: return (0.30, 0.0)  // makeBlind() が別ロジックを持つため実質未使用
         case .ban, .first: return (0.15, 0.10)
         case .middle: return (0.45, 0.35)
         case .last, .complete: return (0.20, 1.60)
@@ -48,6 +49,9 @@ enum Recommender {
     }
 
     static func make(from snapshot: DraftSnapshot, rules: LoadedRules) -> Recommendation {
+        if snapshot.kind == .blindPick {
+            return makeBlind(from: snapshot, rules: rules)
+        }
         guard let map = snapshot.map else {
             return Recommendation(
                 phase: snapshot.phase, map: nil,
@@ -67,6 +71,10 @@ enum Recommender {
         let headline: String
 
         switch snapshot.phase {
+        case .blind:
+            advices = []
+            headline = "N/A"  // blindPick は上で makeBlind() に分岐済みのためここには来ない
+
         case .ban:
             advices = fromPrecomputed(map.bans, rules: rules, taken: taken, limit: 3)
             headline = "BAN推奨"
@@ -102,6 +110,127 @@ enum Recommender {
             speech: speechSegments(phase: snapshot.phase, advices: advices),
             advices: advices,
             caution: caution(map: map, snapshot: snapshot, rules: rules)
+        )
+    }
+
+    // MARK: - ブラインドピック（エリート未満）
+    //
+    // このフェーズでは相手が最後まで見えないので、カウンター（advantage）は使えない。
+    // 使えるのは「モード適性」と「すでに決まっている味方との噛み合い（synergy）」、
+    // それに「同じ役割ばかりに偏らない」という役割分散だけ。
+
+    private static func makeBlind(from snapshot: DraftSnapshot, rules: LoadedRules) -> Recommendation {
+        guard case .blind(let filled, let total) = snapshot.phase else {
+            // 呼び出し経路上ここには来ないが、型を満たすための保険。
+            return Recommendation(phase: snapshot.phase, map: nil, title: "解析エラー",
+                                  body: "内部エラーです。", speech: [], advices: [], caution: nil)
+        }
+
+        let modeWeights = snapshot.mode.flatMap { rules.document.modes[$0]?.weights }
+        let modeLabel = snapshot.modeJa ?? snapshot.mode
+
+        guard filled < total else {
+            let title = "自チーム選択完了"
+            return Recommendation(
+                phase: snapshot.phase, map: nil, title: title,
+                body: "\(modeLabel.map { "モード: \($0)｜" } ?? "")自チーム 3 人が決まりました。"
+                    + "味方: " + snapshot.allies.map { "\($0.name)(\($0.roleJa))" }.joined(separator: " "),
+                speech: [.init(text: "自チーム選択完了。", isJapanese: true)],
+                advices: [], caution: nil
+            )
+        }
+
+        let taken = snapshot.takenIDs
+        let allyRoles = snapshot.allies.map(\.role)
+
+        var scored: [(brawler: BrawlerRole, score: Double, synergy: Double, modeFit: Double)] = []
+        for b in rules.document.brawlers where !taken.contains(b.id) {
+            let syn = allyRoles.reduce(0.0) { $0 + rules.synergy(b.role, with: $1) }
+            let modeFit = modeWeights?[b.role] ?? 0
+            // 味方シナジー 0.5 / モード適性 0.5 で合成。相手情報が無いのでカウンター項は無い。
+            let score = 0.5 * modeFit + 0.5 * syn
+            scored.append((b, score, syn, modeFit))
+        }
+        scored.sort { ($0.score, $0.brawler.name) > ($1.score, $1.brawler.name) }
+
+        // 役割の偏りを避ける（既出ロールに 0.35 の減点）
+        var picked: [(brawler: BrawlerRole, score: Double, synergy: Double, modeFit: Double)] = []
+        var roleCount: [String: Int] = allyRoles.reduce(into: [:]) { $0[$1, default: 0] += 1 }
+        var remaining = scored
+        while !remaining.isEmpty && picked.count < 3 {
+            let bestIndex = remaining.indices.max {
+                let a = remaining[$0].score - 0.35 * Double(roleCount[remaining[$0].brawler.role] ?? 0)
+                let b = remaining[$1].score - 0.35 * Double(roleCount[remaining[$1].brawler.role] ?? 0)
+                return a < b
+            }!
+            let item = remaining.remove(at: bestIndex)
+            roleCount[item.brawler.role, default: 0] += 1
+            picked.append(item)
+        }
+
+        let advices = picked.map { item -> PickAdvice in
+            var parts: [String] = []
+            if item.modeFit != 0, let modeLabel {
+                parts.append("\(modeLabel)適性 \(item.modeFit >= 0 ? "+" : "")\(String(format: "%.1f", item.modeFit))")
+            }
+            if item.synergy >= 0.8, let ally = snapshot.allies.max(by: {
+                rules.synergy(item.brawler.role, with: $0.role) < rules.synergy(item.brawler.role, with: $1.role)
+            }) {
+                parts.append("味方の\(ally.roleJa)と噛み合う")
+            }
+            if parts.isEmpty {
+                parts.append("\(rules.japaneseRole(item.brawler.role))として無難な選択")
+            }
+            return PickAdvice(
+                id: item.brawler.id, name: item.brawler.name, nameJa: item.brawler.nameJa,
+                role: item.brawler.role, roleJa: rules.japaneseRole(item.brawler.role),
+                score: item.score, reason: parts.joined(separator: " / "), winRate: nil
+            )
+        }
+
+        let title = advices.isEmpty
+            ? "候補が見つかりません"
+            : "おすすめ：\(displayName(advices[0], rules: rules))"
+
+        var bodyLines: [String] = []
+        if let modeLabel { bodyLines.append("モード: \(modeLabel)") }
+        for (i, a) in advices.enumerated() {
+            let mark = ["◎", "○", "△"][min(i, 2)]
+            bodyLines.append("\(mark) \(displayName(a, rules: rules))（\(a.roleJa)）\(a.reason.isEmpty ? "" : " — \(a.reason)")")
+        }
+        if !snapshot.allies.isEmpty {
+            bodyLines.append("味方: " + snapshot.allies.map { "\($0.name)(\($0.roleJa))" }.joined(separator: " "))
+        }
+
+        var speech: [Recommendation.SpeechSegment] = [.init(text: "おすすめ、", isJapanese: true)]
+        let limit = min(AppSettings.maxAnnouncedPicks, advices.count)
+        for (i, a) in advices.prefix(limit).enumerated() {
+            if i == 1 { speech.append(.init(text: "次点、", isJapanese: true)) }
+            if let ja = a.nameJa {
+                speech.append(.init(text: ja + "。", isJapanese: true))
+            } else {
+                speech.append(.init(text: a.name, isJapanese: false))
+                speech.append(.init(text: "。", isJapanese: true))
+            }
+        }
+        if advices.isEmpty {
+            speech = [.init(text: "候補が見つかりません", isJapanese: true)]
+        }
+
+        var cautions: [String] = ["相手は非公開のため、味方構成とモード適性のみで判断しています"]
+        if snapshot.mode == nil {
+            cautions.append("モード名を読み取れませんでした（モード適性なしで評価）")
+        }
+        let shaky = snapshot.allies.filter { !$0.isConfident }
+        if !shaky.isEmpty {
+            cautions.append("認識が曖昧: \(shaky.map(\.name).joined(separator: ", "))")
+        }
+
+        return Recommendation(
+            phase: snapshot.phase, map: nil, title: title,
+            body: bodyLines.joined(separator: "\n"),
+            speech: speech, advices: advices,
+            caution: cautions.joined(separator: " / ")
         )
     }
 
@@ -257,6 +386,7 @@ enum Recommender {
         var segments: [Recommendation.SpeechSegment] = []
         let intro: String
         switch phase {
+        case .blind: intro = ""  // makeBlind() が専用の speech を組み立てる
         case .ban: intro = "バン推奨、"
         case .first: intro = "初手、"
         case .middle(let n): intro = "\(n)手目、"

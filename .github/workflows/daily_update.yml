@@ -36,9 +36,20 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: キャラアイコンを更新（新キャラ追加ぶんだけ差分取得）
+        env:
+          # 任意。ブラウザで Cloudflare のチャレンジを通した cf_clearance Cookie を
+          # リポジトリ Secrets に入れておくと、api.brawlify.com 側も試せる。
+          BRAWLIFY_COOKIE: ${{ secrets.BRAWLIFY_COOKIE }}
+          BRAWLIFY_EXTRA_HEADERS: ${{ secrets.BRAWLIFY_EXTRA_HEADERS }}
         run: python scripts/download_icons.py
 
       - name: ルールデータを生成
+        env:
+          BRAWLIFY_COOKIE: ${{ secrets.BRAWLIFY_COOKIE }}
+          BRAWLIFY_EXTRA_HEADERS: ${{ secrets.BRAWLIFY_EXTRA_HEADERS }}
+          # 公式 API は IP 固定のキーなので Actions では基本使えない。
+          # セルフホストランナーなど IP が固定できる環境向け。
+          BRAWLSTARS_API_TOKEN: ${{ secrets.BRAWLSTARS_API_TOKEN }}
         run: |
           python scripts/update_meta.py \
             --rotation-out rules/rules_rotation.json \
@@ -76,8 +87,15 @@ jobs:
           q = d["dataQuality"]
           print(f"- 生成時刻: `{d['generatedAt']}`")
           print(f"- マップ数: **{len(d['maps'])}**")
-          print(f"- 実測勝率: **{'あり' if q['liveStats'] else 'なし（役割適性のみ）'}**"
+          print(f"- 実測勝率: **{'あり' if q['liveStats'] else 'なし'}**"
                 f" ({q['mapsWithLiveStats']} マップ)")
-          print(f"- ローテ判明: **{'はい' if q['rotationKnown'] else 'いいえ'}**")
+          print(f"- 手動ティア: **{q.get('manualTiers', 0)} 件**"
+                f" / 同点の解消方法: `{q.get('tiebreak', '?')}`")
+          print(f"- ローテ判明: **{'はい' if q['rotationKnown'] else 'いいえ'}**"
+                f" (取得元: `{q.get('rotationSource', 'none')}`)")
+          if not q["liveStats"]:
+              print("")
+              print("> 実測勝率が取れていません。Cloudflare が TLS フィンガープリントで"
+                    "弾くため、ヘッダ調整では回避できません。README §8 を参照。")
           PY
           } >> "$GITHUB_STEP_SUMMARY"

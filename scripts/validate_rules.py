@@ -101,7 +101,15 @@ def main() -> int:
     print(f"✔ {path.name} OK")
     print(f"    マップ {len(maps)} / 画像テンプレあり {with_template}")
     print(f"    ブラウラー {len(roles)} / アイコンテンプレ {len(known_icons)}")
-    print(f"    実測勝率: {'あり' if doc['dataQuality']['liveStats'] else 'なし（役割適性のみ）'}")
+    q = doc["dataQuality"]
+    if q["liveStats"]:
+        print(f"    スコア根拠: 実測勝率あり（{q['mapsWithLiveStats']} マップ）")
+    elif q.get("manualTiers"):
+        print(f"    スコア根拠: 手動ティア {q['manualTiers']} 件で補正（実測勝率なし）")
+    else:
+        print("    スコア根拠: 役割適性のみ（同じ役割は同点・並び順に意味なし）")
+    print(f"    ローテーション: {'判明' if q['rotationKnown'] else '不明'}"
+          f"（取得元: {q.get('rotationSource', 'none')}）")
     if missing_icons:
         print(f"    · アイコン未取得のため画像照合できないキャラ: {', '.join(missing_icons)}")
     return 0

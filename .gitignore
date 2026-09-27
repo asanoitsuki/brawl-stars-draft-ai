@@ -28,3 +28,6 @@ scripts/run_update.sh
 
 # 署名のローカル設定（チーム ID を含むのでコミットしない）
 ios/BrawlDraftAI/Local.xcconfig
+
+# ローカルツールの内部状態（コミット不要）
+.claude/

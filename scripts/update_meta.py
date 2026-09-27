@@ -50,6 +50,8 @@ CANDIDATES_PER_ROLE = 4
 ARCH_PATH = DATA_DIR / "archetypes.json"
 TIERS_PATH = DATA_DIR / "tier_overrides.json"
 NAMES_JA_PATH = DATA_DIR / "brawler_names_ja.json"
+MAP_NAMES_JA_PATH = DATA_DIR / "map_names_ja.json"
+ROLE_TIPS_PATH = DATA_DIR / "role_tips_ja.json"
 
 
 # --------------------------------------------------------------------------
@@ -280,6 +282,7 @@ def build_map_entry(
     top: int,
     in_rotation: bool,
     thumb: Path | None,
+    map_names_ja: dict[str, str],
 ) -> dict:
     mode_name = (map_doc.get("gameMode") or {}).get("name") or "Unknown"
     mode_cfg = arch["modes"].get(mode_name, {})
@@ -444,6 +447,7 @@ def build_map_entry(
     entry = {
         "id": map_doc["id"],
         "name": map_doc["name"],
+        "nameJa": map_names_ja.get(str(map_doc["id"])),
         "hash": map_doc.get("hash"),
         "mode": mode_name,
         "modeJa": mode_cfg.get("ja", mode_name),
@@ -495,6 +499,9 @@ def main() -> int:
     maps = fetch_json("maps")["list"]
     print(f"  ブラウラー {len(brawlers)} / マップ {len(maps)}")
 
+    map_names_ja = (load_json(MAP_NAMES_JA_PATH, {}) or {}).get("names", {})
+    role_tips = (load_json(ROLE_TIPS_PATH, {}) or {}).get("tips", {})
+
     # 新キャラを roles へ取り込む（manual は温存）
     roles_doc, newly = merge_roles(brawlers, roles_doc)
     if newly:
@@ -544,6 +551,7 @@ def main() -> int:
             m, brawlers, role_of, arch, tiers,
             stats_by_map.get(m["id"], []), args.top,
             m["id"] in rotation_ids, thumbs.get(m["id"]),
+            map_names_ja,
         )
         for m in targets
     ]
@@ -578,6 +586,7 @@ def main() -> int:
         "draftOrder": arch["draftOrder"],
         "modes": modes_export,
         "archetypes": arch_ja,
+        "roleTips": role_tips,
         "advantage": arch["advantage"],
         "synergy": arch["synergy"],
         "rotation": rotation_detail,

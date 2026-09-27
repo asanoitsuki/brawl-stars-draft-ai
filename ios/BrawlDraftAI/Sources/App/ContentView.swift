@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var busy = false
     @State private var errorText: String?
     @State private var result: (snapshot: DraftSnapshot, recommendation: Recommendation)?
+    @State private var resultExpanded = false
 
     var body: some View {
         NavigationStack {
@@ -94,6 +95,12 @@ struct ContentView: View {
                 Label("枠合わせ（初回は必須）", systemImage: "viewfinder.rectangular")
             }
 
+            NavigationLink {
+                BrawlerRosterView()
+            } label: {
+                Label("持っているキャラを管理", systemImage: "checklist")
+            }
+
             Button {
                 SpeechAnnouncer.shared.announceTest()
             } label: {
@@ -107,24 +114,33 @@ struct ContentView: View {
     // MARK: - 結果
 
     private func resultSection(_ value: (snapshot: DraftSnapshot, recommendation: Recommendation)) -> some View {
-        Section("直近の解析結果") {
-            Text(value.recommendation.title).font(.headline)
-            ForEach(value.recommendation.advices) { advice in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(advice.name)（\(advice.roleJa)）  \(String(format: "%.2f", advice.score))")
-                        .font(.subheadline.weight(.semibold))
-                    if !advice.reason.isEmpty {
-                        Text(advice.reason).font(.caption).foregroundStyle(.secondary)
+        Section {
+            DisclosureGroup(isExpanded: $resultExpanded) {
+                Text(value.recommendation.title).font(.headline)
+                ForEach(value.recommendation.advices) { advice in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(advice.name)（\(advice.roleJa)）  \(String(format: "%.2f", advice.score))")
+                            .font(.subheadline.weight(.semibold))
+                        if !advice.reason.isEmpty {
+                            Text(advice.reason).font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
+                if let caution = value.recommendation.caution {
+                    Label(caution, systemImage: "exclamationmark.triangle")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+                Text(value.snapshot.diagnosticSummary)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("直近の解析結果").font(.subheadline)
+                    Text(value.recommendation.title)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
-            if let caution = value.recommendation.caution {
-                Label(caution, systemImage: "exclamationmark.triangle")
-                    .font(.caption).foregroundStyle(.orange)
-            }
-            Text(value.snapshot.diagnosticSummary)
-                .font(.caption.monospaced())
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -177,9 +193,10 @@ struct ContentView: View {
             Text("""
             1. ショートカットアプリで新規ショートカットを作る
             2. アクション「最新スクショでドラフト解析」を追加
-            3. 設定 > アクセシビリティ > タッチ > 背面タップ > ダブルタップ に \
-            そのショートカットを割り当てる
-            4. 対戦中: 電源+音量上でスクショ → 背面ダブルタップ
+            3. 設定 > アクセシビリティ > タッチ > 背面タップ を開く
+            4. 「ダブルタップ」→「スクリーンショット」（iOS 標準機能）を選ぶ
+            5. 「トリプルタップ」→ さっき作ったショートカットを選ぶ
+            6. 対戦中: 背面ダブルタップ（撮影）→ すぐに背面トリプルタップ（解析）
             """)
             .font(.footnote)
         }

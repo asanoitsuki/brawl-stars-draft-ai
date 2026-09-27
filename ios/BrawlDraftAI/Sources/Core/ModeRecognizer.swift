@@ -16,7 +16,7 @@ enum ModeRecognizer {
                                   bytesPerRow: 32, space: cs,
                                   bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue),
               let dummy = ctx.makeImage() else { return }
-        _ = recognizeText(dummy)
+        _ = recognizeLines(dummy)
     }
 
     /// クロップした領域から、rules.json の modes に載っているモード名を推定する。
@@ -24,16 +24,49 @@ enum ModeRecognizer {
     static func recognizeMode(in raster: ImageRaster, region: NRect,
                               modes: [String: ModeInfo]) -> String? {
         guard let cgImage = makeCGImage(raster: raster, region: region) else { return nil }
-        guard let text = recognizeText(cgImage) else { return nil }
-        return bestMatch(for: text, in: modes)
+        guard let lines = recognizeLines(cgImage) else { return nil }
+        return bestMatch(for: lines.joined(separator: " "), in: modes)
+    }
+
+    /// モード名（1 行目が多い、大きく表示される方）とマップ名（2 行目、小さいサブタイトル）を
+    /// まとめて読み取る。ブラインドピック画面はマップ画像を持たないため、
+    /// マップ固有の BAN/ピック推奨を使うにはこの文字認識が頼りになる。
+    ///
+    /// 行ごとに両方（モード辞書・マップ辞書）へ照合を試す。実機では上段がモード、
+    /// 下段がマップ名だが、OCR の行順が前後する場合に備えて全行を両方に当てる。
+    static func recognizeStage(in raster: ImageRaster, region: NRect,
+                               rules: LoadedRules) -> (mode: String?, map: MapRules?) {
+        guard let cgImage = makeCGImage(raster: raster, region: region),
+              let lines = recognizeLines(cgImage), !lines.isEmpty else {
+            return (nil, nil)
+        }
+
+        var mode: String?
+        var map: MapRules?
+        for line in lines {
+            if mode == nil {
+                mode = bestMatch(for: line, in: rules.document.modes)
+            }
+            if map == nil {
+                map = rules.findMap(inOCRText: line)
+            }
+        }
+        // 行ごとの単独一致で見つからなければ、全行連結でも試す
+        // （OCR がモード名とマップ名を 1 行に詰めて返すことがあるため）。
+        let joined = lines.joined()
+        if mode == nil { mode = bestMatch(for: joined, in: rules.document.modes) }
+        if map == nil { map = rules.findMap(inOCRText: joined) }
+
+        return (mode, map)
     }
 
     // MARK: - Vision 呼び出し
 
-    private static func recognizeText(_ image: CGImage) -> String? {
+    /// OCR で読めた行を、画面に表示されている上から順に返す。
+    private static func recognizeLines(_ image: CGImage) -> [String]? {
         let request = VNRecognizeTextRequest()
         request.recognitionLanguages = ["ja-JP", "en-US"]
-        request.usesLanguageCorrection = false  // モード名は固有名詞なので補正しない方が安定
+        request.usesLanguageCorrection = false  // モード名・マップ名は固有名詞なので補正しない方が安定
         request.recognitionLevel = .accurate
 
         let handler = VNImageRequestHandler(cgImage: image, options: [:])
@@ -43,9 +76,7 @@ enum ModeRecognizer {
             return nil
         }
         guard let observations = request.results, !observations.isEmpty else { return nil }
-        // 複数行（モード名 + サブタイトル）をまとめて 1 文字列にする
-        let lines = observations.compactMap { $0.topCandidates(1).first?.string }
-        return lines.joined(separator: " ")
+        return observations.compactMap { $0.topCandidates(1).first?.string }
     }
 
     /// OCR 結果からもっとも近いモードを選ぶ。

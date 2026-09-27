@@ -12,6 +12,7 @@ enum AppSettings {
         static let lastRefresh = "lastRefreshAt"
         static let autoRefreshHours = "autoRefreshHours"
         static let maxAnnouncedPicks = "maxAnnouncedPicks"
+        static let excludedBrawlerIDs = "excludedBrawlerIDs"
     }
 
     /// 毎日 GitHub Actions が更新する rules.json の置き場所。
@@ -63,5 +64,22 @@ enum AppSettings {
     static var needsRefresh: Bool {
         guard let last = lastRefreshAt else { return true }
         return Date().timeIntervalSince(last) > autoRefreshHours * 3600
+    }
+
+    /// 「持っていない」と手動で外したキャラの ID。
+    /// 初期状態は空 = 全キャラ所持扱い（キャラ一覧画面で個別にオフにしていく運用）。
+    static var excludedBrawlerIDs: Set<Int> {
+        get { Set((defaults.array(forKey: Key.excludedBrawlerIDs) as? [Int]) ?? []) }
+        set { defaults.set(Array(newValue), forKey: Key.excludedBrawlerIDs) }
+    }
+
+    static func isOwned(_ brawlerID: Int) -> Bool {
+        !excludedBrawlerIDs.contains(brawlerID)
+    }
+
+    static func setOwned(_ brawlerID: Int, owned: Bool) {
+        var s = excludedBrawlerIDs
+        if owned { s.remove(brawlerID) } else { s.insert(brawlerID) }
+        excludedBrawlerIDs = s
     }
 }

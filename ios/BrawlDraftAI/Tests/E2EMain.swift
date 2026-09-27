@@ -56,26 +56,32 @@ func draw(_ image: CGImage, into n: NRect) {
     ctx.draw(image, in: flipped)
 }
 
-// モード名を実際のフォントで描画し、Vision OCR が現実に近い条件で読めるか検証する
-func drawText(_ text: String, into n: NRect) {
+// モード名 + マップ名の 2 行を実際のフォントで描画し、
+// Vision OCR が現実に近い条件で両方読めるか検証する（実機の帯は上段大きく・下段小さい）。
+func drawTwoLines(_ big: String, _ small: String, into n: NRect) {
     let r = n.rect(in: canvas)
     let flipped = CGRect(x: r.minX, y: CGFloat(H) - r.maxY, width: r.width, height: r.height)
     ctx.saveGState()
     ctx.setFillColor(red: 0.9, green: 0.55, blue: 0.1, alpha: 1)  // オレンジ帯（実機同様の背景）
     ctx.fill(flipped)
-    let font = CTFontCreateWithName("HiraginoSans-W7" as CFString, flipped.height * 0.55, nil)
-    let attrs: [CFString: Any] = [kCTFontAttributeName: font,
-                                   kCTForegroundColorAttributeName: CGColor(red: 1, green: 1, blue: 1, alpha: 1)]
-    let line = CTLineCreateWithAttributedString(
-        CFAttributedStringCreate(nil, text as CFString, attrs as CFDictionary)
-    )
-    ctx.textPosition = CGPoint(x: flipped.minX + 12, y: flipped.minY + flipped.height * 0.28)
-    CTLineDraw(line, ctx)
+
+    func draw(_ text: String, sizeRatio: CGFloat, yRatio: CGFloat) {
+        let font = CTFontCreateWithName("HiraginoSans-W7" as CFString, flipped.height * sizeRatio, nil)
+        let attrs: [CFString: Any] = [kCTFontAttributeName: font,
+                                       kCTForegroundColorAttributeName: CGColor(red: 1, green: 1, blue: 1, alpha: 1)]
+        let line = CTLineCreateWithAttributedString(
+            CFAttributedStringCreate(nil, text as CFString, attrs as CFDictionary)
+        )
+        ctx.textPosition = CGPoint(x: flipped.minX + 12, y: flipped.minY + flipped.height * yRatio)
+        CTLineDraw(line, ctx)
+    }
+    draw(big, sizeRatio: 0.34, yRatio: 0.52)
+    draw(small, sizeRatio: 0.20, yRatio: 0.14)
     ctx.restoreGState()
 }
 
 if let region = layout.modeTextRegion {
-    drawText("ノックアウト", into: region)
+    drawTwoLines("ノックアウト", "オープンフィールド", into: region)
 }
 for (i, name) in allyNames.enumerated() {
     if let id = idByName[name], let img = loadPNG("\(root)/assets/brawler_icons/borders/\(id).png") {
@@ -94,7 +100,7 @@ if let dest = CGImageDestinationCreateWithURL(outURL as CFURL, UTType.png.identi
 }
 
 print("\n=== 期待値 ===")
-print("モード: ノックアウト / 味方: \(allyNames)（3枠目は未選択）/ 相手: 非公開")
+print("モード: ノックアウト / ステージ: オープンフィールド / 味方: \(allyNames)（3枠目は未選択）/ 相手: 非公開")
 
 var times: [Double] = []
 var snapshot: DraftSnapshot!
@@ -129,6 +135,12 @@ if case .blind(let filled, let total) = snapshot.phase {
 if snapshot.mode != "Knockout" {
     failures.append("モード誤判定またはOCR失敗: \(snapshot.mode ?? "nil")（期待: Knockout）")
 }
+if snapshot.map?.nameJa != "オープンフィールド" {
+    failures.append("ステージ誤判定またはOCR失敗: \(snapshot.map?.nameJa ?? "nil")（期待: オープンフィールド）")
+}
+if rec.body.contains("立ち回り") == false {
+    failures.append("推薦に立ち回りアドバイスが含まれていない")
+}
 if rec.advices.isEmpty { failures.append("推薦が空") }
 
 // ModeRecognizer の文字列マッチ単体（OCR 精度に依存しない部分の健全性チェック）
@@ -136,6 +148,19 @@ let matched = ModeRecognizer.bestMatch(for: "ノックアウト オープンフ�
 if matched != "Knockout" { failures.append("ModeRecognizer.bestMatch が不正: \(matched ?? "nil")") }
 let fuzzyMatched = ModeRecognizer.bestMatch(for: "ノックアウト卜", in: doc.modes)  // 1文字誤読を想定
 if fuzzyMatched != "Knockout" { failures.append("ModeRecognizer のあいまい一致が不正: \(fuzzyMatched ?? "nil")") }
+
+// --- 所持キャラ除外のテスト ---
+// 1 位候補を「持っていない」設定にしたら、推薦から外れて次点が繰り上がるか確認する。
+if let top = rec.advices.first {
+    AppSettings.setOwned(top.id, owned: false)
+    let recAfterExclude = Recommender.make(from: snapshot, rules: rules)
+    if recAfterExclude.advices.contains(where: { $0.id == top.id }) {
+        failures.append("所持OFFにしたキャラ (\(top.name)) が推薦から外れていない")
+    } else {
+        print("\n所持OFFテスト: \(top.name) を除外 → 新1位 \(recAfterExclude.advices.first?.name ?? "nil")  ✔")
+    }
+    AppSettings.setOwned(top.id, owned: true)  // 後片付け
+}
 
 print("\n=== 判定 ===")
 if failures.isEmpty {

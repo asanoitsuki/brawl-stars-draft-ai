@@ -13,6 +13,9 @@ struct LoadedRules {
     /// マップ画像の照合器（マップ名の OCR をしないで済むようにするため）
     let mapMatcher: TemplateMatcher
     let mapIDByMatcherIndex: [Int: Int]
+    /// マップ日本語名 -> マップ ID。ブラインドピック画面のステージ名 OCR に使う。
+    /// キーはマッチング用に空白除去済み。
+    let mapIDByJapaneseName: [String: Int]
     let origin: Origin
 
     enum Origin: String {
@@ -27,6 +30,17 @@ struct LoadedRules {
     func map(id: Int) -> MapRules? { mapsByID[id] }
     func role(of name: String) -> String? { roleByName[name] }
     func japaneseRole(_ role: String) -> String { document.archetypes[role] ?? role }
+    func roleTip(_ role: String) -> String? { document.roleTips[role] }
+
+    /// OCR で読んだテキストに含まれるマップ名を探す（完全一致 → 部分一致の順）。
+    func findMap(inOCRText text: String) -> MapRules? {
+        let cleaned = text.replacingOccurrences(of: " ", with: "")
+        if let id = mapIDByJapaneseName[cleaned] { return mapsByID[id] }
+        for (name, id) in mapIDByJapaneseName where cleaned.contains(name) {
+            return mapsByID[id]
+        }
+        return nil
+    }
 
     func advantage(_ mine: String, vs enemy: String) -> Double {
         document.advantage[mine]?[enemy] ?? 0
@@ -190,6 +204,12 @@ final class RulesStore: ObservableObject {
             names: mapsWithTemplate.map { $0.name }
         )
 
+        var mapIDByJapaneseName: [String: Int] = [:]
+        for m in document.maps {
+            guard let ja = m.nameJa else { continue }
+            mapIDByJapaneseName[ja] = m.id
+        }
+
         return LoadedRules(
             document: document,
             mapsByID: Dictionary(uniqueKeysWithValues: document.maps.map { ($0.id, $0) }),
@@ -199,6 +219,7 @@ final class RulesStore: ObservableObject {
             brawlerMatcher: brawlerMatcher,
             mapMatcher: mapMatcher,
             mapIDByMatcherIndex: indexToMapID,
+            mapIDByJapaneseName: mapIDByJapaneseName,
             origin: origin
         )
     }

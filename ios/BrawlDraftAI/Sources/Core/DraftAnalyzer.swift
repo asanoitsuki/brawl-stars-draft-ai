@@ -70,18 +70,22 @@ enum DraftAnalyzer {
 
         var mode: String?
         var modeJa: String?
+        var map: MapRules?
         if let region = layout.modeTextRegion {
-            if let key = ModeRecognizer.recognizeMode(in: raster, region: region, modes: rules.document.modes) {
-                mode = key
-                modeJa = rules.document.modes[key]?.ja
-            }
+            let stage = ModeRecognizer.recognizeStage(in: raster, region: region, rules: rules)
+            mode = stage.mode
+            map = stage.map
+            modeJa = map?.modeJa ?? mode.flatMap { rules.document.modes[$0]?.ja }
+            // マップが特定できたら、そのマップが属するモードで上書きする
+            // （モード名の OCR に失敗していても、マップ名だけ読めれば十分特定できる）。
+            if let map { mode = map.mode }
         }
 
         let phase = DraftPhase.blind(filled: allies.count, total: layout.allySlots.count)
 
         return DraftSnapshot(
             kind: .blindPick, mode: mode, modeJa: modeJa,
-            map: nil, mapScore: 0, mapMargin: 0,
+            map: map, mapScore: map != nil ? 1 : 0, mapMargin: 0,
             bans: [], allies: allies, enemies: enemies,
             phase: phase, layoutName: layout.name,
             elapsed: CFAbsoluteTimeGetCurrent() - started

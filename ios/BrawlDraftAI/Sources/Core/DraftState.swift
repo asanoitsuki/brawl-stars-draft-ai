@@ -117,7 +117,11 @@ struct DraftSnapshot {
         let head: String
         switch kind {
         case .blindPick:
-            head = "モード: \(modeJa ?? mode ?? "不明")"
+            if let map {
+                head = "ステージ: \(map.nameJa ?? map.name)（\(modeJa ?? mode ?? "?")）"
+            } else {
+                head = "モード: \(modeJa ?? mode ?? "不明")"
+            }
         case .draftPick:
             head = map.map { "\($0.name)（\($0.modeJa)）一致度 \(String(format: "%.2f", mapScore))" }
                 ?? "マップ不明"

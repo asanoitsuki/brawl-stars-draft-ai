@@ -427,7 +427,8 @@ python3 scripts/tiers.py unset Edgar         # 中立に戻す
 │   ├── tiers.py                ティア補正の確認・編集
 │   └── run_all.sh              まとめて実行 + 全テスト
 ├── .env.example                トークン置き場のひな形（.env は gitignore 済み）
-├── data/                       手で調整するナレッジ（相性表・役割・ティア・カタカナ）
+├── data/                       手で調整するナレッジ（相性表・役割・ティア・カタカナ・
+│   │                              マップ日本語名・立ち回りアドバイス）
 ├── assets/
 │   ├── brawler_icons/          キャラアイコン PNG（214 枚）
 │   ├── brawler_templates/      照合用記述子（107 体）

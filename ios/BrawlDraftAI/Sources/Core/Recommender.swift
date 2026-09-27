@@ -126,14 +126,18 @@ enum Recommender {
                                   body: "内部エラーです。", speech: [], advices: [], caution: nil)
         }
 
+        let map = snapshot.map
         let modeWeights = snapshot.mode.flatMap { rules.document.modes[$0]?.weights }
+        // ステージ名まで読めていれば「モード: ノックアウト」ではなく「オープンフィールド」を主役にする。
+        let stageLabel = map?.nameJa ?? map?.name
         let modeLabel = snapshot.modeJa ?? snapshot.mode
 
         guard filled < total else {
             let title = "自チーム選択完了"
+            let where_ = stageLabel.map { "ステージ: \($0)｜" } ?? modeLabel.map { "モード: \($0)｜" } ?? ""
             return Recommendation(
                 phase: snapshot.phase, map: nil, title: title,
-                body: "\(modeLabel.map { "モード: \($0)｜" } ?? "")自チーム 3 人が決まりました。"
+                body: "\(where_)自チーム 3 人が決まりました。"
                     + "味方: " + snapshot.allies.map { "\($0.name)(\($0.roleJa))" }.joined(separator: " "),
                 speech: [.init(text: "自チーム選択完了。", isJapanese: true)],
                 advices: [], caution: nil
@@ -142,19 +146,25 @@ enum Recommender {
 
         let taken = snapshot.takenIDs
         let allyRoles = snapshot.allies.map(\.role)
+        // ステージ固有データ（実測勝率・手動ティア・BAN 済みキャラの除外など）が使えるときは
+        // それを土台にする。読めていなければモード単位の大まかな適性にフォールバックする。
+        let candidateBase: [Int: (base: Double, winRate: Double?)] = map.map {
+            Dictionary(uniqueKeysWithValues: $0.candidates.map { c in (c.id, (c.base, c.winRate)) })
+        } ?? [:]
 
-        var scored: [(brawler: BrawlerRole, score: Double, synergy: Double, modeFit: Double)] = []
-        for b in rules.document.brawlers where !taken.contains(b.id) {
+        var scored: [(brawler: BrawlerRole, score: Double, synergy: Double, fit: Double, winRate: Double?)] = []
+        for b in rules.document.brawlers where !taken.contains(b.id) && AppSettings.isOwned(b.id) {
             let syn = allyRoles.reduce(0.0) { $0 + rules.synergy(b.role, with: $1) }
-            let modeFit = modeWeights?[b.role] ?? 0
-            // 味方シナジー 0.5 / モード適性 0.5 で合成。相手情報が無いのでカウンター項は無い。
-            let score = 0.5 * modeFit + 0.5 * syn
-            scored.append((b, score, syn, modeFit))
+            let stageFit = candidateBase[b.id]
+            let fit = stageFit?.base ?? modeWeights?[b.role] ?? 0
+            // 味方シナジー 0.5 / ステージ(またはモード)適性 0.5 で合成。相手情報が無いのでカウンター項は無い。
+            let score = 0.5 * fit + 0.5 * syn
+            scored.append((b, score, syn, fit, stageFit?.winRate))
         }
         scored.sort { ($0.score, $0.brawler.name) > ($1.score, $1.brawler.name) }
 
         // 役割の偏りを避ける（既出ロールに 0.35 の減点）
-        var picked: [(brawler: BrawlerRole, score: Double, synergy: Double, modeFit: Double)] = []
+        var picked: [(brawler: BrawlerRole, score: Double, synergy: Double, fit: Double, winRate: Double?)] = []
         var roleCount: [String: Int] = allyRoles.reduce(into: [:]) { $0[$1, default: 0] += 1 }
         var remaining = scored
         while !remaining.isEmpty && picked.count < 3 {
@@ -170,8 +180,13 @@ enum Recommender {
 
         let advices = picked.map { item -> PickAdvice in
             var parts: [String] = []
-            if item.modeFit != 0, let modeLabel {
-                parts.append("\(modeLabel)適性 \(item.modeFit >= 0 ? "+" : "")\(String(format: "%.1f", item.modeFit))")
+            if let stageLabel {
+                parts.append("\(stageLabel)での評価 \(item.fit >= 0 ? "+" : "")\(String(format: "%.1f", item.fit))")
+            } else if item.fit != 0, let modeLabel {
+                parts.append("\(modeLabel)適性 \(item.fit >= 0 ? "+" : "")\(String(format: "%.1f", item.fit))")
+            }
+            if let wr = item.winRate {
+                parts.append("勝率 \(String(format: "%.1f", wr))%")
             }
             if item.synergy >= 0.8, let ally = snapshot.allies.max(by: {
                 rules.synergy(item.brawler.role, with: $0.role) < rules.synergy(item.brawler.role, with: $1.role)
@@ -184,7 +199,7 @@ enum Recommender {
             return PickAdvice(
                 id: item.brawler.id, name: item.brawler.name, nameJa: item.brawler.nameJa,
                 role: item.brawler.role, roleJa: rules.japaneseRole(item.brawler.role),
-                score: item.score, reason: parts.joined(separator: " / "), winRate: nil
+                score: item.score, reason: parts.joined(separator: " / "), winRate: item.winRate
             )
         }
 
@@ -193,10 +208,16 @@ enum Recommender {
             : "おすすめ：\(displayName(advices[0], rules: rules))"
 
         var bodyLines: [String] = []
-        if let modeLabel { bodyLines.append("モード: \(modeLabel)") }
+        if let stageLabel {
+            bodyLines.append("ステージ: \(stageLabel)" + (modeLabel.map { "（\($0)）" } ?? ""))
+        } else if let modeLabel {
+            bodyLines.append("モード: \(modeLabel)")
+        }
         for (i, a) in advices.enumerated() {
             let mark = ["◎", "○", "△"][min(i, 2)]
-            bodyLines.append("\(mark) \(displayName(a, rules: rules))（\(a.roleJa)）\(a.reason.isEmpty ? "" : " — \(a.reason)")")
+            let tip = rules.roleTip(a.role).map { " ／ 立ち回り: \($0)" } ?? ""
+            bodyLines.append("\(mark) \(displayName(a, rules: rules))（\(a.roleJa)）"
+                + "\(a.reason.isEmpty ? "" : " — \(a.reason)")\(tip)")
         }
         if !snapshot.allies.isEmpty {
             bodyLines.append("味方: " + snapshot.allies.map { "\($0.name)(\($0.roleJa))" }.joined(separator: " "))
@@ -207,19 +228,35 @@ enum Recommender {
         for (i, a) in advices.prefix(limit).enumerated() {
             if i == 1 { speech.append(.init(text: "次点、", isJapanese: true)) }
             if let ja = a.nameJa {
-                speech.append(.init(text: ja + "。", isJapanese: true))
+                speech.append(.init(text: ja, isJapanese: true))
             } else {
                 speech.append(.init(text: a.name, isJapanese: false))
-                speech.append(.init(text: "。", isJapanese: true))
             }
+            // 1 位だけ「なぜか」と「どう立ち回るか」まで声で伝える。全部読むと長すぎるため。
+            if i == 0 {
+                if !a.reason.isEmpty {
+                    speech.append(.init(text: "。理由は、\(a.reason.replacingOccurrences(of: " / ", with: "、"))",
+                                        isJapanese: true))
+                }
+                if let tip = rules.roleTip(a.role) {
+                    speech.append(.init(text: "。立ち回りは、\(tip)", isJapanese: true))
+                }
+            }
+            speech.append(.init(text: "。", isJapanese: true))
         }
         if advices.isEmpty {
             speech = [.init(text: "候補が見つかりません", isJapanese: true)]
         }
 
-        var cautions: [String] = ["相手は非公開のため、味方構成とモード適性のみで判断しています"]
+        var cautions: [String] = [
+            map != nil
+                ? "相手は非公開のため、味方構成とステージ適性のみで判断しています"
+                : "相手は非公開のため、味方構成とモード適性のみで判断しています"
+        ]
         if snapshot.mode == nil {
-            cautions.append("モード名を読み取れませんでした（モード適性なしで評価）")
+            cautions.append("モード名を読み取れませんでした（役割適性なしで評価）")
+        } else if map == nil {
+            cautions.append("ステージ名は未認識のため、モード全体の大まかな適性で評価しています")
         }
         let shaky = snapshot.allies.filter { !$0.isConfident }
         if !shaky.isEmpty {
@@ -227,7 +264,7 @@ enum Recommender {
         }
 
         return Recommendation(
-            phase: snapshot.phase, map: nil, title: title,
+            phase: snapshot.phase, map: map, title: title,
             body: bodyLines.joined(separator: "\n"),
             speech: speech, advices: advices,
             caution: cautions.joined(separator: " / ")
@@ -245,7 +282,7 @@ enum Recommender {
 
         var scored: [(candidate: MapRules.Candidate, score: Double,
                       synergy: Double, advantage: Double)] = []
-        for c in map.candidates where !taken.contains(c.id) {
+        for c in map.candidates where !taken.contains(c.id) && AppSettings.isOwned(c.id) {
             let syn = allyRoles.reduce(0.0) { $0 + rules.synergy(c.role, with: $1) }
             let adv = enemyRoles.reduce(0.0) { $0 + rules.advantage(c.role, vs: $1) }
             scored.append((c, c.base + w.synergy * syn + w.advantage * adv, syn, adv))
@@ -286,7 +323,7 @@ enum Recommender {
 
     private static func fromPrecomputed(_ list: [PickSuggestion], rules: LoadedRules,
                                         taken: Set<Int>, limit: Int) -> [PickAdvice] {
-        list.filter { !taken.contains($0.id) }.prefix(limit).map { s in
+        list.filter { !taken.contains($0.id) && AppSettings.isOwned($0.id) }.prefix(limit).map { s in
             PickAdvice(
                 id: s.id, name: s.name,
                 nameJa: rules.document.brawlers.first { $0.id == s.id }?.nameJa,

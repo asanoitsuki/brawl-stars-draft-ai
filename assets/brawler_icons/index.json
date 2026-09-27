@@ -5,7 +5,10 @@
     "borders",
     "borderless"
   ],
-  "iconsUnavailable": [],
+  "iconsUnavailable": [
+    "Cosmo",
+    "Vince"
+  ],
   "brawlers": [
     {
       "id": 16000000,

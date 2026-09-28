@@ -94,6 +94,14 @@ enum AppSettings {
         excludedBrawlerIDs = s
     }
 
+    /// 全キャラをまとめて所持/非所持にする。
+    /// `setOwned` を要素数ぶん繰り返すと、その都度 UserDefaults の配列全体を
+    /// 読み書きすることになり（109 体なら 109 回の read-modify-write）、
+    /// メインスレッド上で体感できる遅延になり得る。1 回の書き込みで済ませる。
+    static func setAllOwned(_ ids: some Sequence<Int>, owned: Bool) {
+        excludedBrawlerIDs = owned ? [] : Set(ids)
+    }
+
     // MARK: - 読み上げ音声（ElevenLabs）
 
     static var speechBackend: SpeechBackend {

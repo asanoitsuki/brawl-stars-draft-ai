@@ -23,6 +23,7 @@ struct BrawlerRosterView: View {
         .searchable(text: $query, prompt: "キャラ名で検索")
     }
 
+    @ViewBuilder
     private func content(rules: LoadedRules) -> some View {
         let filtered = rules.document.brawlers.filter {
             query.isEmpty || $0.name.localizedCaseInsensitiveContains(query)
@@ -33,7 +34,7 @@ struct BrawlerRosterView: View {
             (grouped[$0]?.count ?? 0) > (grouped[$1]?.count ?? 0)
         }
 
-        return List {
+        List {
             Section {
                 HStack {
                     Text("所持: \(rules.document.brawlers.count - excluded.count) / \(rules.document.brawlers.count)")
@@ -46,14 +47,13 @@ struct BrawlerRosterView: View {
                 }
             }
             ForEach(roleOrder, id: \.self) { role in
-                guard let list = grouped[role], !list.isEmpty else { return AnyView(EmptyView()) }
-                return AnyView(
+                if let list = grouped[role], !list.isEmpty {
                     Section(rules.japaneseRole(role)) {
                         ForEach(list.sorted { $0.name < $1.name }, id: \.id) { b in
                             row(for: b)
                         }
                     }
-                )
+                }
             }
         }
     }
@@ -78,10 +78,12 @@ struct BrawlerRosterView: View {
         }
     }
 
+    /// 全キャラをまとめて所持/非所持にする。
+    /// 1 体ずつ `setOwned` を呼ぶと 109 回分の UserDefaults 読み書きが直列に走り、
+    /// メインスレッド上で体感できる遅延（＝その間タップを取りこぼしたように見える）
+    /// になり得るため、必ず一括書き込みの `setAllOwned` を使う。
     private func setAll(rules: LoadedRules, owned: Bool) {
-        for b in rules.document.brawlers {
-            AppSettings.setOwned(b.id, owned: owned)
-        }
+        AppSettings.setAllOwned(rules.document.brawlers.map(\.id), owned: owned)
         excluded = AppSettings.excludedBrawlerIDs
     }
 }

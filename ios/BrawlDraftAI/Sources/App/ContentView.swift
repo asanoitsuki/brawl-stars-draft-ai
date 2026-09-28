@@ -17,6 +17,7 @@ struct ContentView: View {
                 if let result { resultSection(result) }
                 settingsSection
                 helpSection
+                legalSection
             }
             .navigationTitle("ガチバトルピックAI")
             .alert("エラー", isPresented: .constant(errorText != nil)) {
@@ -193,6 +194,20 @@ struct ContentView: View {
                     set: { AppSettings.speechRate = $0 }
                 ), in: 0.40...0.70)
             }
+        }
+    }
+
+    private var legalSection: some View {
+        Section("このアプリについて") {
+            Link(destination: URL(string: "https://asanoitsuki.github.io/brawl-stars-draft-ai/privacy-policy.html")!) {
+                Label("プライバシーポリシー", systemImage: "hand.raised")
+            }
+            Link(destination: URL(string: "https://asanoitsuki.github.io/brawl-stars-draft-ai/terms.html")!) {
+                Label("利用規約", systemImage: "doc.text")
+            }
+            Text("本アプリは Brawl Stars（Supercell社）の非公式ファンツールです。"
+                 + "Supercell社とは一切関係ありません。")
+                .font(.caption2).foregroundStyle(.secondary)
         }
     }
 

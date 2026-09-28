@@ -16,14 +16,16 @@ enum AppSettings {
     }
 
     /// 毎日 GitHub Actions が更新する rules.json の置き場所。
-    /// 自分のリポジトリに合わせて設定画面から書き換える。
+    /// 既定でこのプロジェクトの公開リポジトリを指す — 一般ユーザーが設定を一切
+    /// 触らなくても、初回起動後は自動で毎日最新データに更新されるようにするため。
+    /// 自分でフォークして運用する場合はこの値を書き換える。
     static var rulesURL: String {
         get { defaults.string(forKey: Key.rulesURL) ?? defaultRulesURL }
         set { defaults.set(newValue, forKey: Key.rulesURL) }
     }
 
     static let defaultRulesURL =
-        "https://raw.githubusercontent.com/YOUR_NAME/YOUR_REPO/main/rules/rules_rotation.json"
+        "https://raw.githubusercontent.com/asanoitsuki/brawl-stars-draft-ai/main/rules/rules_rotation.json"
 
     static var isRulesURLConfigured: Bool {
         !rulesURL.contains("YOUR_NAME") && URL(string: rulesURL) != nil

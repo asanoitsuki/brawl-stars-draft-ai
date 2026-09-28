@@ -1,17 +1,11 @@
 import AVFoundation
 import Foundation
 
-/// 結果を読み上げる。2 つの方式を切り替えられる。
-///
-///   * 端末内蔵（既定）: AVSpeechSynthesizer。ネット不要・遅延ゼロだが機械的な声。
-///   * ElevenLabs: 自然な声だが API キーとネットワークが要る。テキストごとにディスクへ
-///     キャッシュするので、キャラ名のような閉じた語彙は 2 回目以降ネット無しで即再生できる。
-///     合成に失敗したとき（オフライン・キー未設定・レート制限など）は端末内蔵の声に自動で
-///     切り替える — 対戦中に無音になるよりは機械声の方がマシという判断。
+/// 結果を端末内蔵の声（AVSpeechSynthesizer）で読み上げる。ネット不要・遅延ゼロ。
 ///
 /// ブロスタの BGM を消さずにかぶせたいので、オーディオセッションは
 /// `.playback` + `.duckOthers` + `.mixWithOthers` で構成する。
-final class SpeechAnnouncer {
+final class SpeechAnnouncer: ObservableObject {
     static let shared = SpeechAnnouncer()
 
     private let synthesizer = AVSpeechSynthesizer()
@@ -24,9 +18,6 @@ final class SpeechAnnouncer {
     private lazy var englishVoice: AVSpeechSynthesisVoice? =
         AVSpeechSynthesisVoice(language: "en-US")
 
-    private var cloudTask: Task<Void, Never>?
-    private var cloudPlayer: AVQueuePlayer?
-
     private init() {}
 
     /// 直前の読み上げを打ち切って、新しい内容を読む。
@@ -35,41 +26,6 @@ final class SpeechAnnouncer {
         guard AppSettings.speechEnabled, !segments.isEmpty else { return }
         stop()
         configureSession()
-
-        switch AppSettings.speechBackend {
-        case .onDevice:
-            speakOnDevice(segments)
-        case .elevenLabs:
-            guard AppSettings.isElevenLabsConfigured else {
-                speakOnDevice(segments)  // 未設定なら黙って端末内蔵にフォールバック
-                return
-            }
-            cloudTask = Task { [weak self] in
-                await self?.speakCloud(segments)
-            }
-        }
-    }
-
-    func stop() {
-        synthesizer.stopSpeaking(at: .immediate)
-        cloudTask?.cancel()
-        cloudTask = nil
-        cloudPlayer?.pause()
-        cloudPlayer?.removeAllItems()
-        cloudPlayer = nil
-    }
-
-    /// 動作確認用
-    func announceTest() {
-        announce([
-            .init(text: "テスト。ラスト、", isJapanese: true),
-            .init(text: "パイパー。", isJapanese: true)
-        ])
-    }
-
-    // MARK: - 端末内蔵
-
-    private func speakOnDevice(_ segments: [Recommendation.SpeechSegment]) {
         let rate = Float(AppSettings.speechRate)
         for segment in segments {
             let utterance = AVSpeechUtterance(string: segment.text)
@@ -82,32 +38,32 @@ final class SpeechAnnouncer {
         }
     }
 
-    // MARK: - ElevenLabs
+    func stop() {
+        synthesizer.stopSpeaking(at: .immediate)
+    }
 
-    private func speakCloud(_ segments: [Recommendation.SpeechSegment]) async {
-        var urls: [URL] = []
-        for segment in segments {
-            guard !Task.isCancelled else { return }
-            guard !segment.text.isEmpty else { continue }
-            do {
-                urls.append(try await SpeechCache.fileURL(for: segment.text))
-            } catch {
-                // 1 か所でも合成に失敗したら、部分的にクラウド・部分的に機械音声という
-                // ちぐはぐな結果になるより、丸ごと端末内蔵にフォールバックした方が聞きやすい。
-                guard !Task.isCancelled else { return }
-                await MainActor.run { self.speakOnDevice(segments) }
-                return
-            }
-        }
-        guard !Task.isCancelled, !urls.isEmpty else { return }
-
-        await MainActor.run {
-            let items = urls.map { AVPlayerItem(url: $0) }
-            let player = AVQueuePlayer(items: items)
-            player.actionAtItemEnd = .advance
-            self.cloudPlayer = player
-            player.play()
-        }
+    /// 動作確認用。短い単語だけだと声の自然さが分かりにくいので、
+    /// 実際のおすすめ読み上げ（Recommender.speechSegments）と同じ組み立て方・長さの
+    /// サンプル文を読ませる。
+    ///
+    /// 「相手ゴミピックすぎる」のような相手を煽るセリフは、ブラインドピックでは
+    /// 相手が見えないため本番の読み上げにはまだ出せない（エリート帯の相手公開に対応したら
+    /// HypeCommentary 側に追加する）。ここではあくまで声の雰囲気を試せるように、
+    /// テスト専用でそのトーンのセリフも混ぜてある。
+    func announceTest() {
+        announce([
+            .init(text: "おすすめ、", isJapanese: true),
+            .init(text: "シェリー", isJapanese: true),
+            .init(text: "。理由は、相手構成に近距離アタッカーが不足しているため、"
+                       + "序盤の接近戦を制圧しやすいです", isJapanese: true),
+            .init(text: "。立ち回りは、茂みや壁の裏に隠れて、孤立した相手や後衛だけを狙おう。"
+                       + "正面から撃ち合うと不利なので、飛び込む隙を待つのがコツ。", isJapanese: true),
+            .init(text: "。相手ピック、正直ゴミすぎるて。これ選んだら普通に勝てるわ。"
+                       + "これで負けたらエリ止まり確定やろ。", isJapanese: true),
+            .init(text: "二位、", isJapanese: true),
+            .init(text: "エドガー", isJapanese: true),
+            .init(text: "。", isJapanese: true)
+        ])
     }
 
     private func configureSession() {

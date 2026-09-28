@@ -31,3 +31,7 @@ ios/BrawlDraftAI/Local.xcconfig
 
 # ローカルツールの内部状態（コミット不要）
 .claude/
+
+# このMacのネットワーク（Fortinet FortiGate の SSL 検査）向けに追加した
+# ローカル限定の CA バンドル。他の環境では不要・無関係なのでコミットしない。
+.certs/

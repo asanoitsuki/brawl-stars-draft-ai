@@ -206,6 +206,7 @@ enum Recommender {
         let title = advices.isEmpty
             ? "候補が見つかりません"
             : "おすすめ：\(displayName(advices[0], rules: rules))"
+        let hype = HypeCommentary.comment(for: advices)
 
         var bodyLines: [String] = []
         if let stageLabel {
@@ -222,11 +223,15 @@ enum Recommender {
         if !snapshot.allies.isEmpty {
             bodyLines.append("味方: " + snapshot.allies.map { "\($0.name)(\($0.roleJa))" }.joined(separator: " "))
         }
+        if let hype {
+            bodyLines.append("🎤 \(hype)")
+        }
 
         var speech: [Recommendation.SpeechSegment] = [.init(text: "おすすめ、", isJapanese: true)]
         let limit = min(AppSettings.maxAnnouncedPicks, advices.count)
         for (i, a) in advices.prefix(limit).enumerated() {
-            if i == 1 { speech.append(.init(text: "次点、", isJapanese: true)) }
+            // 「次点」だと何番目か分かりにくいので、順位をそのまま言う（1 位は「おすすめ、」で言い済み）。
+            if let ordinal = rankOrdinal(i) { speech.append(.init(text: "\(ordinal)、", isJapanese: true)) }
             if let ja = a.nameJa {
                 speech.append(.init(text: ja, isJapanese: true))
             } else {
@@ -240,6 +245,9 @@ enum Recommender {
                 }
                 if let tip = rules.roleTip(a.role) {
                     speech.append(.init(text: "。立ち回りは、\(tip)", isJapanese: true))
+                }
+                if let hype {
+                    speech.append(.init(text: "。\(hype)", isJapanese: true))
                 }
             }
             speech.append(.init(text: "。", isJapanese: true))
@@ -434,7 +442,7 @@ enum Recommender {
 
         let limit = min(AppSettings.maxAnnouncedPicks, advices.count)
         for (i, a) in advices.prefix(limit).enumerated() {
-            if i == 1 { segments.append(.init(text: "次点、", isJapanese: true)) }
+            if let ordinal = rankOrdinal(i) { segments.append(.init(text: "\(ordinal)、", isJapanese: true)) }
             if let ja = a.nameJa {
                 segments.append(.init(text: ja + "。", isJapanese: true))
             } else {
@@ -443,6 +451,16 @@ enum Recommender {
             }
         }
         return segments
+    }
+
+    /// 2 位以降の読み上げ用の順位表現。1 位は「おすすめ、」側で言い済みなので nil。
+    /// maxAnnouncedPicks が 1〜3 に収まる前提（AppSettings 側でクランプ済み）。
+    private static func rankOrdinal(_ index: Int) -> String? {
+        switch index {
+        case 1: return "二位"
+        case 2: return "三位"
+        default: return nil
+        }
     }
 
     private static func displayName(_ advice: PickAdvice, rules: LoadedRules) -> String {

@@ -63,6 +63,25 @@ struct BrawlerRole: Decodable {
     let nameJa: String?
     let role: String
     let roleJa: String
+    /// data/tier_overrides.json の手入力強さ補正（-1.5〜+1.5）。実測ではなく手入力の初期値。
+    /// 役割ごとの「メタキャラ例」表示に使う。
+    let tier: Double
+    /// スターパワー・ガジェット（Brawlify 由来。名前・説明は原文の英語のまま — 機械翻訳で
+    /// 誤訳を混ぜると信頼性を損なうため）。ギアは Brawlify API に無いため非対応。
+    let starPowers: [Loadout]
+    let gadgets: [Loadout]
+
+    struct Loadout: Decodable, Identifiable {
+        let id: Int
+        let name: String
+        let description: String
+        /// バンドル同梱ファイル名（拡張子なし）。取得できなかった場合は nil。
+        let image: String?
+        /// 実測勝率（brawltime.ninja 由来、%）。measured statistics — 意見ではない。
+        let measuredWinRate: Double?
+        /// 攻略サイトの意見（timesaver.gg 由来）。実測ではないので区別して表示する。
+        let communityNote: String?
+    }
 }
 
 struct MapRules: Decodable {
@@ -75,6 +94,8 @@ struct MapRules: Decodable {
     let environment: String?
     let inRotation: Bool
     let hasLiveStats: Bool
+    /// 画像・データの出典（Brawlify）。信憑性を示すための「出典」表示に使う。
+    let imageUrl: String?
     let nameAliases: [String]
     let bans: [PickSuggestion]
     let picks: PickPlan
@@ -88,6 +109,9 @@ struct MapRules: Decodable {
         let base: Double
         let winRate: Double?
         let useRate: Double?
+        /// base の内訳（マップ適性・手動ティア・実測勝率）を人間可読にしたもの。
+        /// 味方シナジーはここに含まれない（対戦相手・味方は解析時にしか分からないため）。
+        let reason: String?
     }
 }
 

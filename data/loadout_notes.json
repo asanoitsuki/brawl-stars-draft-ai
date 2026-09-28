@@ -1,0 +1,2204 @@
+{
+  "schema": 2,
+  "_comment": "ガジェット・スターパワーの『実測勝率』と『コミュニティ評価』の注記。schema 2 からはブロースター名を経由せず、アイテム名（Brawl Stars内でグローバルにユニーク）だけで突き合わせる。measuredWinRate は実際のプレイヤー統計、communityNote は攻略サイトの意見（推測・主観）。",
+  "_sources": {
+    "measured": {
+      "site": "brawltime.ninja",
+      "urls": [
+        "https://brawltime.ninja/tier-list/gadgets",
+        "https://brawltime.ninja/tier-list/starpowers"
+      ],
+      "sampleSize": "gadgets 5.66M battles / star powers 4.47M battles",
+      "fetchedAt": "2026-09-28",
+      "note": "全件（ガジェット214件・スターパワー214件）を手動でページ送りして採取。"
+    },
+    "community": {
+      "site": "timesaver.gg",
+      "urls": [
+        "https://timesaver.gg/blog/brawl-stars-best-gadgets-september-2026",
+        "https://timesaver.gg/blog/brawl-stars-best-star-powers-august-2026"
+      ],
+      "fetchedAt": "2026-09-28",
+      "note": "実測データではなく攻略サイトの意見。"
+    }
+  },
+  "gadgets": [
+    {
+      "item": "Green Grenade",
+      "measuredWinRate": 77.1,
+      "communityNote": "スローと治癒妨害により最高のサポート性能"
+    },
+    {
+      "item": "All Eyez On Me",
+      "measuredWinRate": 75.2,
+      "communityNote": "敵チームに応じた別戦法"
+    },
+    {
+      "item": "Telescope Trap",
+      "measuredWinRate": 75.1,
+      "communityNote": "ゾーン制御とスーパーの相乗効果"
+    },
+    {
+      "item": "Planetary Pushback",
+      "measuredWinRate": 74.7,
+      "communityNote": "ダイバー対策の緊急防御"
+    },
+    {
+      "item": "Regulate",
+      "measuredWinRate": 74.2,
+      "communityNote": "安定した基本選択"
+    },
+    {
+      "item": "Wind-powered",
+      "measuredWinRate": 73.8,
+      "communityNote": "ダイブの多いマップでの生存性向上"
+    },
+    {
+      "item": "Utility Belt",
+      "measuredWinRate": 73.7,
+      "communityNote": "防御的な編成での治癒価値"
+    },
+    {
+      "item": "Hacks!",
+      "measuredWinRate": 73.1,
+      "communityNote": null
+    },
+    {
+      "item": "Upper Cut",
+      "measuredWinRate": 72.9,
+      "communityNote": "デフォルト選択"
+    },
+    {
+      "item": "Voodoo Chile",
+      "measuredWinRate": 72.5,
+      "communityNote": null
+    },
+    {
+      "item": "Last Stand",
+      "measuredWinRate": 72.4,
+      "communityNote": "バースト時の生存性向上"
+    },
+    {
+      "item": "Personal Space",
+      "measuredWinRate": 72.4,
+      "communityNote": null
+    },
+    {
+      "item": "Disappearing Act",
+      "measuredWinRate": 72.3,
+      "communityNote": null
+    },
+    {
+      "item": "Oil Change",
+      "measuredWinRate": 72.2,
+      "communityNote": "広いマップでの継続的制御"
+    },
+    {
+      "item": "Spiritual Healing",
+      "measuredWinRate": 72.1,
+      "communityNote": null
+    },
+    {
+      "item": "Repot",
+      "measuredWinRate": 72.1,
+      "communityNote": null
+    },
+    {
+      "item": "Longer Strings",
+      "measuredWinRate": 72.0,
+      "communityNote": null
+    },
+    {
+      "item": "Worker Ants",
+      "measuredWinRate": 71.8,
+      "communityNote": null
+    },
+    {
+      "item": "Drop The Bass",
+      "measuredWinRate": 71.8,
+      "communityNote": null
+    },
+    {
+      "item": "Wall Of Sound",
+      "measuredWinRate": 71.6,
+      "communityNote": null
+    },
+    {
+      "item": "Slippery Savior",
+      "measuredWinRate": 71.5,
+      "communityNote": null
+    },
+    {
+      "item": "Bouncy Ball",
+      "measuredWinRate": 71.4,
+      "communityNote": "エンゲージまたは壁破壊が必要な場合"
+    },
+    {
+      "item": "Pulse Repellent",
+      "measuredWinRate": 71.4,
+      "communityNote": null
+    },
+    {
+      "item": "Out Of Line",
+      "measuredWinRate": 71.4,
+      "communityNote": null
+    },
+    {
+      "item": "Spiders",
+      "measuredWinRate": 71.3,
+      "communityNote": null
+    },
+    {
+      "item": "Tactical Retreat",
+      "measuredWinRate": 71.2,
+      "communityNote": null
+    },
+    {
+      "item": "Elementalist",
+      "measuredWinRate": 71.1,
+      "communityNote": null
+    },
+    {
+      "item": "Extra Mustard",
+      "measuredWinRate": 71.1,
+      "communityNote": null
+    },
+    {
+      "item": "For The Queen!",
+      "measuredWinRate": 71.1,
+      "communityNote": null
+    },
+    {
+      "item": "Slo-mo Replay",
+      "measuredWinRate": 71.0,
+      "communityNote": "基本選択"
+    },
+    {
+      "item": "Backstage Pass",
+      "measuredWinRate": 71.0,
+      "communityNote": null
+    },
+    {
+      "item": "More Lumens!",
+      "measuredWinRate": 71.0,
+      "communityNote": null
+    },
+    {
+      "item": "Replanting",
+      "measuredWinRate": 71.0,
+      "communityNote": null
+    },
+    {
+      "item": "Back To The Finxture",
+      "measuredWinRate": 71.0,
+      "communityNote": null
+    },
+    {
+      "item": "Now You See Me...",
+      "measuredWinRate": 70.9,
+      "communityNote": null
+    },
+    {
+      "item": "Magnetic Field",
+      "measuredWinRate": 70.8,
+      "communityNote": null
+    },
+    {
+      "item": "Double Sausage",
+      "measuredWinRate": 70.8,
+      "communityNote": null
+    },
+    {
+      "item": "Snappy Shooting",
+      "measuredWinRate": 70.6,
+      "communityNote": null
+    },
+    {
+      "item": "Shining Starr Of Friendship And Justice",
+      "measuredWinRate": 70.5,
+      "communityNote": null
+    },
+    {
+      "item": "Pneumatic Booster",
+      "measuredWinRate": 70.4,
+      "communityNote": null
+    },
+    {
+      "item": "Crash Test",
+      "measuredWinRate": 70.4,
+      "communityNote": null
+    },
+    {
+      "item": "Cheeseburger",
+      "measuredWinRate": 70.4,
+      "communityNote": null
+    },
+    {
+      "item": "Chill Pill",
+      "measuredWinRate": 70.4,
+      "communityNote": null
+    },
+    {
+      "item": "Sugar Rush",
+      "measuredWinRate": 70.3,
+      "communityNote": null
+    },
+    {
+      "item": "Rotten Banana",
+      "measuredWinRate": 70.3,
+      "communityNote": null
+    },
+    {
+      "item": "Motherly Love",
+      "measuredWinRate": 70.3,
+      "communityNote": null
+    },
+    {
+      "item": "Electric Shuffle",
+      "measuredWinRate": 70.2,
+      "communityNote": null
+    },
+    {
+      "item": "Sweet Dreams",
+      "measuredWinRate": 70.2,
+      "communityNote": null
+    },
+    {
+      "item": "Gotta Go!",
+      "measuredWinRate": 70.2,
+      "communityNote": null
+    },
+    {
+      "item": "Sleep Stimulator",
+      "measuredWinRate": 70.2,
+      "communityNote": null
+    },
+    {
+      "item": "Finish Them!",
+      "measuredWinRate": 70.1,
+      "communityNote": null
+    },
+    {
+      "item": "A Starr Is Born",
+      "measuredWinRate": 70.1,
+      "communityNote": null
+    },
+    {
+      "item": "Made With Love",
+      "measuredWinRate": 70.1,
+      "communityNote": null
+    },
+    {
+      "item": "Unfriendly Bushes",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "Presto",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "Jolting Volts",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "Hit The Lights",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "Master Of Shadows",
+      "measuredWinRate": 69.9,
+      "communityNote": null
+    },
+    {
+      "item": "Dodgy Digging",
+      "measuredWinRate": 69.8,
+      "communityNote": null
+    },
+    {
+      "item": "Dormant Star",
+      "measuredWinRate": 69.8,
+      "communityNote": null
+    },
+    {
+      "item": "Disengage!",
+      "measuredWinRate": 69.8,
+      "communityNote": null
+    },
+    {
+      "item": "No Escape",
+      "measuredWinRate": 69.8,
+      "communityNote": null
+    },
+    {
+      "item": "Grow Light",
+      "measuredWinRate": 69.7,
+      "communityNote": null
+    },
+    {
+      "item": "Repurpose",
+      "measuredWinRate": 69.7,
+      "communityNote": null
+    },
+    {
+      "item": "Order: Swap",
+      "measuredWinRate": 69.6,
+      "communityNote": null
+    },
+    {
+      "item": "Weekend Warrior",
+      "measuredWinRate": 69.6,
+      "communityNote": null
+    },
+    {
+      "item": "Perfect Pitch",
+      "measuredWinRate": 69.6,
+      "communityNote": null
+    },
+    {
+      "item": "Overcooked",
+      "measuredWinRate": 69.6,
+      "communityNote": null
+    },
+    {
+      "item": "Time For A Slow Song",
+      "measuredWinRate": 69.6,
+      "communityNote": null
+    },
+    {
+      "item": "Rat Race",
+      "measuredWinRate": 69.5,
+      "communityNote": null
+    },
+    {
+      "item": "Water Balloons",
+      "measuredWinRate": 69.5,
+      "communityNote": null
+    },
+    {
+      "item": "Feed The Gators",
+      "measuredWinRate": 69.4,
+      "communityNote": null
+    },
+    {
+      "item": "Porter Reinforcements",
+      "measuredWinRate": 69.4,
+      "communityNote": null
+    },
+    {
+      "item": "Rerouting",
+      "measuredWinRate": 69.3,
+      "communityNote": null
+    },
+    {
+      "item": "Scrapsucker",
+      "measuredWinRate": 69.2,
+      "communityNote": null
+    },
+    {
+      "item": "Dashi Dash",
+      "measuredWinRate": 69.2,
+      "communityNote": "機動性による到達・脱出"
+    },
+    {
+      "item": "X-ray-shades",
+      "measuredWinRate": 69.2,
+      "communityNote": null
+    },
+    {
+      "item": "Vanish",
+      "measuredWinRate": 69.1,
+      "communityNote": null
+    },
+    {
+      "item": "Stunt Double",
+      "measuredWinRate": 69.1,
+      "communityNote": null
+    },
+    {
+      "item": "Ice Block",
+      "measuredWinRate": 69.0,
+      "communityNote": null
+    },
+    {
+      "item": "Order: Fall Back",
+      "measuredWinRate": 69.0,
+      "communityNote": null
+    },
+    {
+      "item": "Hosomaki Healing",
+      "measuredWinRate": 69.0,
+      "communityNote": "基本選択"
+    },
+    {
+      "item": "Cold-blooded",
+      "measuredWinRate": 68.9,
+      "communityNote": null
+    },
+    {
+      "item": "Take Cover",
+      "measuredWinRate": 68.9,
+      "communityNote": null
+    },
+    {
+      "item": "Jump Scare",
+      "measuredWinRate": 68.8,
+      "communityNote": null
+    },
+    {
+      "item": "Phat Splatter",
+      "measuredWinRate": 68.8,
+      "communityNote": null
+    },
+    {
+      "item": "Spellbound",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Ragequit",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Grand Piano",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Poison Mushroom",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Ghost Train",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Poison Puddles",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Gracious Host",
+      "measuredWinRate": 68.6,
+      "communityNote": null
+    },
+    {
+      "item": "Vengeful Spirits",
+      "measuredWinRate": 68.6,
+      "communityNote": "自動マルチターゲットバースト"
+    },
+    {
+      "item": "Dive",
+      "measuredWinRate": 68.6,
+      "communityNote": null
+    },
+    {
+      "item": "Knockback Spirit",
+      "measuredWinRate": 68.5,
+      "communityNote": null
+    },
+    {
+      "item": "Bear Paws",
+      "measuredWinRate": 68.5,
+      "communityNote": null
+    },
+    {
+      "item": "Corn-fu",
+      "measuredWinRate": 68.4,
+      "communityNote": null
+    },
+    {
+      "item": "Service Bell",
+      "measuredWinRate": 68.4,
+      "communityNote": null
+    },
+    {
+      "item": "Faux Fur",
+      "measuredWinRate": 68.3,
+      "communityNote": null
+    },
+    {
+      "item": "Clipping Scream",
+      "measuredWinRate": 68.3,
+      "communityNote": null
+    },
+    {
+      "item": "Cryo Syrup",
+      "measuredWinRate": 68.3,
+      "communityNote": null
+    },
+    {
+      "item": "Windmill",
+      "measuredWinRate": 68.3,
+      "communityNote": null
+    },
+    {
+      "item": "Freeze Frame",
+      "measuredWinRate": 68.3,
+      "communityNote": null
+    },
+    {
+      "item": "Najia Jar",
+      "measuredWinRate": 68.1,
+      "communityNote": null
+    },
+    {
+      "item": "Barricade",
+      "measuredWinRate": 68.0,
+      "communityNote": null
+    },
+    {
+      "item": "Fire Starters",
+      "measuredWinRate": 68.0,
+      "communityNote": null
+    },
+    {
+      "item": "Twister",
+      "measuredWinRate": 68.0,
+      "communityNote": null
+    },
+    {
+      "item": "Interlude",
+      "measuredWinRate": 68.0,
+      "communityNote": null
+    },
+    {
+      "item": "Capo-what?",
+      "measuredWinRate": 68.0,
+      "communityNote": null
+    },
+    {
+      "item": "Asteroid Belt",
+      "measuredWinRate": 68.0,
+      "communityNote": null
+    },
+    {
+      "item": "Air Support",
+      "measuredWinRate": 67.9,
+      "communityNote": null
+    },
+    {
+      "item": "Nest Egg",
+      "measuredWinRate": 67.9,
+      "communityNote": null
+    },
+    {
+      "item": "Reverse Polarity",
+      "measuredWinRate": 67.9,
+      "communityNote": null
+    },
+    {
+      "item": "Bottomless Mags",
+      "measuredWinRate": 67.8,
+      "communityNote": null
+    },
+    {
+      "item": "Floaty Time",
+      "measuredWinRate": 67.8,
+      "communityNote": null
+    },
+    {
+      "item": "Master Fletcher",
+      "measuredWinRate": 67.7,
+      "communityNote": "基本選択"
+    },
+    {
+      "item": "Grim And Frostbitten",
+      "measuredWinRate": 67.7,
+      "communityNote": null
+    },
+    {
+      "item": "Sushi Snack",
+      "measuredWinRate": 67.7,
+      "communityNote": null
+    },
+    {
+      "item": "Extra Credits",
+      "measuredWinRate": 67.7,
+      "communityNote": null
+    },
+    {
+      "item": "Rebuild",
+      "measuredWinRate": 67.6,
+      "communityNote": null
+    },
+    {
+      "item": "Tar Barrel",
+      "measuredWinRate": 67.6,
+      "communityNote": null
+    },
+    {
+      "item": "Recoil Spring",
+      "measuredWinRate": 67.6,
+      "communityNote": null
+    },
+    {
+      "item": "Stinging Flight",
+      "measuredWinRate": 67.5,
+      "communityNote": "接近するアサシン対策"
+    },
+    {
+      "item": "Dancing Flames",
+      "measuredWinRate": 67.5,
+      "communityNote": null
+    },
+    {
+      "item": "Support From Beyond",
+      "measuredWinRate": 67.5,
+      "communityNote": "シャドウアシスタントの重要性"
+    },
+    {
+      "item": "Pulse Modulator",
+      "measuredWinRate": 67.4,
+      "communityNote": null
+    },
+    {
+      "item": "Lamp Blowout",
+      "measuredWinRate": 67.3,
+      "communityNote": "アサシンまたはボール運び者対策"
+    },
+    {
+      "item": "Spicy Dice",
+      "measuredWinRate": 67.2,
+      "communityNote": null
+    },
+    {
+      "item": "Hensojutsu",
+      "measuredWinRate": 67.2,
+      "communityNote": null
+    },
+    {
+      "item": "Psychic Enhancer",
+      "measuredWinRate": 67.1,
+      "communityNote": "スーパーサイクル専用編成"
+    },
+    {
+      "item": "Reserve Buoy",
+      "measuredWinRate": 67.1,
+      "communityNote": null
+    },
+    {
+      "item": "Super Totem",
+      "measuredWinRate": 67.1,
+      "communityNote": null
+    },
+    {
+      "item": "T-bone Missile",
+      "measuredWinRate": 67.1,
+      "communityNote": null
+    },
+    {
+      "item": "Transplant",
+      "measuredWinRate": 67.0,
+      "communityNote": null
+    },
+    {
+      "item": "Gonna Need A Bigger Net",
+      "measuredWinRate": 66.9,
+      "communityNote": null
+    },
+    {
+      "item": "Longarms",
+      "measuredWinRate": 66.9,
+      "communityNote": null
+    },
+    {
+      "item": "Recoiling Rotator",
+      "measuredWinRate": 66.8,
+      "communityNote": null
+    },
+    {
+      "item": "Watchtower",
+      "measuredWinRate": 66.8,
+      "communityNote": null
+    },
+    {
+      "item": "Heat Ejector",
+      "measuredWinRate": 66.8,
+      "communityNote": null
+    },
+    {
+      "item": "Spark Plug",
+      "measuredWinRate": 66.7,
+      "communityNote": null
+    },
+    {
+      "item": "Cheat Cartridge",
+      "measuredWinRate": 66.5,
+      "communityNote": null
+    },
+    {
+      "item": "Suplex Supplement",
+      "measuredWinRate": 66.5,
+      "communityNote": null
+    },
+    {
+      "item": "You Only Brawl Twice",
+      "measuredWinRate": 66.5,
+      "communityNote": null
+    },
+    {
+      "item": "Coin Shower",
+      "measuredWinRate": 66.5,
+      "communityNote": null
+    },
+    {
+      "item": "Protective Tunes",
+      "measuredWinRate": 66.4,
+      "communityNote": "スタンと低速対策"
+    },
+    {
+      "item": "Candy Beans",
+      "measuredWinRate": 66.4,
+      "communityNote": null
+    },
+    {
+      "item": "Piggy Bank",
+      "measuredWinRate": 66.3,
+      "communityNote": null
+    },
+    {
+      "item": "Walking Cane",
+      "measuredWinRate": 66.3,
+      "communityNote": null
+    },
+    {
+      "item": "Flying Hook",
+      "measuredWinRate": 66.3,
+      "communityNote": null
+    },
+    {
+      "item": "Radio Check",
+      "measuredWinRate": 66.3,
+      "communityNote": null
+    },
+    {
+      "item": "Healthy Additives",
+      "measuredWinRate": 66.1,
+      "communityNote": null
+    },
+    {
+      "item": "Salty Barrel",
+      "measuredWinRate": 66.1,
+      "communityNote": null
+    },
+    {
+      "item": "Trusty Spyglass",
+      "measuredWinRate": 66.1,
+      "communityNote": null
+    },
+    {
+      "item": "Roundhouse Kick",
+      "measuredWinRate": 66.0,
+      "communityNote": null
+    },
+    {
+      "item": "Sticky Syrup Mixer",
+      "measuredWinRate": 66.0,
+      "communityNote": null
+    },
+    {
+      "item": "Clone Projector",
+      "measuredWinRate": 65.9,
+      "communityNote": "茂みのスカウトまたはアモ誘導用"
+    },
+    {
+      "item": "Garden Mulcher",
+      "measuredWinRate": 65.9,
+      "communityNote": null
+    },
+    {
+      "item": "Herbal Tonic",
+      "measuredWinRate": 65.8,
+      "communityNote": null
+    },
+    {
+      "item": "Speed Zone",
+      "measuredWinRate": 65.8,
+      "communityNote": null
+    },
+    {
+      "item": "Sneaky Sneakers",
+      "measuredWinRate": 65.6,
+      "communityNote": null
+    },
+    {
+      "item": "Cardboard Box",
+      "measuredWinRate": 65.5,
+      "communityNote": null
+    },
+    {
+      "item": "Tripwire",
+      "measuredWinRate": 65.5,
+      "communityNote": null
+    },
+    {
+      "item": "Stomper",
+      "measuredWinRate": 65.4,
+      "communityNote": "ブロールボールでの使用"
+    },
+    {
+      "item": "Rattled Hive",
+      "measuredWinRate": 65.3,
+      "communityNote": null
+    },
+    {
+      "item": "Honey Molasses",
+      "measuredWinRate": 65.3,
+      "communityNote": null
+    },
+    {
+      "item": "Vitamin Booster",
+      "measuredWinRate": 65.2,
+      "communityNote": "ブロールボールでの生存力向上"
+    },
+    {
+      "item": "Tuning Fork",
+      "measuredWinRate": 65.2,
+      "communityNote": "治癒用"
+    },
+    {
+      "item": "Irresistible Attraction",
+      "measuredWinRate": 65.1,
+      "communityNote": "スーパー連携用の追加プル"
+    },
+    {
+      "item": "Lollipop Drop",
+      "measuredWinRate": 65.0,
+      "communityNote": "キル確定のためのスロー"
+    },
+    {
+      "item": "Friendzoner",
+      "measuredWinRate": 64.9,
+      "communityNote": null
+    },
+    {
+      "item": "Extra Sticky",
+      "measuredWinRate": 64.8,
+      "communityNote": null
+    },
+    {
+      "item": "Active Noise Canceling",
+      "measuredWinRate": 64.8,
+      "communityNote": "基本選択"
+    },
+    {
+      "item": "Phase Shifter",
+      "measuredWinRate": 64.7,
+      "communityNote": null
+    },
+    {
+      "item": "Last Hurrah",
+      "measuredWinRate": 64.6,
+      "communityNote": "緊急脱出"
+    },
+    {
+      "item": "Gotcha!",
+      "measuredWinRate": 64.6,
+      "communityNote": null
+    },
+    {
+      "item": "Kooky Popper",
+      "measuredWinRate": 64.5,
+      "communityNote": null
+    },
+    {
+      "item": "Life Plant",
+      "measuredWinRate": 64.4,
+      "communityNote": "エリア治癒"
+    },
+    {
+      "item": "Power Surge",
+      "measuredWinRate": 64.4,
+      "communityNote": "最初のアップグレード獲得加速"
+    },
+    {
+      "item": "Return To Sender",
+      "measuredWinRate": 64.4,
+      "communityNote": null
+    },
+    {
+      "item": "Friendship Is Great",
+      "measuredWinRate": 64.1,
+      "communityNote": null
+    },
+    {
+      "item": "Hardcore",
+      "measuredWinRate": 64.0,
+      "communityNote": "スーパーアクセスが容易な場合のシールド"
+    },
+    {
+      "item": "Fast Forward",
+      "measuredWinRate": 63.9,
+      "communityNote": null
+    },
+    {
+      "item": "Clay Pigeons",
+      "measuredWinRate": 63.9,
+      "communityNote": null
+    },
+    {
+      "item": "Windup",
+      "measuredWinRate": 63.9,
+      "communityNote": null
+    },
+    {
+      "item": "Power Shield",
+      "measuredWinRate": 63.8,
+      "communityNote": "基本選択"
+    },
+    {
+      "item": "Residue",
+      "measuredWinRate": 63.8,
+      "communityNote": null
+    },
+    {
+      "item": "Acid Spray",
+      "measuredWinRate": 63.7,
+      "communityNote": null
+    },
+    {
+      "item": "Popping Pincushion",
+      "measuredWinRate": 63.7,
+      "communityNote": "強奪戦または接近戦闘"
+    },
+    {
+      "item": "Shot In The Arm",
+      "measuredWinRate": 63.6,
+      "communityNote": null
+    },
+    {
+      "item": "Caramelize",
+      "measuredWinRate": 63.6,
+      "communityNote": "基本選択"
+    },
+    {
+      "item": "Na-ah!",
+      "measuredWinRate": 63.5,
+      "communityNote": null
+    },
+    {
+      "item": "Breakthrough",
+      "measuredWinRate": 63.5,
+      "communityNote": null
+    },
+    {
+      "item": "Warpin' Time",
+      "measuredWinRate": 63.4,
+      "communityNote": null
+    },
+    {
+      "item": "Slowing Toxin",
+      "measuredWinRate": 63.3,
+      "communityNote": null
+    },
+    {
+      "item": "Speedloader",
+      "measuredWinRate": 63.3,
+      "communityNote": "既に開けたマップでのプレッシャー増加"
+    },
+    {
+      "item": "Booster Shots",
+      "measuredWinRate": 63.3,
+      "communityNote": null
+    },
+    {
+      "item": "Rocket Laces",
+      "measuredWinRate": 63.2,
+      "communityNote": null
+    },
+    {
+      "item": "Mine Mania",
+      "measuredWinRate": 63.0,
+      "communityNote": "ダイブ安全時のプレッシャー"
+    },
+    {
+      "item": "Instapoison",
+      "measuredWinRate": 62.9,
+      "communityNote": null
+    },
+    {
+      "item": "Cookie Crumbs",
+      "measuredWinRate": 62.8,
+      "communityNote": "薄い壁の背後に隠れる敵対策"
+    },
+    {
+      "item": "Creature Of The Night",
+      "measuredWinRate": 62.7,
+      "communityNote": "継続戦闘での生存力向上"
+    },
+    {
+      "item": "Rocket Fuel",
+      "measuredWinRate": 62.6,
+      "communityNote": null
+    },
+    {
+      "item": "Mansions Of Meeple",
+      "measuredWinRate": 62.4,
+      "communityNote": null
+    },
+    {
+      "item": "Combo Spinner",
+      "measuredWinRate": 62.2,
+      "communityNote": "即座のバースト火力が必要な場合"
+    },
+    {
+      "item": "Fidget Spinner",
+      "measuredWinRate": 62.2,
+      "communityNote": null
+    },
+    {
+      "item": "Multiball Launcher",
+      "measuredWinRate": 62.0,
+      "communityNote": "レーン制御が可能な場合"
+    },
+    {
+      "item": "Multiball",
+      "measuredWinRate": 61.9,
+      "communityNote": null
+    },
+    {
+      "item": "Let'S Fly",
+      "measuredWinRate": 61.9,
+      "communityNote": "ジャンプ再設定による機動性"
+    },
+    {
+      "item": "Auto Aimer",
+      "measuredWinRate": 61.9,
+      "communityNote": "アサシンと戦車の接近対策"
+    },
+    {
+      "item": "Homemade Recipe",
+      "measuredWinRate": 61.8,
+      "communityNote": "脱出用"
+    },
+    {
+      "item": "Silver Bullet",
+      "measuredWinRate": 61.6,
+      "communityNote": "壁破壊バースト"
+    },
+    {
+      "item": "Satchel Charge",
+      "measuredWinRate": 61.5,
+      "communityNote": null
+    },
+    {
+      "item": "Spring Ejector",
+      "measuredWinRate": 42.3,
+      "communityNote": null
+    },
+    {
+      "item": "Bouncy Castle",
+      "measuredWinRate": null,
+      "communityNote": "壁の多いマップでの自己治癒"
+    },
+    {
+      "item": "T-Bone Injector",
+      "measuredWinRate": null,
+      "communityNote": "基本選択"
+    },
+    {
+      "item": "Batting Stance",
+      "measuredWinRate": null,
+      "communityNote": "射撃反射が必要な緊急時"
+    }
+  ],
+  "starPowers": [
+    {
+      "item": "Precession",
+      "measuredWinRate": 75.3,
+      "communityNote": null
+    },
+    {
+      "item": "Solar Shield",
+      "measuredWinRate": 74.6,
+      "communityNote": null
+    },
+    {
+      "item": "Ammo Attractor",
+      "measuredWinRate": 74.5,
+      "communityNote": null
+    },
+    {
+      "item": "Slowing Shield",
+      "measuredWinRate": 74.4,
+      "communityNote": null
+    },
+    {
+      "item": "Renegade",
+      "measuredWinRate": 73.8,
+      "communityNote": null
+    },
+    {
+      "item": "Kick, Push",
+      "measuredWinRate": 73.5,
+      "communityNote": null
+    },
+    {
+      "item": "Guarded Gris-gris",
+      "measuredWinRate": 73.2,
+      "communityNote": null
+    },
+    {
+      "item": "Crowdkill",
+      "measuredWinRate": 72.8,
+      "communityNote": null
+    },
+    {
+      "item": "Toss Up",
+      "measuredWinRate": 72.7,
+      "communityNote": null
+    },
+    {
+      "item": "New Insect Overlords",
+      "measuredWinRate": 72.4,
+      "communityNote": null
+    },
+    {
+      "item": "Expose",
+      "measuredWinRate": 72.3,
+      "communityNote": null
+    },
+    {
+      "item": "Counter Crush",
+      "measuredWinRate": 71.9,
+      "communityNote": null
+    },
+    {
+      "item": "Shredding",
+      "measuredWinRate": 71.7,
+      "communityNote": null
+    },
+    {
+      "item": "Self Service",
+      "measuredWinRate": 71.7,
+      "communityNote": null
+    },
+    {
+      "item": "Vulgar Display Of Punch",
+      "measuredWinRate": 71.7,
+      "communityNote": null
+    },
+    {
+      "item": "A Helping Hand",
+      "measuredWinRate": 71.7,
+      "communityNote": null
+    },
+    {
+      "item": "Unstoppaball",
+      "measuredWinRate": 71.6,
+      "communityNote": null
+    },
+    {
+      "item": "Biotic Ecosystem",
+      "measuredWinRate": 71.5,
+      "communityNote": null
+    },
+    {
+      "item": "Pumping Up",
+      "measuredWinRate": 71.4,
+      "communityNote": null
+    },
+    {
+      "item": "Parasitism",
+      "measuredWinRate": 71.4,
+      "communityNote": null
+    },
+    {
+      "item": "First Bash",
+      "measuredWinRate": 71.3,
+      "communityNote": null
+    },
+    {
+      "item": "Numbing Needles",
+      "measuredWinRate": 71.3,
+      "communityNote": null
+    },
+    {
+      "item": "Digestive",
+      "measuredWinRate": 71.1,
+      "communityNote": null
+    },
+    {
+      "item": "Black Powder",
+      "measuredWinRate": 71.0,
+      "communityNote": null
+    },
+    {
+      "item": "Mad As Heck",
+      "measuredWinRate": 71.0,
+      "communityNote": null
+    },
+    {
+      "item": "Recon",
+      "measuredWinRate": 71.0,
+      "communityNote": null
+    },
+    {
+      "item": "Hieroglyph Halt",
+      "measuredWinRate": 70.9,
+      "communityNote": null
+    },
+    {
+      "item": "Plié Protection",
+      "measuredWinRate": 70.9,
+      "communityNote": null
+    },
+    {
+      "item": "Fast Food",
+      "measuredWinRate": 70.9,
+      "communityNote": null
+    },
+    {
+      "item": "Stage View",
+      "measuredWinRate": 70.8,
+      "communityNote": null
+    },
+    {
+      "item": "Hardy Hard Hat",
+      "measuredWinRate": 70.7,
+      "communityNote": null
+    },
+    {
+      "item": "Speeding Ticket",
+      "measuredWinRate": 70.7,
+      "communityNote": null
+    },
+    {
+      "item": "Remote Recharge",
+      "measuredWinRate": 70.7,
+      "communityNote": null
+    },
+    {
+      "item": "Hearty Recovery",
+      "measuredWinRate": 70.7,
+      "communityNote": null
+    },
+    {
+      "item": "Colony Scouts",
+      "measuredWinRate": 70.4,
+      "communityNote": null
+    },
+    {
+      "item": "Tremors",
+      "measuredWinRate": 70.4,
+      "communityNote": null
+    },
+    {
+      "item": "Stencil Glue",
+      "measuredWinRate": 70.3,
+      "communityNote": null
+    },
+    {
+      "item": "Happy Surprise",
+      "measuredWinRate": 70.3,
+      "communityNote": null
+    },
+    {
+      "item": "Heat Shield",
+      "measuredWinRate": 70.2,
+      "communityNote": null
+    },
+    {
+      "item": "Recording",
+      "measuredWinRate": 70.1,
+      "communityNote": null
+    },
+    {
+      "item": "The Great Ziggini",
+      "measuredWinRate": 70.1,
+      "communityNote": null
+    },
+    {
+      "item": "Dusk Runners",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "Monkey Business",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "Kevlar Vest",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "The Darkest Starr",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "Rude Sands",
+      "measuredWinRate": 70.0,
+      "communityNote": null
+    },
+    {
+      "item": "Slimy",
+      "measuredWinRate": 69.9,
+      "communityNote": null
+    },
+    {
+      "item": "Force Field",
+      "measuredWinRate": 69.9,
+      "communityNote": null
+    },
+    {
+      "item": "Vocal Warm Up",
+      "measuredWinRate": 69.9,
+      "communityNote": null
+    },
+    {
+      "item": "Quick Maths",
+      "measuredWinRate": 69.8,
+      "communityNote": null
+    },
+    {
+      "item": "The Crowd Goes Mild",
+      "measuredWinRate": 69.8,
+      "communityNote": null
+    },
+    {
+      "item": "Hypothermia",
+      "measuredWinRate": 69.7,
+      "communityNote": null
+    },
+    {
+      "item": "Wisdom Tooth",
+      "measuredWinRate": 69.6,
+      "communityNote": null
+    },
+    {
+      "item": "It'S Gonna Blow",
+      "measuredWinRate": 69.6,
+      "communityNote": null
+    },
+    {
+      "item": "Healing Winds",
+      "measuredWinRate": 69.5,
+      "communityNote": "チームサポート用"
+    },
+    {
+      "item": "Improvise",
+      "measuredWinRate": 69.5,
+      "communityNote": null
+    },
+    {
+      "item": "Thunderstruck",
+      "measuredWinRate": 69.5,
+      "communityNote": null
+    },
+    {
+      "item": "Plant Life",
+      "measuredWinRate": 69.5,
+      "communityNote": null
+    },
+    {
+      "item": "Vigilance",
+      "measuredWinRate": 69.4,
+      "communityNote": null
+    },
+    {
+      "item": "Take Cover!",
+      "measuredWinRate": 69.4,
+      "communityNote": null
+    },
+    {
+      "item": "Extra High Note",
+      "measuredWinRate": 69.4,
+      "communityNote": null
+    },
+    {
+      "item": "Skipping Stones",
+      "measuredWinRate": 69.4,
+      "communityNote": null
+    },
+    {
+      "item": "Power Level: Maximum",
+      "measuredWinRate": 69.4,
+      "communityNote": null
+    },
+    {
+      "item": "Mushroom Kingdom",
+      "measuredWinRate": 69.3,
+      "communityNote": null
+    },
+    {
+      "item": "Blockbuster",
+      "measuredWinRate": 69.3,
+      "communityNote": null
+    },
+    {
+      "item": "Unnatural Order",
+      "measuredWinRate": 69.3,
+      "communityNote": null
+    },
+    {
+      "item": "Thorny Gloves",
+      "measuredWinRate": 69.3,
+      "communityNote": null
+    },
+    {
+      "item": "Mama'S Squeeze",
+      "measuredWinRate": 69.2,
+      "communityNote": null
+    },
+    {
+      "item": "Venomous",
+      "measuredWinRate": 69.1,
+      "communityNote": null
+    },
+    {
+      "item": "Protocol: Protect",
+      "measuredWinRate": 69.1,
+      "communityNote": null
+    },
+    {
+      "item": "You Better Run, You Better Take Cover",
+      "measuredWinRate": 69.1,
+      "communityNote": null
+    },
+    {
+      "item": "Tickets Please!",
+      "measuredWinRate": 69.1,
+      "communityNote": null
+    },
+    {
+      "item": "Obsession",
+      "measuredWinRate": 69.1,
+      "communityNote": null
+    },
+    {
+      "item": "Protocol: Assist",
+      "measuredWinRate": 69.0,
+      "communityNote": null
+    },
+    {
+      "item": "Primer",
+      "measuredWinRate": 69.0,
+      "communityNote": null
+    },
+    {
+      "item": "Heavy Metal",
+      "measuredWinRate": 69.0,
+      "communityNote": null
+    },
+    {
+      "item": "Revolving Door",
+      "measuredWinRate": 69.0,
+      "communityNote": null
+    },
+    {
+      "item": "Lizard Limbs",
+      "measuredWinRate": 69.0,
+      "communityNote": null
+    },
+    {
+      "item": "Pinpoint Precision",
+      "measuredWinRate": 68.9,
+      "communityNote": null
+    },
+    {
+      "item": "Hyper Bear",
+      "measuredWinRate": 68.9,
+      "communityNote": null
+    },
+    {
+      "item": "Extended Mix",
+      "measuredWinRate": 68.9,
+      "communityNote": null
+    },
+    {
+      "item": "Mama'S Hug",
+      "measuredWinRate": 68.8,
+      "communityNote": null
+    },
+    {
+      "item": "Ink Refills",
+      "measuredWinRate": 68.8,
+      "communityNote": null
+    },
+    {
+      "item": "Mystical Starr Technique",
+      "measuredWinRate": 68.8,
+      "communityNote": null
+    },
+    {
+      "item": "Nigiri Nemesis",
+      "measuredWinRate": 68.8,
+      "communityNote": null
+    },
+    {
+      "item": "Business Resilience",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Handle With Care",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Wild Flames",
+      "measuredWinRate": 68.7,
+      "communityNote": null
+    },
+    {
+      "item": "Love Is Blind",
+      "measuredWinRate": 68.6,
+      "communityNote": null
+    },
+    {
+      "item": "Bear With Me",
+      "measuredWinRate": 68.6,
+      "communityNote": null
+    },
+    {
+      "item": "Boosted Booster",
+      "measuredWinRate": 68.5,
+      "communityNote": "移動性コンポでのみ推奨"
+    },
+    {
+      "item": "Spiky",
+      "measuredWinRate": 68.5,
+      "communityNote": null
+    },
+    {
+      "item": "Fast Beats",
+      "measuredWinRate": 68.5,
+      "communityNote": null
+    },
+    {
+      "item": "Comboshrooms",
+      "measuredWinRate": 68.4,
+      "communityNote": null
+    },
+    {
+      "item": "Heat Retention",
+      "measuredWinRate": 68.4,
+      "communityNote": null
+    },
+    {
+      "item": "Steel Hoops",
+      "measuredWinRate": 68.2,
+      "communityNote": null
+    },
+    {
+      "item": "Scorchin' Siphon",
+      "measuredWinRate": 68.2,
+      "communityNote": null
+    },
+    {
+      "item": "Studied The Blade",
+      "measuredWinRate": 68.2,
+      "communityNote": null
+    },
+    {
+      "item": "Record Smash",
+      "measuredWinRate": 68.1,
+      "communityNote": null
+    },
+    {
+      "item": "Positive Feedback",
+      "measuredWinRate": 68.1,
+      "communityNote": null
+    },
+    {
+      "item": "Grounded",
+      "measuredWinRate": 68.1,
+      "communityNote": null
+    },
+    {
+      "item": "42% Burnt",
+      "measuredWinRate": 68.1,
+      "communityNote": null
+    },
+    {
+      "item": "Gratuity Included",
+      "measuredWinRate": 68.1,
+      "communityNote": null
+    },
+    {
+      "item": "Poisonous Protector",
+      "measuredWinRate": 68.0,
+      "communityNote": null
+    },
+    {
+      "item": "Shocky",
+      "measuredWinRate": 68.0,
+      "communityNote": null
+    },
+    {
+      "item": "Hardened Hoodie",
+      "measuredWinRate": 67.9,
+      "communityNote": null
+    },
+    {
+      "item": "Healing Shade",
+      "measuredWinRate": 67.9,
+      "communityNote": null
+    },
+    {
+      "item": "Plugged In",
+      "measuredWinRate": 67.8,
+      "communityNote": null
+    },
+    {
+      "item": "Half-time",
+      "measuredWinRate": 67.8,
+      "communityNote": null
+    },
+    {
+      "item": "Meteor Rush",
+      "measuredWinRate": 67.8,
+      "communityNote": null
+    },
+    {
+      "item": "Health Bonanza",
+      "measuredWinRate": 67.8,
+      "communityNote": null
+    },
+    {
+      "item": "Sealed With A Kiss",
+      "measuredWinRate": 67.8,
+      "communityNote": null
+    },
+    {
+      "item": "Protective Pirouette",
+      "measuredWinRate": 67.7,
+      "communityNote": null
+    },
+    {
+      "item": "Flow",
+      "measuredWinRate": 67.6,
+      "communityNote": null
+    },
+    {
+      "item": "Tougher Torpedo",
+      "measuredWinRate": 67.5,
+      "communityNote": null
+    },
+    {
+      "item": "Big Haul",
+      "measuredWinRate": 67.4,
+      "communityNote": null
+    },
+    {
+      "item": "Single Bell'O'Mania",
+      "measuredWinRate": 67.4,
+      "communityNote": null
+    },
+    {
+      "item": "His Mother'S Son",
+      "measuredWinRate": 67.4,
+      "communityNote": null
+    },
+    {
+      "item": "Screeching Solo",
+      "measuredWinRate": 67.4,
+      "communityNote": null
+    },
+    {
+      "item": "Blown Away",
+      "measuredWinRate": 67.4,
+      "communityNote": null
+    },
+    {
+      "item": "Zum Zum Zum",
+      "measuredWinRate": 67.4,
+      "communityNote": null
+    },
+    {
+      "item": "Air Superiority",
+      "measuredWinRate": 67.4,
+      "communityNote": null
+    },
+    {
+      "item": "Sneak Peek",
+      "measuredWinRate": 67.3,
+      "communityNote": null
+    },
+    {
+      "item": "Field Promotion",
+      "measuredWinRate": 67.3,
+      "communityNote": null
+    },
+    {
+      "item": "New Perspective",
+      "measuredWinRate": 67.3,
+      "communityNote": null
+    },
+    {
+      "item": "Spooky Speedster",
+      "measuredWinRate": 67.3,
+      "communityNote": null
+    },
+    {
+      "item": "Rolling Reload",
+      "measuredWinRate": 67.2,
+      "communityNote": null
+    },
+    {
+      "item": "Overgrowth",
+      "measuredWinRate": 67.2,
+      "communityNote": null
+    },
+    {
+      "item": "Divine Soles",
+      "measuredWinRate": 67.2,
+      "communityNote": null
+    },
+    {
+      "item": "Medical Use",
+      "measuredWinRate": 67.1,
+      "communityNote": null
+    },
+    {
+      "item": "Advanced Techniques",
+      "measuredWinRate": 67.1,
+      "communityNote": null
+    },
+    {
+      "item": "Photosynthesis",
+      "measuredWinRate": 67.1,
+      "communityNote": null
+    },
+    {
+      "item": "Fake Injury",
+      "measuredWinRate": 67.0,
+      "communityNote": null
+    },
+    {
+      "item": "Mission: Swimpossible",
+      "measuredWinRate": 67.0,
+      "communityNote": null
+    },
+    {
+      "item": "Empower",
+      "measuredWinRate": 67.0,
+      "communityNote": null
+    },
+    {
+      "item": "Supercool",
+      "measuredWinRate": 67.0,
+      "communityNote": null
+    },
+    {
+      "item": "El Fuego",
+      "measuredWinRate": 66.9,
+      "communityNote": null
+    },
+    {
+      "item": "Black Portal",
+      "measuredWinRate": 66.9,
+      "communityNote": "高速シャドウでスカウティング"
+    },
+    {
+      "item": "Snare A Bear",
+      "measuredWinRate": 66.9,
+      "communityNote": null
+    },
+    {
+      "item": "Foot Patrol",
+      "measuredWinRate": 66.9,
+      "communityNote": null
+    },
+    {
+      "item": "Circling Eagle",
+      "measuredWinRate": 66.8,
+      "communityNote": null
+    },
+    {
+      "item": "Slip 'N Snipe",
+      "measuredWinRate": 66.7,
+      "communityNote": null
+    },
+    {
+      "item": "Keep The Change",
+      "measuredWinRate": 66.6,
+      "communityNote": null
+    },
+    {
+      "item": "Berserker",
+      "measuredWinRate": 66.6,
+      "communityNote": null
+    },
+    {
+      "item": "Tough Guy",
+      "measuredWinRate": 66.5,
+      "communityNote": null
+    },
+    {
+      "item": "Home Run",
+      "measuredWinRate": 66.5,
+      "communityNote": null
+    },
+    {
+      "item": "X-factor",
+      "measuredWinRate": 66.5,
+      "communityNote": null
+    },
+    {
+      "item": "Sponge",
+      "measuredWinRate": 66.5,
+      "communityNote": null
+    },
+    {
+      "item": "Extra Noxious",
+      "measuredWinRate": 66.2,
+      "communityNote": null
+    },
+    {
+      "item": "Power Throw",
+      "measuredWinRate": 66.2,
+      "communityNote": null
+    },
+    {
+      "item": "Floor Is Fine",
+      "measuredWinRate": 66.2,
+      "communityNote": null
+    },
+    {
+      "item": "Eyes Sharp",
+      "measuredWinRate": 66.2,
+      "communityNote": null
+    },
+    {
+      "item": "Spirit Animal",
+      "measuredWinRate": 66.0,
+      "communityNote": null
+    },
+    {
+      "item": "Energize",
+      "measuredWinRate": 66.0,
+      "communityNote": null
+    },
+    {
+      "item": "Batting Stance",
+      "measuredWinRate": 66.0,
+      "communityNote": "シールド効果"
+    },
+    {
+      "item": "Overly Attached",
+      "measuredWinRate": 65.9,
+      "communityNote": "デュオサポート用"
+    },
+    {
+      "item": "Fresh Kicks",
+      "measuredWinRate": 65.9,
+      "communityNote": "スーパーキル後のリセット"
+    },
+    {
+      "item": "Magic Puffs",
+      "measuredWinRate": 65.8,
+      "communityNote": "味方をサポート"
+    },
+    {
+      "item": "Spirit Slap",
+      "measuredWinRate": 65.8,
+      "communityNote": null
+    },
+    {
+      "item": "Honeycomb",
+      "measuredWinRate": 65.8,
+      "communityNote": null
+    },
+    {
+      "item": "Invisiheal",
+      "measuredWinRate": 65.8,
+      "communityNote": null
+    },
+    {
+      "item": "Gaso-heal",
+      "measuredWinRate": 65.7,
+      "communityNote": null
+    },
+    {
+      "item": "Making A Mess",
+      "measuredWinRate": 65.6,
+      "communityNote": null
+    },
+    {
+      "item": "Band-aid",
+      "measuredWinRate": 65.6,
+      "communityNote": null
+    },
+    {
+      "item": "Insta Beaload",
+      "measuredWinRate": 65.5,
+      "communityNote": null
+    },
+    {
+      "item": "Power Hungry",
+      "measuredWinRate": 65.5,
+      "communityNote": null
+    },
+    {
+      "item": "Power Grab",
+      "measuredWinRate": 65.4,
+      "communityNote": null
+    },
+    {
+      "item": "Hype",
+      "measuredWinRate": 65.3,
+      "communityNote": null
+    },
+    {
+      "item": "Heavy Coffers",
+      "measuredWinRate": 65.3,
+      "communityNote": null
+    },
+    {
+      "item": "Do Not Pass Go",
+      "measuredWinRate": 65.1,
+      "communityNote": null
+    },
+    {
+      "item": "Smoke Trails",
+      "measuredWinRate": 65.0,
+      "communityNote": null
+    },
+    {
+      "item": "Bad Karma",
+      "measuredWinRate": 65.0,
+      "communityNote": null
+    },
+    {
+      "item": "Serve Ice Cold",
+      "measuredWinRate": 65.0,
+      "communityNote": "ダメージ出力を維持"
+    },
+    {
+      "item": "Push It",
+      "measuredWinRate": 64.9,
+      "communityNote": "ジェムグラブで強力"
+    },
+    {
+      "item": "Run N Gun",
+      "measuredWinRate": 64.8,
+      "communityNote": null
+    },
+    {
+      "item": "Tempered Steel",
+      "measuredWinRate": 64.8,
+      "communityNote": null
+    },
+    {
+      "item": "Da Capo!",
+      "measuredWinRate": 64.8,
+      "communityNote": null
+    },
+    {
+      "item": "Well Oiled",
+      "measuredWinRate": 64.8,
+      "communityNote": null
+    },
+    {
+      "item": "Mass Tax",
+      "measuredWinRate": 64.5,
+      "communityNote": null
+    },
+    {
+      "item": "Super Charged",
+      "measuredWinRate": 64.5,
+      "communityNote": null
+    },
+    {
+      "item": "Master Blaster",
+      "measuredWinRate": 64.4,
+      "communityNote": null
+    },
+    {
+      "item": "Autofocus",
+      "measuredWinRate": 64.3,
+      "communityNote": null
+    },
+    {
+      "item": "Super Sticky",
+      "measuredWinRate": 64.2,
+      "communityNote": null
+    },
+    {
+      "item": "Pit Stop",
+      "measuredWinRate": 64.1,
+      "communityNote": null
+    },
+    {
+      "item": "Shell Shock",
+      "measuredWinRate": 64.1,
+      "communityNote": null
+    },
+    {
+      "item": "To The Max!",
+      "measuredWinRate": 64.1,
+      "communityNote": null
+    },
+    {
+      "item": "Curveball",
+      "measuredWinRate": 64.1,
+      "communityNote": null
+    },
+    {
+      "item": "Fertilize",
+      "measuredWinRate": 64.1,
+      "communityNote": "毎秒チームヒール"
+    },
+    {
+      "item": "Chain Reaction",
+      "measuredWinRate": 64.0,
+      "communityNote": null
+    },
+    {
+      "item": "Automa-tick Reload",
+      "measuredWinRate": 63.7,
+      "communityNote": null
+    },
+    {
+      "item": "Rocket No. 4",
+      "measuredWinRate": 63.6,
+      "communityNote": null
+    },
+    {
+      "item": "Zero Drag",
+      "measuredWinRate": 63.4,
+      "communityNote": null
+    },
+    {
+      "item": "Slick Boots",
+      "measuredWinRate": 63.3,
+      "communityNote": "キティング用"
+    },
+    {
+      "item": "Robo Retreat",
+      "measuredWinRate": 63.3,
+      "communityNote": null
+    },
+    {
+      "item": "In My Sights",
+      "measuredWinRate": 63.2,
+      "communityNote": null
+    },
+    {
+      "item": "Rule Bending",
+      "measuredWinRate": 63.2,
+      "communityNote": null
+    },
+    {
+      "item": "Demolition",
+      "measuredWinRate": 63.2,
+      "communityNote": null
+    },
+    {
+      "item": "Injection",
+      "measuredWinRate": 63.2,
+      "communityNote": null
+    },
+    {
+      "item": "Fisticuffs",
+      "measuredWinRate": 63.1,
+      "communityNote": null
+    },
+    {
+      "item": "Extra Toxic",
+      "measuredWinRate": 63.1,
+      "communityNote": null
+    },
+    {
+      "item": "Hard Candy",
+      "measuredWinRate": 63.1,
+      "communityNote": null
+    },
+    {
+      "item": "Carrion Crow",
+      "measuredWinRate": 63.0,
+      "communityNote": "低HP敵に追加ダメージ実行効果"
+    },
+    {
+      "item": "Magnum Special",
+      "measuredWinRate": 62.9,
+      "communityNote": null
+    },
+    {
+      "item": "Super Bouncy",
+      "measuredWinRate": 62.8,
+      "communityNote": null
+    },
+    {
+      "item": "Malaise",
+      "measuredWinRate": 62.6,
+      "communityNote": null
+    },
+    {
+      "item": "More Rockets!",
+      "measuredWinRate": 62.2,
+      "communityNote": null
+    },
+    {
+      "item": "Hard Landing",
+      "measuredWinRate": 62.1,
+      "communityNote": null
+    },
+    {
+      "item": "Blustery Blow",
+      "measuredWinRate": 62.0,
+      "communityNote": null
+    },
+    {
+      "item": "Snappy Sniping",
+      "measuredWinRate": 62.0,
+      "communityNote": null
+    },
+    {
+      "item": "Freezing Snow",
+      "measuredWinRate": 61.8,
+      "communityNote": null
+    },
+    {
+      "item": "Coiled Snake",
+      "measuredWinRate": 61.8,
+      "communityNote": "ダッシュバーをより早くチャージ"
+    },
+    {
+      "item": "Dyna-jump",
+      "measuredWinRate": 61.0,
+      "communityNote": null
+    },
+    {
+      "item": "Ambush",
+      "measuredWinRate": 60.9,
+      "communityNote": "最大射程でダメージ増加"
+    },
+    {
+      "item": "Creepy Harvest",
+      "measuredWinRate": 60.8,
+      "communityNote": null
+    },
+    {
+      "item": "Incendiary",
+      "measuredWinRate": null,
+      "communityNote": "ロケットが火ゾーン形成"
+    },
+    {
+      "item": "Smoke Trail",
+      "measuredWinRate": null,
+      "communityNote": "不可視時に移動速度上昇"
+    },
+    {
+      "item": "Run n' Gun",
+      "measuredWinRate": null,
+      "communityNote": "キティング用"
+    },
+    {
+      "item": "Insta Beeload",
+      "measuredWinRate": null,
+      "communityNote": null
+    }
+  ]
+}

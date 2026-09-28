@@ -21,6 +21,24 @@ struct BrawlerRosterView: View {
         .navigationTitle("持っているキャラ")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: "キャラ名で検索")
+        .toolbar {
+            // List の行内に複数の Button を並べると、行選択のジェスチャーと競合して
+            // タップが反応しないことがあるため、一括操作はツールバーに出す。
+            ToolbarItem(placement: .topBarTrailing) {
+                if case .ready(let rules) = store.state {
+                    Menu("一括操作") {
+                        Button("全員ON") { setAll(rules: rules, owned: true) }
+                        Button("全員OFF") { setAll(rules: rules, owned: false) }
+                    }
+                }
+            }
+        }
+        .onAppear {
+            // NavigationLink の宛先は再利用されることがあり、@State の初期値だけに頼ると
+            // 他画面から戻ってきた際に古い値のまま表示され続けることがあるため、
+            // 表示のたびに UserDefaults の最新値を読み直す。
+            excluded = AppSettings.excludedBrawlerIDs
+        }
     }
 
     @ViewBuilder
@@ -36,15 +54,8 @@ struct BrawlerRosterView: View {
 
         List {
             Section {
-                HStack {
-                    Text("所持: \(rules.document.brawlers.count - excluded.count) / \(rules.document.brawlers.count)")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button("全員ON") { setAll(rules: rules, owned: true) }
-                        .font(.footnote)
-                    Button("全員OFF") { setAll(rules: rules, owned: false) }
-                        .font(.footnote)
-                }
+                Text("所持: \(rules.document.brawlers.count - excluded.count) / \(rules.document.brawlers.count)")
+                    .foregroundStyle(.secondary)
             }
             ForEach(roleOrder, id: \.self) { role in
                 if let list = grouped[role], !list.isEmpty {

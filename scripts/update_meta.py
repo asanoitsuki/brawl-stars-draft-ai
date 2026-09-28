@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -42,6 +43,8 @@ from download_icons import build_descriptor  # noqa: E402
 DATA_DIR = PROJECT_ROOT / "data"
 RULES_PATH = PROJECT_ROOT / "rules" / "rules.json"
 MAP_THUMB_DIR = PROJECT_ROOT / "assets" / "map_thumbs"
+GADGET_DIR = PROJECT_ROOT / "assets" / "gadgets"
+STAR_POWER_DIR = PROJECT_ROOT / "assets" / "star_powers"
 
 ROLES_PATH = DATA_DIR / "brawler_roles.json"
 
@@ -52,6 +55,7 @@ TIERS_PATH = DATA_DIR / "tier_overrides.json"
 NAMES_JA_PATH = DATA_DIR / "brawler_names_ja.json"
 MAP_NAMES_JA_PATH = DATA_DIR / "map_names_ja.json"
 ROLE_TIPS_PATH = DATA_DIR / "role_tips_ja.json"
+LOADOUT_NOTES_PATH = DATA_DIR / "loadout_notes.json"
 
 
 # --------------------------------------------------------------------------
@@ -66,6 +70,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--max-maps", type=int, default=0, help="デバッグ用の上限（0=無制限）")
     ap.add_argument("--workers", type=int, default=6, help="API 並列数")
     ap.add_argument("--no-thumbs", action="store_true", help="マップ画像を取得しない")
+    ap.add_argument("--no-loadouts", action="store_true",
+                    help="ガジェット・スターパワーの画像を取得しない")
     ap.add_argument("--require-stats", action="store_true",
                     help="実測勝率が1マップも取れなかったら失敗させる（CI 用）")
     ap.add_argument("--rotation-out", default="",
@@ -214,6 +220,44 @@ def download_thumb(map_doc: dict) -> Path | None:
     return dest
 
 
+_STAT_PLACEHOLDER_RE = re.compile(r"<!card\.[^>]*>")
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def clean_description(text: str) -> str:
+    """Brawlify の説明文には `<!card.value1.scaleStatToLevel>` のような、レベルで
+    変化する数値をゲーム内クライアントが差し込むためのプレースホルダーが残っている。
+    このAPIからは実際の数値が取れないため、壊れた表記のまま出すより
+    「(数値はレベルで変動)」で明示する。"""
+    text = _STAT_PLACEHOLDER_RE.sub("(数値はレベルで変動)", text)
+    text = _HTML_TAG_RE.sub("", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def download_item_image(item: dict, out_dir: Path, prefix: str) -> str | None:
+    """ガジェット / スターパワー 1 個ぶんの画像をダウンロードする。
+    ガジェットとスターパワーは ID 帯が重なりうるため、ファイル名に種別プレフィックスを
+    付けて衝突を避ける（iOS 側バンドルは全リソースをフラットに展開するため）。
+    戻り値はそのままアプリ側の Bundle.main.url(forResource:) に使えるファイル名（拡張子なし）。
+    """
+    url = item.get("imageUrl")
+    if not url:
+        return None
+    filename = f"{prefix}{item['id']}"
+    dest = out_dir / f"{filename}.png"
+    if dest.exists() and dest.stat().st_size > 0:
+        return filename
+    try:
+        payload = fetch_bytes(url)
+    except BrawlAPIError:
+        return None
+    if not payload.startswith(b"\x89PNG"):
+        return None
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(payload)
+    return filename
+
+
 # --------------------------------------------------------------------------
 # スコアリング
 # --------------------------------------------------------------------------
@@ -314,6 +358,8 @@ def build_map_entry(
             "role": role,
             "roleJa": arch_ja[role],
             "base": round(base, 4),
+            "fit": round(fit, 4),
+            "tier": round(tier, 4),
             "winRate": (m or {}).get("winRate"),
             "useRate": (m or {}).get("useRate"),
             "pressure": (m or {}).get("pressure", 0.0) or 0.0,
@@ -344,6 +390,25 @@ def build_map_entry(
                 candidate_pool.append(e)
                 seen_ids.add(e["id"])
     candidate_pool.sort(key=lambda e: (-e["base"], e["name"]))
+
+    mode_ja = mode_cfg.get("ja", mode_name)
+
+    def candidate_reason(e: dict) -> str:
+        """ブラインドピック候補（candidates[]）の素点 base の内訳を人間可読にする。
+        base = (実測 winRate の z スコア × 0.65 + fit × 0.35 + tier × 0.20)
+             または（実測なし）fit + tier×0.50。
+        味方シナジーはここには入っていない（対戦相手・味方は解析時にしか分からないため、
+        iOS 側がライブ計算で別途加味する）。"""
+        parts: list[str] = []
+        if e.get("winRate") is not None:
+            parts.append(f"実測 勝率{e['winRate']}% / 使用率{e['useRate']}%")
+        if abs(e["fit"]) > 0.001:
+            parts.append(f"{mode_ja}での役割適性 {e['fit']:+.2f}")
+        if abs(e["tier"]) > 0.001:
+            parts.append(f"手動ティア補正 {e['tier']:+.2f}")
+        if not parts:
+            parts.append(f"{e['roleJa']}として同点（際立った根拠なし）")
+        return " / ".join(parts)
 
     def stat_phrase(e: dict) -> str:
         if e.get("winRate") is None:
@@ -468,7 +533,8 @@ def build_map_entry(
         },
         "candidates": [
             {"id": e["id"], "name": e["name"], "role": e["role"], "base": e["base"],
-             "winRate": e.get("winRate"), "useRate": e.get("useRate")}
+             "winRate": e.get("winRate"), "useRate": e.get("useRate"),
+             "reason": candidate_reason(e)}
             for e in candidate_pool
         ],
     }
@@ -498,6 +564,68 @@ def main() -> int:
     brawlers = fetch_json("brawlers")["list"]
     maps = fetch_json("maps")["list"]
     print(f"  ブラウラー {len(brawlers)} / マップ {len(maps)}")
+
+    # ガジェット・スターパワーは Brawlify のブラウラー一覧に既に英語名・説明文・画像URLが
+    # 入っている（ギアだけは API 側に無いので非対応）。名前/説明は英語のまま使う —
+    # 変な機械翻訳を混ぜると「信頼できるAI」という趣旨に反するため、原文のまま出す。
+    #
+    # 実測勝率・コミュニティ評価は Brawlify に無いデータなので、別途 data/loadout_notes.json
+    # に手動で採取したものをアイテム名だけで突き合わせて足す（ガジェット名・スターパワー名は
+    # Brawl Stars 内でグローバルにユニークなので、ブロースター名は不要 — schema 2）。
+    # measuredWinRate = 実測統計（brawltime.ninja）、communityNote = 攻略サイトの意見
+    # （timesaver.gg）。両者は性質が違うので混同しないよう別フィールドのまま持たせる。
+    loadout_notes = load_json(LOADOUT_NOTES_PATH, {}) or {}
+    loadout_notes_index: dict[str, dict] = {}
+    for section in ("gadgets", "starPowers"):
+        for note in loadout_notes.get(section, []):
+            loadout_notes_index[note["item"].strip().lower()] = note
+
+    loadouts_by_id: dict[int, dict] = {}
+    if not args.no_loadouts:
+        print("▶ ガジェット・スターパワーの画像を取得中 …")
+        jobs: list[tuple[int, str, str, dict]] = []
+        for b in brawlers:
+            for sp in b.get("starPowers", []) or []:
+                jobs.append((b["id"], b["name"], "starPower", sp))
+            for gd in b.get("gadgets", []) or []:
+                jobs.append((b["id"], b["name"], "gadget", gd))
+        with ThreadPoolExecutor(max_workers=args.workers) as pool:
+            futs = {
+                pool.submit(
+                    download_item_image, item,
+                    STAR_POWER_DIR if kind == "starPower" else GADGET_DIR,
+                    "s" if kind == "starPower" else "g",
+                ): (bid, bname, kind, item)
+                for bid, bname, kind, item in jobs
+            }
+            downloaded = 0
+            for fut in as_completed(futs):
+                bid, bname, kind, item = futs[fut]
+                filename = fut.result()
+                if filename:
+                    downloaded += 1
+                entry = loadouts_by_id.setdefault(bid, {"starPowers": [], "gadgets": []})
+                key = "starPowers" if kind == "starPower" else "gadgets"
+                note = loadout_notes_index.get(item["name"].strip().lower())
+                entry[key].append({
+                    "id": item["id"], "name": item["name"],
+                    "description": clean_description(item.get("description", "")),
+                    "image": filename,
+                    "measuredWinRate": (note or {}).get("measuredWinRate"),
+                    "communityNote": (note or {}).get("communityNote"),
+                })
+        print(f"  画像 {downloaded}/{len(jobs)} 件取得")
+        matched = sum(
+            1 for entry in loadouts_by_id.values()
+            for lst in (entry["starPowers"], entry["gadgets"])
+            for it in lst if it["measuredWinRate"] is not None or it["communityNote"] is not None
+        )
+        print(f"  実測/コミュニティ注記 {matched}/{len(jobs)} 件マッチ"
+              f"（data/loadout_notes.json は {len(loadout_notes_index)} 件登録）")
+        # 表示順を安定させる（スレッド完了順は不定なので、ID 順に揃える）
+        for entry in loadouts_by_id.values():
+            entry["starPowers"].sort(key=lambda x: x["id"])
+            entry["gadgets"].sort(key=lambda x: x["id"])
 
     map_names_ja = (load_json(MAP_NAMES_JA_PATH, {}) or {}).get("names", {})
     role_tips = (load_json(ROLE_TIPS_PATH, {}) or {}).get("tips", {})
@@ -592,7 +720,10 @@ def main() -> int:
         "rotation": rotation_detail,
         "brawlers": [
             {"id": e["id"], "name": e["name"], "nameJa": names_ja.get(e["name"]),
-             "role": e["role"], "roleJa": arch_ja[e["role"]], "source": e["source"]}
+             "role": e["role"], "roleJa": arch_ja[e["role"]], "source": e["source"],
+             "tier": tiers.get(e["name"], 0.0),
+             "starPowers": loadouts_by_id.get(e["id"], {}).get("starPowers", []),
+             "gadgets": loadouts_by_id.get(e["id"], {}).get("gadgets", [])}
             for e in roles_doc["brawlers"]
         ],
         "maps": entries,

@@ -13,17 +13,6 @@ enum AppSettings {
         static let autoRefreshHours = "autoRefreshHours"
         static let maxAnnouncedPicks = "maxAnnouncedPicks"
         static let excludedBrawlerIDs = "excludedBrawlerIDs"
-        static let speechBackend = "speechBackend"
-        static let elevenLabsAPIKey = "elevenLabsAPIKey"
-        static let elevenLabsVoiceID = "elevenLabsVoiceID"
-        static let elevenLabsModelID = "elevenLabsModelID"
-    }
-
-    enum SpeechBackend: String {
-        /// 端末内蔵の AVSpeechSynthesizer。ネット不要・即時再生だが機械的な声。
-        case onDevice
-        /// ElevenLabs の TTS API。自然な声だが API キーとネットワークが要る。
-        case elevenLabs
     }
 
     /// 毎日 GitHub Actions が更新する rules.json の置き場所。
@@ -81,7 +70,13 @@ enum AppSettings {
     /// 初期状態は空 = 全キャラ所持扱い（キャラ一覧画面で個別にオフにしていく運用）。
     static var excludedBrawlerIDs: Set<Int> {
         get { Set((defaults.array(forKey: Key.excludedBrawlerIDs) as? [Int]) ?? []) }
-        set { defaults.set(Array(newValue), forKey: Key.excludedBrawlerIDs) }
+        set {
+            defaults.set(Array(newValue), forKey: Key.excludedBrawlerIDs)
+            // 解析中の重い画像処理でアプリがメモリ不足のまま強制終了された場合に備え、
+            // ディスクへの反映をその場で確定させる（通常は不要だが所持設定は消えると
+            // 実害が大きいため明示的に synchronize する）。
+            defaults.synchronize()
+        }
     }
 
     static func isOwned(_ brawlerID: Int) -> Bool {
@@ -101,33 +96,4 @@ enum AppSettings {
     static func setAllOwned(_ ids: some Sequence<Int>, owned: Bool) {
         excludedBrawlerIDs = owned ? [] : Set(ids)
     }
-
-    // MARK: - 読み上げ音声（ElevenLabs）
-
-    static var speechBackend: SpeechBackend {
-        get { SpeechBackend(rawValue: defaults.string(forKey: Key.speechBackend) ?? "") ?? .onDevice }
-        set { defaults.set(newValue.rawValue, forKey: Key.speechBackend) }
-    }
-
-    /// ElevenLabs の API キー。デバイスの UserDefaults にのみ保存され、
-    /// リポジトリや rules.json には一切含まれない。
-    static var elevenLabsAPIKey: String {
-        get { defaults.string(forKey: Key.elevenLabsAPIKey) ?? "" }
-        set { defaults.set(newValue, forKey: Key.elevenLabsAPIKey) }
-    }
-
-    /// 既定は ElevenLabs のサンプルボイス「Rachel」。多言語モデルで日本語も読める。
-    /// 好みの声に変えたい場合は ElevenLabs の Voice Library で Voice ID をコピーして貼る。
-    static var elevenLabsVoiceID: String {
-        get { defaults.string(forKey: Key.elevenLabsVoiceID) ?? "21m00Tcm4TlvDq8ikWAM" }
-        set { defaults.set(newValue, forKey: Key.elevenLabsVoiceID) }
-    }
-
-    /// eleven_turbo_v2_5: 多言語対応・低遅延寄りのモデル。
-    static var elevenLabsModelID: String {
-        get { defaults.string(forKey: Key.elevenLabsModelID) ?? "eleven_turbo_v2_5" }
-        set { defaults.set(newValue, forKey: Key.elevenLabsModelID) }
-    }
-
-    static var isElevenLabsConfigured: Bool { !elevenLabsAPIKey.isEmpty }
 }

@@ -14,6 +14,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -67,6 +68,25 @@ MAX_RETRY = 3
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+# このネットワークには SSL を検査するファイアウォール（Fortinet FortiGate）があり、
+# 外向き HTTPS 通信は Brawlify の本物の証明書ではなくファイアウォール自身の証明書に
+# すり替えられる。ブラウザは端末の信頼設定に従うため気付かないが、Python の
+# urllib はそれを信頼しないため接続に失敗する。
+# .certs/combined_ca_bundle.pem が存在すればそれ（certifi + ファイアウォールの
+# ルート証明書）を使い、無ければ certifi 単体にフォールバックする。
+# このバンドルはこのネットワーク専用のローカルファイルで、リポジトリには含めない
+# （.gitignore 済み）。検証を無効化しているわけではなく、正規のルート証明書束に
+# もう1つ信頼するルートを足しているだけ。
+_LOCAL_CA_BUNDLE = PROJECT_ROOT / ".certs" / "combined_ca_bundle.pem"
+try:
+    if _LOCAL_CA_BUNDLE.exists():
+        _SSL_CONTEXT = ssl.create_default_context(cafile=str(_LOCAL_CA_BUNDLE))
+    else:
+        import certifi
+        _SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    _SSL_CONTEXT = None
+
 
 class BrawlAPIError(RuntimeError):
     pass
@@ -101,7 +121,7 @@ def _open(url: str, timeout: int = DEFAULT_TIMEOUT) -> bytes:
     req = urllib.request.Request(
         url, headers=request_headers(for_image=url.endswith(".png"))
     )
-    with urllib.request.urlopen(req, timeout=timeout) as res:
+    with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as res:
         raw = res.read()
         if res.headers.get("Content-Encoding") == "gzip":
             raw = gzip.decompress(raw)
@@ -230,7 +250,7 @@ def fetch_official_rotation(timeout: int = DEFAULT_TIMEOUT) -> list[dict]:
         "User-Agent": USER_AGENT,
     })
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as res:
+        with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as res:
             payload = json.loads(res.read())
     except urllib.error.HTTPError as exc:
         if exc.code == 403:

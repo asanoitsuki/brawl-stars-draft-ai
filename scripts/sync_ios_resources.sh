@@ -25,4 +25,20 @@ else
   copy "$ROOT/rules/rules.json" "$DEST/rules.json"
 fi
 copy "$ROOT/assets/brawler_templates/templates.json" "$DEST/templates.json"
+
+# キャラ一覧画面（持っているキャラ管理）用のアイコン。
+# borders バリアント（レアリティ色の背景付き正方形）をそのまま使う。107 体で 1MB 弱。
+ICON_SRC="$ROOT/assets/brawler_icons/borders"
+ICON_DEST="$DEST/BrawlerIcons"
+if [ -d "$ICON_SRC" ]; then
+  mkdir -p "$ICON_DEST"
+  # 前回コピー分の掃除（キャラが減ることは無いはずだが、念のため）
+  rm -f "$ICON_DEST"/*.png
+  cp "$ICON_SRC"/*.png "$ICON_DEST"/
+  n=$(ls "$ICON_DEST" | wc -l | tr -d ' ')
+  echo "  BrawlerIcons/  ${n} 枚  $(du -sh "$ICON_DEST" | cut -f1)"
+else
+  echo "  ⚠️ $ICON_SRC が無いので、キャラアイコンは同梱しません（先に download_icons.py を実行してください）" >&2
+fi
+
 echo "✔ 完了: $DEST"

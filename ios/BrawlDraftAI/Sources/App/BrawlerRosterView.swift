@@ -66,10 +66,13 @@ struct BrawlerRosterView: View {
                 if owned { excluded.remove(b.id) } else { excluded.insert(b.id) }
             }
         )) {
-            HStack {
-                Text(b.nameJa ?? b.name)
-                if let ja = b.nameJa, ja != b.name {
-                    Text(b.name).font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 12) {
+                BrawlerIcon(id: b.id)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(b.nameJa ?? b.name)
+                    if let ja = b.nameJa, ja != b.name {
+                        Text(b.name).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
         }

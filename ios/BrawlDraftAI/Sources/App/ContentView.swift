@@ -8,6 +8,8 @@ struct ContentView: View {
     @State private var errorText: String?
     @State private var result: (snapshot: DraftSnapshot, recommendation: Recommendation)?
     @State private var resultExpanded = false
+    @State private var precacheProgress: SpeechPrecacher.Progress?
+    @State private var cacheInfo: (count: Int, bytes: Int64) = (SpeechCache.fileCount, SpeechCache.totalBytes)
 
     var body: some View {
         NavigationStack {
@@ -147,6 +149,7 @@ struct ContentView: View {
     // MARK: - 設定
 
     private var settingsSection: some View {
+        Group {
         Section("設定") {
             VStack(alignment: .leading, spacing: 4) {
                 Text("rules.json の URL").font(.caption).foregroundStyle(.secondary)
@@ -177,15 +180,109 @@ struct ContentView: View {
             ), in: 1...3) {
                 Text("読み上げるキャラ数: \(AppSettings.maxAnnouncedPicks)")
             }
-            VStack(alignment: .leading) {
-                Text("読み上げ速度: \(String(format: "%.2f", AppSettings.speechRate))")
-                    .font(.caption)
-                Slider(value: Binding(
-                    get: { AppSettings.speechRate },
-                    set: { AppSettings.speechRate = $0 }
-                ), in: 0.40...0.70)
+        }
+        voiceSection
+        }
+    }
+
+    // MARK: - 読み上げの声
+
+    private var voiceSection: some View {
+        Section("読み上げの声") {
+            Picker("方式", selection: Binding(
+                get: { AppSettings.speechBackend },
+                set: { AppSettings.speechBackend = $0 }
+            )) {
+                Text("端末内蔵（即時・無料）").tag(AppSettings.SpeechBackend.onDevice)
+                Text("ElevenLabs（自然な声・要ネット）").tag(AppSettings.SpeechBackend.elevenLabs)
+            }
+            .pickerStyle(.segmented)
+
+            switch AppSettings.speechBackend {
+            case .onDevice:
+                VStack(alignment: .leading) {
+                    Text("読み上げ速度: \(String(format: "%.2f", AppSettings.speechRate))")
+                        .font(.caption)
+                    Slider(value: Binding(
+                        get: { AppSettings.speechRate },
+                        set: { AppSettings.speechRate = $0 }
+                    ), in: 0.40...0.70)
+                }
+
+            case .elevenLabs:
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("API キー").font(.caption).foregroundStyle(.secondary)
+                    SecureField("elevenlabs.io で発行したキー", text: Binding(
+                        get: { AppSettings.elevenLabsAPIKey },
+                        set: { AppSettings.elevenLabsAPIKey = $0 }
+                    ))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .font(.footnote)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Voice ID（ElevenLabs の Voice Library でコピーできます）")
+                        .font(.caption).foregroundStyle(.secondary)
+                    TextField("21m00Tcm4TlvDq8ikWAM", text: Binding(
+                        get: { AppSettings.elevenLabsVoiceID },
+                        set: { AppSettings.elevenLabsVoiceID = $0 }
+                    ))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .font(.footnote)
+                }
+                if !AppSettings.isElevenLabsConfigured {
+                    Text("API キー未設定の間は自動で端末内蔵の声にフォールバックします。")
+                        .font(.caption2).foregroundStyle(.orange)
+                }
+
+                LabeledContent("キャッシュ済み音声", value: "\(cacheInfo.count) 件 / \(formatBytes(cacheInfo.bytes))")
+
+                if let progress = precacheProgress {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ProgressView(value: Double(progress.done), total: Double(max(progress.total, 1)))
+                        Text("\(progress.done)/\(progress.total)"
+                             + (progress.failed > 0 ? "（失敗 \(progress.failed)）" : "")
+                             + (progress.currentText.isEmpty ? "" : " — \(progress.currentText)"))
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
+                } else {
+                    Button {
+                        precacheAll()
+                    } label: {
+                        Label("キャラ名・立ち回りを事前キャッシュ", systemImage: "arrow.down.circle")
+                    }
+                    .disabled(!AppSettings.isElevenLabsConfigured)
+                    Text("キャラ名など約130フレーズを事前に合成しておくと、本番中はほぼ即時再生になります。")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+
+                Button(role: .destructive) {
+                    SpeechCache.clear()
+                    cacheInfo = (SpeechCache.fileCount, SpeechCache.totalBytes)
+                } label: {
+                    Label("音声キャッシュを削除", systemImage: "trash")
+                }
             }
         }
+    }
+
+    private func precacheAll() {
+        guard case .ready(let rules) = store.state else { return }
+        precacheProgress = .init(done: 0, total: 1)
+        Task {
+            await SpeechPrecacher.run(rules: rules) { progress in
+                Task { @MainActor in precacheProgress = progress }
+            }
+            await MainActor.run {
+                precacheProgress = nil
+                cacheInfo = (SpeechCache.fileCount, SpeechCache.totalBytes)
+            }
+        }
+    }
+
+    private func formatBytes(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
     private var helpSection: some View {

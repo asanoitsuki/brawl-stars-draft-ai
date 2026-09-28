@@ -13,6 +13,17 @@ enum AppSettings {
         static let autoRefreshHours = "autoRefreshHours"
         static let maxAnnouncedPicks = "maxAnnouncedPicks"
         static let excludedBrawlerIDs = "excludedBrawlerIDs"
+        static let speechBackend = "speechBackend"
+        static let elevenLabsAPIKey = "elevenLabsAPIKey"
+        static let elevenLabsVoiceID = "elevenLabsVoiceID"
+        static let elevenLabsModelID = "elevenLabsModelID"
+    }
+
+    enum SpeechBackend: String {
+        /// 端末内蔵の AVSpeechSynthesizer。ネット不要・即時再生だが機械的な声。
+        case onDevice
+        /// ElevenLabs の TTS API。自然な声だが API キーとネットワークが要る。
+        case elevenLabs
     }
 
     /// 毎日 GitHub Actions が更新する rules.json の置き場所。
@@ -82,4 +93,33 @@ enum AppSettings {
         if owned { s.remove(brawlerID) } else { s.insert(brawlerID) }
         excludedBrawlerIDs = s
     }
+
+    // MARK: - 読み上げ音声（ElevenLabs）
+
+    static var speechBackend: SpeechBackend {
+        get { SpeechBackend(rawValue: defaults.string(forKey: Key.speechBackend) ?? "") ?? .onDevice }
+        set { defaults.set(newValue.rawValue, forKey: Key.speechBackend) }
+    }
+
+    /// ElevenLabs の API キー。デバイスの UserDefaults にのみ保存され、
+    /// リポジトリや rules.json には一切含まれない。
+    static var elevenLabsAPIKey: String {
+        get { defaults.string(forKey: Key.elevenLabsAPIKey) ?? "" }
+        set { defaults.set(newValue, forKey: Key.elevenLabsAPIKey) }
+    }
+
+    /// 既定は ElevenLabs のサンプルボイス「Rachel」。多言語モデルで日本語も読める。
+    /// 好みの声に変えたい場合は ElevenLabs の Voice Library で Voice ID をコピーして貼る。
+    static var elevenLabsVoiceID: String {
+        get { defaults.string(forKey: Key.elevenLabsVoiceID) ?? "21m00Tcm4TlvDq8ikWAM" }
+        set { defaults.set(newValue, forKey: Key.elevenLabsVoiceID) }
+    }
+
+    /// eleven_turbo_v2_5: 多言語対応・低遅延寄りのモデル。
+    static var elevenLabsModelID: String {
+        get { defaults.string(forKey: Key.elevenLabsModelID) ?? "eleven_turbo_v2_5" }
+        set { defaults.set(newValue, forKey: Key.elevenLabsModelID) }
+    }
+
+    static var isElevenLabsConfigured: Bool { !elevenLabsAPIKey.isEmpty }
 }

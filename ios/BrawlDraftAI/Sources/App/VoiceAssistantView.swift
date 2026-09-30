@@ -17,7 +17,7 @@ struct VoiceAssistantView: View {
 
     var body: some View {
         ZStack {
-            GlassBackdrop()
+            SpaceBackdrop()
 
             VStack(spacing: 0) {
                 Text("この画面を開いている間だけ会話できます。スマホでブロスタを操作しながら、"
@@ -28,7 +28,7 @@ struct VoiceAssistantView: View {
                     .padding(.top, 8)
 
                 ZStack {
-                    DynamicCoreImage(energy: energy, accent: accent)
+                    AICoreOrb(energy: energy, accent: accent)
                         .frame(width: 300, height: 300)
                     Text(label)
                         .font(.subheadline.weight(.semibold))

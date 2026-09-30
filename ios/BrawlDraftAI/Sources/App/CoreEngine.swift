@@ -1,6 +1,7 @@
+import CoreGraphics
 import Foundation
 
-/// 対話モードのAIコア演出（`DynamicCoreImage`）が使う、時間経過とパルスだけの
+/// 対話モードのAIコア演出（`AICoreOrb`）が使う、時間経過・パルス・流れ星の
 /// 軽量な状態管理。`View` の再生成をまたいで状態を持つため参照型。
 ///
 /// あえて `@Observable` にしていない。毎フレーム `TimelineView` の描画クロージャの
@@ -51,6 +52,23 @@ final class ParticleEngine {
         absorbParticles = built
     }
 
+    /// 「流れ星」。画面の外周からコアへ向けて不定期に飛んでくる、明るく目立つ筋。
+    /// 参考動画にあった、たまに斜めに流れて消える線を再現する。コアに触れる
+    /// 瞬間に消えるので、常時流れている `AbsorbParticle` と違い「時々落ちてくる」
+    /// アクセントになる。
+    struct Meteor {
+        let id: Int
+        let startAngle: Double
+        let targetX: Double // -1...1（コア中心からのずれ）
+        let targetY: Double
+        let speed: Double
+        let spawnTime: Double
+    }
+    private(set) var meteors: [Meteor] = []
+    private var nextMeteorAt: Double = 1.2
+    private var meteorSeq = 0
+    private static let meteorLifetime = 1.6
+
     func advance(to date: Date, target: Double) {
         let dt = lastDate.map { date.timeIntervalSince($0) } ?? 0
         lastDate = date
@@ -63,6 +81,44 @@ final class ParticleEngine {
         }
         lastTargetForPulse = target
         pulseHistory.removeAll { date.timeIntervalSince($0.start) > 1.2 }
+
+        if elapsedSeconds >= nextMeteorAt {
+            meteorSeq += 1
+            meteors.append(Meteor(
+                id: meteorSeq,
+                startAngle: Double.random(in: 0...(2 * .pi)),
+                targetX: Double.random(in: -0.12...0.12),
+                targetY: Double.random(in: -0.12...0.12),
+                speed: Double.random(in: 0.85...1.25),
+                spawnTime: elapsedSeconds
+            ))
+            nextMeteorAt = elapsedSeconds + Double.random(in: 1.8...3.6)
+        }
+        meteors.removeAll { elapsedSeconds - $0.spawnTime > Self.meteorLifetime }
+    }
+
+    struct DrawnMeteor { let head: CGPoint; let tail: CGPoint; let opacity: Double }
+    /// `head`/`tail` は -1...1 に正規化された、コア中心を原点とする座標
+    /// （呼び出し側で実際のサイズを掛けて使う）。
+    func drawnMeteors() -> [DrawnMeteor] {
+        meteors.compactMap { m in
+            let age = elapsedSeconds - m.spawnTime
+            let travel = min(1, age * m.speed / Self.meteorLifetime * 1.3)
+            let startX = cos(m.startAngle) * 1.15
+            let startY = sin(m.startAngle) * 1.15
+            let headX = startX + (m.targetX - startX) * travel
+            let headY = startY + (m.targetY - startY) * travel
+            let tailTravel = max(0, travel - 0.1)
+            let tailX = startX + (m.targetX - startX) * tailTravel
+            let tailY = startY + (m.targetY - startY) * tailTravel
+            let opacity: Double
+            if travel < 0.12 { opacity = travel / 0.12 }
+            else if travel > 0.82 { opacity = max(0, (1 - travel) / 0.18) }
+            else { opacity = 1 }
+            return DrawnMeteor(
+                head: CGPoint(x: headX, y: headY), tail: CGPoint(x: tailX, y: tailY), opacity: opacity
+            )
+        }
     }
 
     struct DrawnPulse { let radius: Double; let opacity: Double }

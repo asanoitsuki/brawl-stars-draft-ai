@@ -46,3 +46,4 @@ targets:
       - sdk: AVFoundation.framework
       - sdk: UserNotifications.framework
       - sdk: Accelerate.framework
+      - sdk: Speech.framework

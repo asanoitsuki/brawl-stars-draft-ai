@@ -116,6 +116,12 @@ struct ContentView: View {
                 Label("読み上げテスト", systemImage: "speaker.wave.2.fill")
             }
 
+            NavigationLink {
+                VoiceAssistantView()
+            } label: {
+                Label("対話モードで質問する", systemImage: "waveform.and.mic")
+            }
+
             if busy { HStack { ProgressView(); Text("解析中 …") } }
         }
     }

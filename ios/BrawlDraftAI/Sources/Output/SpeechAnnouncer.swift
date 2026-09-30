@@ -9,12 +9,7 @@ final class SpeechAnnouncer: ObservableObject {
     static let shared = SpeechAnnouncer()
 
     private let synthesizer = AVSpeechSynthesizer()
-    private lazy var japaneseVoice: AVSpeechSynthesisVoice? = {
-        let ja = AVSpeechSynthesisVoice.speechVoices().filter { $0.language.hasPrefix("ja") }
-        return ja.first { $0.quality == .premium }
-            ?? ja.first { $0.quality == .enhanced }
-            ?? AVSpeechSynthesisVoice(language: "ja-JP")
-    }()
+    private var japaneseVoice: AVSpeechSynthesisVoice? { VoiceCatalog.japanese }
     private lazy var englishVoice: AVSpeechSynthesisVoice? =
         AVSpeechSynthesisVoice(language: "en-US")
 

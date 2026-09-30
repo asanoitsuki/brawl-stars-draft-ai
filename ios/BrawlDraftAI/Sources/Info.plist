@@ -15,6 +15,12 @@
   <key>NSPhotoLibraryUsageDescription</key>
   <string>ドラフト画面のスクリーンショットを読み取って、おすすめのピックを判定するために使います。写真がアプリの外へ送られることはありません。</string>
 
+  <key>NSMicrophoneUsageDescription</key>
+  <string>対話モードで話しかけた内容を聞き取るために使います。音声が外部のサーバーへ送られることはありません。</string>
+
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>対話モードで話しかけた質問をテキストに変換するために使います。対応端末では音声認識も端末内だけで行われます。</string>
+
   <key>CFBundleURLTypes</key>
   <array>
     <dict>

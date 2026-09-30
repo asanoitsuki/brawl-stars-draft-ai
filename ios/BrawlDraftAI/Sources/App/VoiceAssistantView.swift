@@ -1,7 +1,10 @@
 import SwiftUI
 
-/// マイクに向かって自由に質問できる対話モード。
-/// 「おすすめは?」「なんで?」「次点は?」「シェリーどう?」のように話しかけると声で返す。
+/// マイクに向かって状況を実況すると、その都度おすすめを声で返す対話モード。
+/// スマホでブロスタ本体を操作しながら、この画面は別端末（iPadなど）で開いておく運用を想定。
+/// 「このマップになった」「相手、二人はこれを選んだ」のように状況を伝えると、
+/// 聞き取った内容の確認と次のおすすめを声で返す。「おすすめは?」「なんで?」のような
+/// 質問にも答える。
 struct VoiceAssistantView: View {
     @ObservedObject private var assistant = VoiceAssistant.shared
 
@@ -14,7 +17,8 @@ struct VoiceAssistantView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("このアプリの画面を開いている間だけ会話できます。ブロスタ本体に切り替えると自動で止まります。")
+            Text("この画面を開いている間だけ会話できます。スマホでブロスタを操作しながら、"
+                 + "この画面は別端末で開いておく使い方を想定しています。")
                 .font(.caption2).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
@@ -51,7 +55,8 @@ struct VoiceAssistantView: View {
                     ContentUnavailableView(
                         "まだ会話がありません",
                         systemImage: "mic.circle",
-                        description: Text("「おすすめは?」「なんで?」「ガジェットは?」のように話しかけてみてください。")
+                        description: Text("「このマップになった」「相手、二人はこれを選んだ」のように状況を教えるか、"
+                                         + "「おすすめは?」「なんで?」と聞いてみてください。")
                     )
                 }
             }

@@ -1,75 +1,58 @@
 import Foundation
 
-/// 対話モードで聞かれた質問に、いま分かっている情報（直近の解析結果・rules.json）だけで答える。
-/// クラウドAIは使わず、キーワード照合の簡易対話にとどめる（オフライン・無料で完結させるため）。
-@MainActor
+/// 対話モードで聞かれた質問（新しい状況の申告ではない、雑談的な質問）に、
+/// いま組み立て中のドラフト状態だけを根拠に答える。クラウドAIは使わず、
+/// キーワード照合の簡易対話にとどめる（オフライン・無料で完結させるため）。
 enum AssistantIntentEngine {
-    struct Answer {
-        let text: String
-        let shouldStop: Bool
-    }
-
-    static func answer(to question: String) -> Answer {
+    static func answer(to question: String, rules: LoadedRules,
+                       snapshot: DraftSnapshot, recommendation: Recommendation) -> String {
         let q = question.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if containsAny(q, ["やめて", "終了", "ストップ", "もういい", "またね", "ばいばい", "おわり"]) {
-            return Answer(text: "対話モードを終了します。", shouldStop: true)
-        }
-
-        guard let rules = RulesStore.shared.loaded else {
-            return Answer(text: "まだデータを読み込み中です。少し待ってから聞いてください。", shouldStop: false)
-        }
-        guard let result = DraftService.lastResult, !result.recommendation.advices.isEmpty else {
-            return Answer(text: "まだ解析結果がありません。先にスクリーンショットを解析してから聞いてください。",
-                          shouldStop: false)
-        }
-        let advices = result.recommendation.advices
-        let snapshot = result.snapshot
+        let advices = recommendation.advices
 
         if let brawler = matchBrawler(in: q, rules: rules) {
-            return Answer(text: brawlerAnswer(brawler, rules: rules), shouldStop: false)
+            return brawlerAnswer(brawler, rules: rules)
         }
-        if let role = matchRole(in: q, rules: rules) {
-            return Answer(text: roleAnswer(role, top: advices[0], rules: rules), shouldStop: false)
+        if let role = matchRole(in: q, rules: rules), let top = advices.first {
+            return roleAnswer(role, top: top, rules: rules)
+        }
+        guard !advices.isEmpty else {
+            return "まだ判断材料が足りません。マップやピックの状況を教えてください。"
         }
         if containsAny(q, ["ガジェット"]) {
-            return Answer(text: loadoutAnswer(advices[0], rules: rules, kind: .gadget), shouldStop: false)
+            return loadoutAnswer(advices[0], rules: rules, kind: .gadget)
         }
         if containsAny(q, ["スターパワー", "エスピー"]) {
-            return Answer(text: loadoutAnswer(advices[0], rules: rules, kind: .starPower), shouldStop: false)
+            return loadoutAnswer(advices[0], rules: rules, kind: .starPower)
         }
         if containsAny(q, ["立ち回り", "どう動け", "動き方", "コツ"]) {
             if let tip = rules.roleTip(advices[0].role) {
-                return Answer(text: "\(displayName(advices[0]))の立ち回りは、\(tip)", shouldStop: false)
+                return "\(displayName(advices[0]))の立ち回りは、\(tip)"
             }
         }
         if containsAny(q, ["マップ", "ステージ"]) {
             if let map = snapshot.map {
-                return Answer(text: "マップは\(map.nameJa ?? map.name)、モードは\(map.modeJa)です。",
-                              shouldStop: false)
+                return "マップは\(map.nameJa ?? map.name)、モードは\(map.modeJa)です。"
             } else if let modeJa = snapshot.modeJa {
-                return Answer(text: "モードは\(modeJa)です。マップまでは判別できていません。", shouldStop: false)
+                return "モードは\(modeJa)です。マップはまだ聞いていません。"
             }
+            return "マップはまだ聞いていません。"
         }
         if containsAny(q, ["三位", "3位", "さんい"]), advices.count > 2 {
-            return Answer(text: reasonedAnswer(prefix: "三位は", advice: advices[2]), shouldStop: false)
+            return reasonedAnswer(prefix: "三位は", advice: advices[2])
         }
         if containsAny(q, ["二位", "2位", "次点", "他には", "ほかには", "ほかは", "代わり"]), advices.count > 1 {
-            return Answer(text: reasonedAnswer(prefix: "二位は", advice: advices[1]), shouldStop: false)
+            return reasonedAnswer(prefix: "二位は", advice: advices[1])
         }
         if containsAny(q, ["なんで", "理由", "根拠", "どうして", "なぜ"]) {
-            return Answer(text: reasonedAnswer(prefix: "理由は、", advice: advices[0], skipName: true),
-                          shouldStop: false)
+            return reasonedAnswer(prefix: "理由は、", advice: advices[0], skipName: true)
         }
         if containsAny(q, ["おすすめ", "誰がいい", "誰を", "何を", "ピック", "候補", "一位", "1位"]) {
-            return Answer(text: reasonedAnswer(prefix: "おすすめは", advice: advices[0]), shouldStop: false)
+            return reasonedAnswer(prefix: "おすすめは", advice: advices[0])
         }
 
-        return Answer(
-            text: "すみません、うまく聞き取れませんでした。"
-                + "「おすすめは?」「なんで?」「次点は?」「ガジェットは?」「(キャラ名)どう?」のように聞いてみてください。",
-            shouldStop: false
-        )
+        return "すみません、うまく聞き取れませんでした。"
+            + "「このマップになった」「相手はこれを選んだ」のように状況を教えるか、"
+            + "「おすすめは?」「なんで?」のように聞いてみてください。"
     }
 
     // MARK: - 個別の回答文
@@ -140,16 +123,11 @@ enum AssistantIntentEngine {
     // MARK: - キーワード / 名前照合
 
     private static func matchBrawler(in q: String, rules: LoadedRules) -> BrawlerRole? {
-        // 長い名前から先に照合する（"エド" が別のキャラ名に部分一致しないように）。
         let byJapanese = rules.document.brawlers.sorted {
             ($0.nameJa?.count ?? 0) > ($1.nameJa?.count ?? 0)
         }
         for b in byJapanese {
             if let ja = b.nameJa, ja.count >= 2, q.contains(ja) { return b }
-        }
-        let lowered = q.lowercased()
-        for b in rules.document.brawlers.sorted(by: { $0.name.count > $1.name.count }) {
-            if b.name.count >= 3, lowered.contains(b.name.lowercased()) { return b }
         }
         return nil
     }

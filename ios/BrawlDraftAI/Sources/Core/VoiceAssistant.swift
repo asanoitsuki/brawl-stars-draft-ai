@@ -5,9 +5,17 @@ import UIKit
 
 /// マイクで話しかけた内容を聞き取り→回答を声で返す、をこのアプリが前面にある間ずっと繰り返す。
 ///
+/// 想定運用は「スマホでブロスタ本体を操作しながら、iPad など別端末でこのアプリを対話モードで
+/// 開いておく」形。スクリーンショット解析は使わず、「このマップになった」「相手、二人はこれを
+/// 選んだ」のように状況を声で実況してもらい、そのままドラフト状態を組み立てて次の一手を声で
+/// 返す（`DraftDictationSession` が状態管理、`Recommender` が既存のスコアリングを担当）。
+/// 状況の実況ではない一般的な質問（「なんで?」「ガジェットは?」など）は `AssistantIntentEngine`
+/// に振り分ける。
+///
 /// iOS の制約上、ブロスタ本体が前面にある間はサードパーティアプリのマイクは使えない
 /// （バックグラウンドでの常時マイク録音は OS レベルで禁止・審査でも通らない）。
-/// そのため「対話モード」はこのアプリの画面を開いている間だけ会話できる、という設計にしてある。
+/// そのため「対話モード」はこのアプリの画面を開いている間だけ会話できる、という設計にしてある
+/// （2 台持ち運用なら、この画面はずっと開きっぱなしにできるので実質困らない）。
 ///
 /// 認識は `requiresOnDeviceRecognition` が使える端末では端末内だけで完結させる
 /// （プライバシーポリシーの「外部サーバーへ送らない」という説明を裏切らないため）。
@@ -39,6 +47,7 @@ final class VoiceAssistant: NSObject, ObservableObject {
     private var task: SFSpeechRecognitionTask?
     private let synthesizer = AVSpeechSynthesizer()
     private var speakCompletion: (() -> Void)?
+    private let dictation = DraftDictationSession()
 
     private var running = false
     private var hasHeardSpeech = false
@@ -61,6 +70,8 @@ final class VoiceAssistant: NSObject, ObservableObject {
 
     func start() {
         guard !running else { return }
+        dictation.reset()
+        turns = []
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             Task { @MainActor in
                 guard let self else { return }
@@ -130,6 +141,10 @@ final class VoiceAssistant: NSObject, ObservableObject {
         if recognizer.supportsOnDeviceRecognition {
             req.requiresOnDeviceRecognition = true
         }
+        // キャラ名など一般的でない固有名詞を優先的に聞き取ってもらうためのヒント。
+        // Apple の推奨に沿って 100 語前後に収め、最も間違えやすいキャラ名を優先する。
+        let hints = contextualHints()
+        if !hints.isEmpty { req.contextualStrings = hints }
         request = req
         hasHeardSpeech = false
         quietBufferCount = 0
@@ -171,20 +186,35 @@ final class VoiceAssistant: NSObject, ObservableObject {
     }
 
     /// 音量が一定水準を下回るバッファが連続したら、発話が終わったとみなして打ち切る。
-    /// バッファは 1024 フレーム/44.1kHz ≒ 23ms なので、40 バッファ ≒ 0.9 秒の無音で確定させる。
+    /// バッファは 1024 フレーム/44.1kHz ≒ 23ms なので、55 バッファ ≒ 1.3 秒の無音で確定させる。
+    /// 「マップは○○、味方はコレとコレを選んだ、相手はコレをバンした」のような長い複合文を
+    /// 言い切る前に区切ってしまわないよう、単発の質問より少し長めに待つ。
     private func registerAudioLevel(_ level: Float) {
         guard state == .listening else { return }
         let isQuiet = level < 0.015
         if isQuiet {
             guard hasHeardSpeech else { return }
             quietBufferCount += 1
-            if quietBufferCount > 40 {
+            if quietBufferCount > 55 {
                 quietBufferCount = 0
                 request?.endAudio()
             }
         } else {
             quietBufferCount = 0
         }
+    }
+
+    /// キャラ名など聞き取りにくい固有名詞を音声認識に優先させるためのヒント一覧。
+    private func contextualHints() -> [String] {
+        guard let rules = RulesStore.shared.loaded else { return [] }
+        var words = rules.document.brawlers.compactMap(\.nameJa)
+        words.append(contentsOf: [
+            "バン", "禁止", "味方", "相手", "敵", "自チーム",
+            "終了", "リセット", "新しいドラフト", "取り消し", "訂正",
+            "おすすめ", "ガジェット", "スターパワー", "立ち回り",
+            "二位", "三位", "次点", "理由", "マップ", "モード"
+        ])
+        return words
     }
 
     private func handleEndOfUtterance() {
@@ -206,18 +236,95 @@ final class VoiceAssistant: NSObject, ObservableObject {
 
         state = .thinking
         liveTranscript = ""
-        let answer = AssistantIntentEngine.answer(to: heard)
-        turns.append(Turn(question: heard, answer: answer.text))
-        if turns.count > 30 { turns.removeFirst(turns.count - 30) }
+        respond(to: heard)
+    }
 
-        if answer.shouldStop {
-            speak(answer.text) { [weak self] in self?.stop() }
-        } else {
-            speak(answer.text) { [weak self] in
+    private func respond(to heard: String) {
+        if containsAny(heard, ["やめて", "終了", "ストップ", "もういい", "またね", "ばいばい", "おわり"]) {
+            record(question: heard, answer: "対話モードを終了します。")
+            speak("対話モードを終了します。") { [weak self] in self?.stop() }
+            return
+        }
+        if containsAny(heard, ["新しいドラフト", "最初から", "リセット", "やり直し"]) {
+            dictation.reset()
+            let text = "新しいドラフトとして最初から聞きます。"
+            record(question: heard, answer: text)
+            speak(text) { [weak self] in
                 guard let self, self.running else { return }
                 self.beginListening()
             }
+            return
         }
+        if containsAny(heard, ["取り消し", "訂正", "間違えた", "今のなし", "聞き間違い"]) {
+            let undone = dictation.undoLast()
+            let text = undone.map { "\($0.name)を取り消しました。" } ?? "取り消せる内容がありません。"
+            record(question: heard, answer: text)
+            speak(text) { [weak self] in
+                guard let self, self.running else { return }
+                self.beginListening()
+            }
+            return
+        }
+
+        guard let rules = RulesStore.shared.loaded else {
+            let text = "まだデータを読み込み中です。少し待ってから聞いてください。"
+            record(question: heard, answer: text)
+            speak(text) { [weak self] in
+                guard let self, self.running else { return }
+                self.beginListening()
+            }
+            return
+        }
+
+        let result = dictation.ingest(heard, rules: rules)
+        let snapshot = dictation.buildSnapshot()
+        let recommendation = Recommender.make(from: snapshot, rules: rules)
+
+        let text = result.changed
+            ? confirmationText(result, recommendation: recommendation)
+            : AssistantIntentEngine.answer(to: heard, rules: rules, snapshot: snapshot, recommendation: recommendation)
+
+        record(question: heard, answer: text)
+        speak(text) { [weak self] in
+            guard let self, self.running else { return }
+            self.beginListening()
+        }
+    }
+
+    private func record(question: String, answer: String) {
+        turns.append(Turn(question: question, answer: answer))
+        if turns.count > 30 { turns.removeFirst(turns.count - 30) }
+    }
+
+    private func containsAny(_ text: String, _ keywords: [String]) -> Bool {
+        keywords.contains { text.contains($0) }
+    }
+
+    /// マップ／BAN／ピックの申告に対する「聞き取った内容の確認＋次のおすすめ」の返答文。
+    private func confirmationText(_ result: DraftDictationSession.IngestResult,
+                                  recommendation: Recommendation) -> String {
+        var parts: [String] = []
+        if result.mapChanged, let map = dictation.map {
+            parts.append("ステージは\(map.nameJa ?? map.name)、モードは\(map.modeJa)ですね。")
+        } else if result.modeChanged, let modeJa = dictation.modeJa {
+            parts.append("モードは\(modeJa)ですね。")
+        }
+        if !result.addedBans.isEmpty {
+            parts.append("BAN、" + result.addedBans.map { $0.nameJa ?? $0.name }.joined(separator: "、") + "ですね。")
+        }
+        if !result.addedAllies.isEmpty {
+            parts.append("味方、" + result.addedAllies.map { $0.nameJa ?? $0.name }.joined(separator: "、") + "ですね。")
+        }
+        if !result.addedEnemies.isEmpty {
+            parts.append("相手、" + result.addedEnemies.map { $0.nameJa ?? $0.name }.joined(separator: "、") + "ですね。")
+        }
+        if recommendation.phase == .complete {
+            parts.append("ドラフト完了です。お疲れ様でした。")
+        } else if let top = recommendation.advices.first {
+            let reason = top.reason.isEmpty ? "" : "理由は、\(top.reason.replacingOccurrences(of: " / ", with: "、"))。"
+            parts.append("次のおすすめは、\(top.nameJa ?? top.name)です。\(reason)")
+        }
+        return parts.joined(separator: " ")
     }
 
     private func speak(_ text: String, completion: @escaping () -> Void) {

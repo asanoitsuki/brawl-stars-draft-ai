@@ -12,16 +12,50 @@ import Foundation
 final class ParticleEngine {
     private(set) var currentEnergy: Double = 0.22
     private(set) var phase: Double = 0
+    /// 吸い込み粒子用の、スケールしていない生の経過秒数。
+    private(set) var elapsedSeconds: Double = 0
     private var lastDate: Date?
 
     private struct Pulse { let start: Date }
     private var pulseHistory: [Pulse] = []
     private var lastTargetForPulse: Double = 0.22
 
+    /// 中心に向かって吸い込まれていく粒子。1 個ずつ `period` 秒かけて外周から
+    /// 中心まで渦を巻きながら落ちて消え、`phaseOffset` でずらすことで
+    /// 途切れず次々と吸い込まれているように見せる。
+    struct AbsorbParticle {
+        let angle0: Double
+        let period: Double
+        let phaseOffset: Double
+        let spin: Double
+        let size: Double
+        let colorIndex: Int
+    }
+    let absorbParticles: [AbsorbParticle]
+
+    init(absorbCount: Int = 46) {
+        var built: [AbsorbParticle] = []
+        for i in 0..<absorbCount {
+            let angle0: Double = Double.random(in: 0...(2 * .pi))
+            let period: Double = Double.random(in: 3.2...7.0)
+            let phaseOffset: Double = Double(i) / Double(absorbCount) * period
+                + Double.random(in: 0...(period * 0.3))
+            let spin: Double = Double.random(in: 1.4...3.2) * (i % 2 == 0 ? 1 : -1)
+            let size: Double = Double.random(in: 1.4...3.4)
+            let colorIndex: Int = i % 3
+            built.append(AbsorbParticle(
+                angle0: angle0, period: period, phaseOffset: phaseOffset,
+                spin: spin, size: size, colorIndex: colorIndex
+            ))
+        }
+        absorbParticles = built
+    }
+
     func advance(to date: Date, target: Double) {
         let dt = lastDate.map { date.timeIntervalSince($0) } ?? 0
         lastDate = date
         phase += dt * 6
+        elapsedSeconds += dt
         currentEnergy += (target - currentEnergy) * min(1, dt * 3.0)
 
         if target > lastTargetForPulse + 0.15 {

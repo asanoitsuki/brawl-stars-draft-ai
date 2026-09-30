@@ -37,6 +37,13 @@ struct DynamicCoreImage: View {
                         .overlay(Circle().stroke(accent.opacity(glow), lineWidth: 2))
                         .shadow(color: accent.opacity(glow), radius: 16 + energy * 12)
 
+                    // 周囲から中心へ、渦を巻きながら吸い込まれていく粒子。
+                    // 円の外から見え始め、コアに触れる瞬間に一瞬光って消える。
+                    Canvas { context, size in
+                        drawAbsorption(context: context, size: size, elapsed: engine.elapsedSeconds)
+                    }
+                    .frame(width: w, height: w)
+
                     ForEach(Array(engine.pulses(now: t).enumerated()), id: \.offset) { _, p in
                         let d = p.radius * 2 * (w / 720)
                         Circle()
@@ -57,6 +64,32 @@ struct DynamicCoreImage: View {
     private func advancedPhase(at date: Date) -> Double {
         engine.advance(to: date, target: energy)
         return engine.phase
+    }
+
+    private func drawAbsorption(context: GraphicsContext, size: CGSize, elapsed: Double) {
+        let center = CGPoint(x: size.width / 2, y: size.height / 2)
+        let rMax = size.width * 0.78
+        let colors = [accent, Color.white, Color.purple]
+
+        for p in engine.absorbParticles {
+            let tt = ((elapsed + p.phaseOffset).truncatingRemainder(dividingBy: p.period)) / p.period
+            // 中心に近づくほど加速するイージング（吸い込まれる感じ）
+            let radius = rMax * pow(1 - tt, 0.6)
+            let angle = p.angle0 + tt * p.spin
+            let pos = CGPoint(x: center.x + radius * cos(angle), y: center.y + radius * sin(angle))
+
+            let fadeIn = min(1, tt / 0.08)
+            let flash = tt > 0.88 ? (tt - 0.88) / 0.12 : 0
+            let opacity = fadeIn * (1 - flash * 0.3) // 消える直前だけ少し明るく張り出す
+            guard opacity > 0.02 else { continue }
+
+            let baseSize = p.size * (1 - tt * 0.55) + flash * p.size * 1.6
+            var path = Path(ellipseIn: CGRect(
+                x: pos.x - baseSize, y: pos.y - baseSize, width: baseSize * 2, height: baseSize * 2))
+            var c = context
+            c.opacity = opacity
+            c.fill(path, with: .color(colors[p.colorIndex]))
+        }
     }
 
     @ViewBuilder

@@ -16,98 +16,126 @@ struct VoiceAssistantView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text("この画面を開いている間だけ会話できます。スマホでブロスタを操作しながら、"
-                 + "この画面は別端末で開いておく使い方を想定しています。")
-                .font(.caption2).foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-                .padding(.top, 8)
+        ZStack {
+            GlassBackdrop()
 
-            statusIndicator
-                .padding(.vertical, 20)
-
-            if case .unavailable(let message) = assistant.state {
-                Label(message, systemImage: "exclamationmark.triangle.fill")
-                    .font(.footnote).foregroundStyle(.red)
-                    .multilineTextAlignment(.leading)
+            VStack(spacing: 0) {
+                Text("この画面を開いている間だけ会話できます。スマホでブロスタを操作しながら、"
+                     + "この画面は別端末で開いておく使い方を想定しています。")
+                    .font(.caption2).foregroundStyle(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
                     .padding(.horizontal)
-            }
+                    .padding(.top, 8)
 
-            if !assistant.liveTranscript.isEmpty {
-                Text(assistant.liveTranscript)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                ZStack {
+                    DynamicCoreImage(energy: energy, accent: accent)
+                        .frame(width: 300, height: 300)
+                    Text(label)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .offset(y: 150)
+                }
+                .frame(height: 240)
+                .padding(.vertical, 12)
+
+                if case .unavailable(let message) = assistant.state {
+                    Label(message, systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote).foregroundStyle(.red)
+                        .multilineTextAlignment(.leading)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                }
+
+                if !assistant.liveTranscript.isEmpty {
+                    Text(assistant.liveTranscript)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.75))
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                        .transition(.opacity)
+                }
+
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 12) {
+                        ForEach(assistant.turns.reversed()) { turn in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Q. \(turn.question)")
+                                    .font(.footnote).foregroundStyle(.white.opacity(0.6))
+                                Text(turn.answer)
+                                    .font(.callout).foregroundStyle(.white)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(16)
+                            .glassCard(tint: .green.opacity(0.5))
+                        }
+                    }
                     .padding(.horizontal)
-                    .transition(.opacity)
-            }
-
-            List(assistant.turns.reversed()) { turn in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Q. \(turn.question)").font(.footnote).foregroundStyle(.secondary)
-                    Text(turn.answer).font(.callout)
+                    .padding(.top, 4)
                 }
-                .padding(.vertical, 4)
-            }
-            .listStyle(.plain)
-            .overlay {
-                if assistant.turns.isEmpty {
-                    ContentUnavailableView(
-                        "まだ会話がありません",
-                        systemImage: "mic.circle",
-                        description: Text("「このマップになった」「相手、二人はこれを選んだ」のように状況を教えるか、"
-                                         + "「おすすめは?」「なんで?」と聞いてみてください。")
-                    )
+                .overlay {
+                    if assistant.turns.isEmpty {
+                        ContentUnavailableView(
+                            "まだ会話がありません",
+                            systemImage: "mic.circle",
+                            description: Text("「このマップになった」「相手、二人はこれを選んだ」のように状況を教えるか、"
+                                             + "「おすすめは?」「なんで?」と聞いてみてください。")
+                        )
+                        .foregroundStyle(.white.opacity(0.7))
+                    }
                 }
-            }
 
-            Button {
-                isActive ? assistant.stop() : assistant.start()
-            } label: {
-                Label(isActive ? "対話を終了" : "対話を始める",
-                      systemImage: isActive ? "stop.fill" : "mic.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                Button {
+                    isActive ? assistant.stop() : assistant.start()
+                } label: {
+                    Label(isActive ? "対話を終了" : "対話を始める",
+                          systemImage: isActive ? "stop.fill" : "mic.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .foregroundStyle(.white)
+                }
+                .background(
+                    Capsule().fill(isActive ? Color.red.opacity(0.85) : Color.green.opacity(0.85))
+                )
+                .overlay(Capsule().strokeBorder(.white.opacity(0.3), lineWidth: 1))
+                .shadow(color: (isActive ? Color.red : Color.green).opacity(0.5), radius: 20, y: 8)
+                .padding()
             }
-            .buttonStyle(.borderedProminent)
-            .tint(isActive ? .red : .accentColor)
-            .padding()
         }
         .navigationTitle("対話モード")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    assistant.resetConversation()
+                } label: {
+                    Label("リセット", systemImage: "arrow.counterclockwise")
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
         .onDisappear { assistant.stop() }
         .animation(.default, value: assistant.liveTranscript)
+        .animation(.easeInOut(duration: 0.4), value: assistant.state)
     }
 
-    @ViewBuilder
-    private var statusIndicator: some View {
-        VStack(spacing: 8) {
-            Image(systemName: iconName)
-                .font(.system(size: 56))
-                .foregroundStyle(iconColor)
-                .symbolEffect(.pulse, isActive: assistant.state == .listening)
-            Text(label).font(.subheadline).foregroundStyle(.secondary)
+    private var energy: Double {
+        switch assistant.state {
+        case .idle: return 0.12
+        case .listening: return 0.55
+        case .thinking: return 0.35
+        case .speaking: return 0.85
+        case .unavailable: return 0.08
         }
     }
 
-    private var iconName: String {
+    private var accent: Color {
         switch assistant.state {
-        case .idle: return "mic.slash.fill"
-        case .listening: return "mic.fill"
-        case .thinking: return "ellipsis.circle.fill"
-        case .speaking: return "speaker.wave.2.fill"
-        case .unavailable: return "exclamationmark.triangle.fill"
-        }
-    }
-
-    private var iconColor: Color {
-        switch assistant.state {
-        case .idle: return .secondary
-        case .listening: return .red
-        case .thinking: return .orange
-        case .speaking: return .blue
-        case .unavailable: return .red
+        case .listening: return .cyan
+        case .speaking: return .green
+        case .thinking: return .yellow
+        default: return .white.opacity(0.6)
         }
     }
 

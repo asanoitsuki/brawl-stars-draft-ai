@@ -84,6 +84,14 @@ final class VoiceAssistant: NSObject, ObservableObject {
         }
     }
 
+    /// 画面のリセットボタン用。マイクは止めず、これまでの状況（マップ・ピック・会話ログ）
+    /// だけ白紙に戻す。音声の「リセット」コマンドと同じ効果。
+    func resetConversation() {
+        dictation.reset()
+        turns = []
+        liveTranscript = ""
+    }
+
     func stop() {
         guard running || state != .idle else { return }
         running = false

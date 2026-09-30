@@ -1,6 +1,16 @@
 import PhotosUI
 import SwiftUI
 
+/// Form 内の NavigationLink(destination:) は、行が画面に出た時点で遷移先を
+/// 先読み構築してしまう（SwiftUI の既知の挙動）。対話モードの遷移先は常時
+/// 描画し続ける TimelineView を2つ抱えているため、先読みされるとホーム画面が
+/// 表示された瞬間からバックグラウンドで描画ループが回り続け、メインスレッドを
+/// 圧迫してアプリ全体が固まる（実機で確認済みの不具合）。
+/// これを避けるため、このリンクだけ値ベースの遅延遷移にしている。
+private enum ContentRoute: Hashable {
+    case voiceAssistant
+}
+
 struct ContentView: View {
     @EnvironmentObject private var store: RulesStore
     @State private var pickedItem: PhotosPickerItem?
@@ -20,6 +30,11 @@ struct ContentView: View {
                 legalSection
             }
             .navigationTitle("ガチバトルピックAI")
+            .navigationDestination(for: ContentRoute.self) { route in
+                switch route {
+                case .voiceAssistant: VoiceAssistantView()
+                }
+            }
             .alert("エラー", isPresented: .constant(errorText != nil)) {
                 Button("OK") { errorText = nil }
             } message: {
@@ -116,9 +131,7 @@ struct ContentView: View {
                 Label("読み上げテスト", systemImage: "speaker.wave.2.fill")
             }
 
-            NavigationLink {
-                VoiceAssistantView()
-            } label: {
+            NavigationLink(value: ContentRoute.voiceAssistant) {
                 Label("対話モードで質問する", systemImage: "waveform.and.mic")
             }
 

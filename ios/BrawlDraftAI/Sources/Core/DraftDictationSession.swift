@@ -17,6 +17,10 @@ final class DraftDictationSession {
 
     private var nextSlot = 0
     private var history: [(bucket: Bucket, brawler: DetectedBrawler)] = []
+    /// 「相手は」「味方は」と言っただけでキャラ名がまだ出てきていない節があったとき、
+    /// そのバケツを覚えておく。無音判定で発話が「相手は」と「レオン」の2回に千切れても、
+    /// 次の発話で名前だけ言われたときに正しい側へ割り当てるため。
+    private var pendingBucket: Bucket?
 
     private enum Bucket { case ban, ally, enemy }
 
@@ -37,6 +41,7 @@ final class DraftDictationSession {
         bans = []; allies = []; enemies = []
         nextSlot = 0
         history = []
+        pendingBucket = nil
     }
 
     private var takenIDs: Set<Int> {
@@ -131,13 +136,25 @@ final class DraftDictationSession {
     /// 探す（先頭からの逐次スキャンだと述語を名前より先に見てしまい判定を誤る）。
     private func extractPicks(from text: String, rules: LoadedRules) -> [(Bucket, BrawlerRole)] {
         var picks: [(Bucket, BrawlerRole)] = []
+        var anyFound = false
         for (cueBucket, segment) in splitIntoSegments(text) {
             let segText = String(segment)
-            let bucket: Bucket = Self.banKeywords.contains { segText.contains($0) } ? .ban : (cueBucket ?? .ally)
-            for brawler in matchBrawlers(in: segText, rules: rules) {
-                picks.append((bucket, brawler))
+            let isBan = Self.banKeywords.contains { segText.contains($0) }
+            let names = matchBrawlers(in: segText, rules: rules)
+
+            guard !names.isEmpty else {
+                // 「相手は」「味方は」だけでキャラ名がまだ無い節。無音判定で発話が千切れて
+                // 次の発話に名前だけ来るケースに備えて、このバケツを持ち越す。
+                if isBan { pendingBucket = .ban }
+                else if let cueBucket { pendingBucket = cueBucket }
+                continue
             }
+
+            let bucket: Bucket = isBan ? .ban : (cueBucket ?? pendingBucket ?? .ally)
+            for brawler in names { picks.append((bucket, brawler)) }
+            anyFound = true
         }
+        if anyFound { pendingBucket = nil }
         return picks
     }
 

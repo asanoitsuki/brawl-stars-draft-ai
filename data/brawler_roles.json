@@ -55,13 +55,11 @@
     {
       "id": 16000005,
       "name": "Spike",
-      "role": "controller",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.825,
-      "tip": "Zone Enemies With A Super And Spikes.",
-      "matched": [
-        "controller:\\bzone\\b|zoning|zone enemies"
-      ]
+      "confidence": 0.0,
+      "tip": "Damage Dealer",
+      "matched": []
     },
     {
       "id": 16000006,
@@ -434,14 +432,11 @@
     {
       "id": 16000053,
       "name": "Lola",
-      "role": "controller",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 1.0,
-      "tip": "Control Multiple Lanes With Ego",
-      "matched": [
-        "controller:control (space|the map|objectives|multiple lanes)",
-        "controller:\\bcontrol\\b"
-      ]
+      "confidence": 0.0,
+      "tip": "Damage Dealer",
+      "matched": []
     },
     {
       "id": 16000054,
@@ -465,21 +460,17 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "Super To Drop Bombs Safely From Above",
+      "tip": "Marksman",
       "matched": []
     },
     {
       "id": 16000058,
       "name": "Bonnie",
-      "role": "marksman",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.615,
-      "tip": "Snipe Then Jump In For Big Damage.",
-      "matched": [
-        "marksman:\\bsnipe",
-        "assassin:jump (in|to|around)",
-        "damage:big damage"
-      ]
+      "confidence": 0.0,
+      "tip": "Marksman",
+      "matched": []
     },
     {
       "id": 16000059,
@@ -559,7 +550,7 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "Punish Advancing Enemies.",
+      "tip": "Marksman",
       "matched": []
     },
     {
@@ -685,13 +676,11 @@
     {
       "id": 16000084,
       "name": "Moe",
-      "role": "assassin",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.495,
-      "tip": "Chase Down Enemies With The Drill.",
-      "matched": [
-        "assassin:chase down"
-      ]
+      "confidence": 0.0,
+      "tip": "Damage Dealer",
+      "matched": []
     },
     {
       "id": 16000085,
@@ -723,21 +712,17 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "Unknown",
+      "tip": "Damage Dealer",
       "matched": []
     },
     {
       "id": 16000089,
       "name": "Meeple",
-      "role": "controller",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.945,
-      "tip": "Shoot Through Walls And Control The Map",
-      "matched": [
-        "thrower:through walls",
-        "controller:control (space|the map|objectives|multiple lanes)",
-        "controller:\\bcontrol\\b"
-      ]
+      "confidence": 0.0,
+      "tip": "Controller",
+      "matched": []
     },
     {
       "id": 16000090,
@@ -753,65 +738,53 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "Recall Weapons To Create New Angles Of Attack.",
+      "tip": "Damage Dealer",
       "matched": []
     },
     {
       "id": 16000092,
       "name": "Finx",
-      "role": "controller",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 1.0,
-      "tip": "Slow Enemy Projectiles To Take Space.",
-      "matched": [
-        "controller:take space",
-        "controller:\\bslow\\b"
-      ]
+      "confidence": 0.0,
+      "tip": "Controller",
+      "matched": []
     },
     {
       "id": 16000093,
       "name": "Jae-Yong",
-      "role": "support",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.33,
-      "tip": "Use Speed For Aggression And Heal For Safety.",
-      "matched": [
-        "support:\\bheal\\b"
-      ]
+      "confidence": 0.0,
+      "tip": "Support",
+      "matched": []
     },
     {
       "id": 16000094,
       "name": "Kaze",
-      "role": "controller",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.675,
-      "tip": "Zone As Geisha Strike As Ninja.",
-      "matched": [
-        "assassin:strike",
-        "controller:\\bzone\\b|zoning|zone enemies"
-      ]
+      "confidence": 0.0,
+      "tip": "Assassin",
+      "matched": []
     },
     {
       "id": 16000095,
       "name": "Alli",
-      "role": "assassin",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.825,
-      "tip": "Ambush From Bushes And Water",
-      "matched": [
-        "assassin:ambush"
-      ]
+      "confidence": 0.0,
+      "tip": "Assassin",
+      "matched": []
     },
     {
       "id": 16000096,
       "name": "Trunk",
-      "role": "tank",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.825,
-      "tip": "Use Ants For Speed And Charge In",
-      "matched": [
-        "tank:charge in"
-      ]
+      "confidence": 0.0,
+      "tip": "Tank",
+      "matched": []
     },
     {
       "id": 16000097,
@@ -819,20 +792,17 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "Combo Your Super With Main Attacks.",
+      "tip": "Damage Dealer",
       "matched": []
     },
     {
       "id": 16000098,
       "name": "Ziggy",
-      "role": "controller",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 1.0,
-      "tip": "Call Lightning To Control Space.",
-      "matched": [
-        "controller:control (space|the map|objectives|multiple lanes)",
-        "controller:\\bcontrol\\b"
-      ]
+      "confidence": 0.0,
+      "tip": "Controller",
+      "matched": []
     },
     {
       "id": 16000099,
@@ -840,19 +810,17 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "The Last Shot Is Key For Damage.",
+      "tip": "Marksman",
       "matched": []
     },
     {
       "id": 16000100,
       "name": "Gigi",
-      "role": "assassin",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.825,
-      "tip": "Dodge Enemies Then Jump In To Finish Them.",
-      "matched": [
-        "assassin:jump (in|to|around)"
-      ]
+      "confidence": 0.0,
+      "tip": "Assassin",
+      "matched": []
     },
     {
       "id": 16000101,
@@ -865,48 +833,38 @@
     {
       "id": 16000102,
       "name": "Sirius",
-      "role": "controller",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 1.0,
-      "tip": "Use Shadows To Control The Map.",
-      "matched": [
-        "controller:control (space|the map|objectives|multiple lanes)",
-        "controller:\\bcontrol\\b"
-      ]
+      "confidence": 0.0,
+      "tip": "Controller",
+      "matched": []
     },
     {
       "id": 16000103,
       "name": "Najia",
-      "role": "marksman",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.825,
-      "tip": "Massive Range With Added Poison",
-      "matched": [
-        "marksman:(huge|massive|more|extra|for) range"
-      ]
+      "confidence": 0.0,
+      "tip": "Damage Dealer",
+      "matched": []
     },
     {
       "id": 16000104,
       "name": "Damian",
-      "role": "assassin",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.825,
-      "tip": "Jump In To Unleash Chaos",
-      "matched": [
-        "assassin:jump (in|to|around)"
-      ]
+      "confidence": 0.0,
+      "tip": "Tank",
+      "matched": []
     },
     {
       "id": 16000105,
       "name": "Starr Nova",
-      "role": "assassin",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.255,
-      "tip": "Poke Then Transform And Strike",
-      "matched": [
-        "assassin:strike",
-        "damage:\\bpoke\\b"
-      ]
+      "confidence": 0.0,
+      "tip": "Assassin",
+      "matched": []
     },
     {
       "id": 16000106,
@@ -914,19 +872,17 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "Avoid Walls And Sharp Turns For Speed",
+      "tip": "Tank",
       "matched": []
     },
     {
       "id": 16000107,
       "name": "Nori",
-      "role": "assassin",
+      "role": "damage",
       "source": "heuristic",
-      "confidence": 0.825,
-      "tip": "Jump Around The Map And Cause Chaos",
-      "matched": [
-        "assassin:jump (in|to|around)"
-      ]
+      "confidence": 0.0,
+      "tip": "Assassin",
+      "matched": []
     },
     {
       "id": 16000108,
@@ -942,7 +898,7 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "Use Gravity To Target Enemies",
+      "tip": "Controller",
       "matched": []
     },
     {
@@ -951,7 +907,7 @@
       "role": "damage",
       "source": "heuristic",
       "confidence": 0.0,
-      "tip": "Collect Caterpillars To Become More Powerful",
+      "tip": "Damage Dealer",
       "matched": []
     }
   ]

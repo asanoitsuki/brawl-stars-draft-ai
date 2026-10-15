@@ -14,7 +14,7 @@ struct MapDetailView: View {
         List {
             Section {
                 VStack(spacing: 10) {
-                    MapThumbnail(id: map.id, cornerRadius: 12)
+                    MapThumbnail(id: map.id, cornerRadius: 12, fit: true)
                         .frame(maxWidth: .infinity)
                         .frame(height: 220)
                     VStack(spacing: 2) {

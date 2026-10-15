@@ -22,13 +22,15 @@ enum MapImageStore {
 struct MapThumbnail: View {
     let id: Int
     var cornerRadius: CGFloat = 8
+    /// true なら画像全体を枠に収める（詳細画面用）。false は枠いっぱいに敷いて切り抜く（一覧用）。
+    var fit = false
 
     var body: some View {
         Group {
             if let image = MapImageStore.image(for: id) {
                 Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .aspectRatio(contentMode: fit ? .fit : .fill)
             } else {
                 ZStack {
                     Color(.tertiarySystemFill)

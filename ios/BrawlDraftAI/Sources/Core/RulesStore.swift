@@ -49,6 +49,37 @@ struct LoadedRules {
     func synergy(_ mine: String, with ally: String) -> Double {
         document.synergy[mine]?[ally] ?? 0
     }
+
+    /// 実測の対面相性。delta は「素の強さの差」を除いた相性（%pt）。データが無ければ nil。
+    func matchup(_ mine: Int, vs enemy: Int) -> PairStat? {
+        guard mine != enemy else { return nil }
+        let (lo, hi) = mine < enemy ? (mine, enemy) : (enemy, mine)
+        guard let row = document.matchups?.vs["\(lo)-\(hi)"], row.count >= 3 else { return nil }
+        return mine == lo
+            ? PairStat(delta: row[0], winRate: row[1], games: Int(row[2]))
+            : PairStat(delta: -row[0], winRate: 100 - row[1], games: Int(row[2]))
+    }
+
+    /// 実測の同チーム相性（対称）。
+    func duo(_ a: Int, _ b: Int) -> PairStat? {
+        guard a != b else { return nil }
+        let (lo, hi) = a < b ? (a, b) : (b, a)
+        guard let row = document.matchups?.with["\(lo)-\(hi)"], row.count >= 3 else { return nil }
+        return PairStat(delta: row[0], winRate: row[1], games: Int(row[2]))
+    }
+
+    struct PairStat {
+        let delta: Double
+        let winRate: Double
+        let games: Int
+    }
+
+    /// 実測データの鮮度（時間）。実測が無ければ nil。
+    var statsAgeHours: Double? {
+        guard let s = document.dataQuality.statsUpdatedAt,
+              let date = ISO8601DateFormatter().date(from: s) else { return nil }
+        return Date().timeIntervalSince(date) / 3600
+    }
 }
 
 /// rules.json / templates.json の読み込み・キャッシュ・更新を一手に引き受ける。
@@ -130,16 +161,31 @@ final class RulesStore: ObservableObject {
                 lastRefreshMessage = "受け取った rules.json の形式が想定と違います"
                 return
             }
+            // CDN の古いキャッシュなどで「今より古いデータ」が返ってきたら採用しない
+            if let current = loaded, document.generatedAt < current.generatedAt {
+                AppSettings.lastRefreshAt = Date()
+                lastRefreshMessage = "最新です（生成 \(Self.displayDate(current.generatedAt))）"
+                return
+            }
             try data.write(to: Self.cacheURL, options: .atomic)
             AppSettings.lastRefreshAt = Date()
 
             let pack = try Self.loadTemplatePack()
             let built = try Self.build(document: document, pack: pack, origin: .remote)
             state = .ready(built)
-            lastRefreshMessage = "更新しました（生成 \(document.generatedAt)）"
+            lastRefreshMessage = "更新しました（生成 \(Self.displayDate(document.generatedAt))）"
         } catch {
             lastRefreshMessage = "更新に失敗: \(error.localizedDescription)"
         }
+    }
+
+    /// "2026-10-14T08:52:10+00:00" → "10/14 17:52"（端末のタイムゾーン）
+    nonisolated static func displayDate(_ iso: String) -> String {
+        guard let date = ISO8601DateFormatter().date(from: iso) else { return iso }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ja_JP")
+        f.dateFormat = "M/d H:mm"
+        return f.string(from: date)
     }
 
     // MARK: - 読み込み本体
@@ -152,17 +198,18 @@ final class RulesStore: ObservableObject {
     nonisolated private static func loadEverything() async throws -> LoadedRules {
         try await Task.detached(priority: .userInitiated) {
             let pack = try loadTemplatePack()
-            // キャッシュ優先。壊れていたら同梱版にフォールバックする。
-            if let data = try? Data(contentsOf: cacheURL),
-               let doc = try? JSONDecoder().decode(RulesDocument.self, from: data),
-               doc.schema == 2, !doc.maps.isEmpty {
-                return try build(document: doc, pack: pack, origin: .cached)
-            }
             guard let url = Bundle.main.url(forResource: "rules", withExtension: "json") else {
                 throw StoreError.missingResource("rules.json")
             }
-            let doc = try JSONDecoder().decode(RulesDocument.self, from: Data(contentsOf: url))
-            return try build(document: doc, pack: pack, origin: .bundled)
+            let bundled = try JSONDecoder().decode(RulesDocument.self, from: Data(contentsOf: url))
+            // ダウンロード済みキャッシュと同梱版のうち「新しいほう」を使う。
+            // アプリ更新で同梱版のほうが新しくなっていることがあるため、キャッシュを無条件には優先しない。
+            if let data = try? Data(contentsOf: cacheURL),
+               let doc = try? JSONDecoder().decode(RulesDocument.self, from: data),
+               doc.schema == 2, !doc.maps.isEmpty, doc.generatedAt >= bundled.generatedAt {
+                return try build(document: doc, pack: pack, origin: .cached)
+            }
+            return try build(document: bundled, pack: pack, origin: .bundled)
         }.value
     }
 

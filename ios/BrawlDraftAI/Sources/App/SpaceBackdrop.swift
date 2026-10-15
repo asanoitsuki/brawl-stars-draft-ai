@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 対話モードの背景。参考アプリの「暗い宇宙空間に淡い星が瞬く」雰囲気を、
-/// 画面全体の控えめな土台として敷く（主役の演出は `AICoreOrb` 側）。
+/// チーム募集などの画面の控えめな土台として敷く（GPU を使う主役の演出は `CosmosView`）。
 struct SpaceBackdrop: View {
     @State private var stars: [Star] = Star.generate(count: 70)
 

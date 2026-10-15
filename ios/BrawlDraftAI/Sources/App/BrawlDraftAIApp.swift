@@ -4,6 +4,7 @@ import SwiftUI
 struct BrawlDraftAIApp: App {
     @StateObject private var store = RulesStore.shared
     @State private var urlMessage: String?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -14,6 +15,12 @@ struct BrawlDraftAIApp: App {
                     DraftService.warmUp()
                 }
                 .onOpenURL { url in handle(url) }
+                // 前面に戻るたびに、一定時間（既定 3 時間）経っていれば最新データを取りに行く
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active {
+                        Task { await RulesStore.shared.refreshFromRemote() }
+                    }
+                }
                 .overlay(alignment: .top) {
                     if let urlMessage {
                         Text(urlMessage)

@@ -54,7 +54,7 @@ enum AppSettings {
     }
 
     static var autoRefreshHours: Double {
-        get { defaults.object(forKey: Key.autoRefreshHours) as? Double ?? 6 }
+        get { defaults.object(forKey: Key.autoRefreshHours) as? Double ?? 3 }
         set { defaults.set(newValue, forKey: Key.autoRefreshHours) }
     }
 

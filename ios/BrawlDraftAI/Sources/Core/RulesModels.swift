@@ -21,10 +21,23 @@ struct RulesDocument: Decodable {
     let synergy: [String: [String: Double]]
     let brawlers: [BrawlerRole]
     let maps: [MapRules]
+    /// キャラ同士の実測相性（公式 API のガチバトル対戦履歴）。古いデータには無い。
+    let matchups: Matchups?
+
+    struct Matchups: Decodable {
+        /// "小さいID-大きいID" -> [小さいID側から見た相性(%pt), 小さいID側の対面勝率(%), 試合数]
+        let vs: [String: [Double]]
+        /// "小さいID-大きいID" -> [同じチームでの上振れ(%pt), 同チーム勝率(%), 試合数]
+        let with: [String: [Double]]
+    }
 
     struct DataQuality: Decodable {
         let liveStats: Bool
         let mapsWithLiveStats: Int
+        /// 集計に使ったガチバトルの試合数（減衰後）。0 / nil = 実測なし
+        let battlesAnalyzed: Int?
+        /// 実測データの最終更新（ISO8601）
+        let statsUpdatedAt: String?
         let rotationKnown: Bool
         let rotationSource: String?
         /// data/tier_overrides.json で手入力された強さ補正の件数
@@ -94,6 +107,10 @@ struct MapRules: Decodable {
     let environment: String?
     let inRotation: Bool
     let hasLiveStats: Bool
+    /// "map" = このマップの実測 / "mode" = 試合が少なくモード全体の実測で代用 / nil・"" = 実測なし
+    let statsScope: String?
+    /// 実測に使った試合数
+    let statsBattles: Int?
     /// 画像・データの出典（Brawlify）。信憑性を示すための「出典」表示に使う。
     let imageUrl: String?
     let nameAliases: [String]
@@ -109,6 +126,8 @@ struct MapRules: Decodable {
         let base: Double
         let winRate: Double?
         let useRate: Double?
+        /// 実測の試合数（勝率の信頼度の目安）
+        let games: Int?
         /// base の内訳（マップ適性・手動ティア・実測勝率）を人間可読にしたもの。
         /// 味方シナジーはここに含まれない（対戦相手・味方は解析時にしか分からないため）。
         let reason: String?
@@ -143,6 +162,7 @@ struct PickSuggestion: Decodable {
     let reason: String?
     let winRate: Double?
     let useRate: Double?
+    let games: Int?
     let advantage: Double?
     let synergy: Double?
     let vulnerability: Double?

@@ -56,6 +56,13 @@ NAMES_JA_PATH = DATA_DIR / "brawler_names_ja.json"
 MAP_NAMES_JA_PATH = DATA_DIR / "map_names_ja.json"
 ROLE_TIPS_PATH = DATA_DIR / "role_tips_ja.json"
 LOADOUT_NOTES_PATH = DATA_DIR / "loadout_notes.json"
+RANKED_STATS_PATH = DATA_DIR / "ranked_stats.json"   # scripts/ranked_stats.py が更新する
+
+# 実測勝率の扱い
+MIN_MAP_BATTLES = 25     # これ未満のマップはモード全体の集計で代用する
+SHRINK_GAMES = 20        # 試合数が少ないキャラの勝率を 50% 側へ寄せる強さ（ベイズ縮小）
+PAIR_MIN_GAMES = 12      # 対面・同チームの相性を載せる最低試合数
+ROTATION_RECENT_DAYS = 2 # この日数以内にランク戦が観測されたマップを「いまのランク用マップ」とみなす
 
 
 # --------------------------------------------------------------------------
@@ -76,6 +83,8 @@ def parse_args() -> argparse.Namespace:
                     help="実測勝率が1マップも取れなかったら失敗させる（CI 用）")
     ap.add_argument("--rotation-out", default="",
                     help="ローテ中マップだけの軽量版をこのパスにも書き出す")
+    ap.add_argument("--ranked-stats", default=str(RANKED_STATS_PATH),
+                    help="scripts/ranked_stats.py の出力（ガチバトル実測勝率）")
     ap.add_argument("--out", default=str(RULES_PATH))
     return ap.parse_args()
 
@@ -202,6 +211,117 @@ def fetch_map_stats(map_id: int) -> list[dict]:
     return out
 
 
+def shrunk_rate(games: float, wins: float, k: float = SHRINK_GAMES) -> float:
+    """試合数が少ないほど 50% に寄せた勝率（0〜1）。3 戦 3 勝で 100% にならないようにする。"""
+    return (wins + 0.5 * k) / (games + k)
+
+
+class RankedStats:
+    """data/ranked_stats.json（公式 API のガチバトル対戦履歴の集計）を読みやすくしたもの。"""
+
+    def __init__(self, store: dict, maps: list[dict]) -> None:
+        self.store = store
+        self.updated_at = store.get("updatedAt")
+        self.total_battles = float(store.get("battles") or 0)
+        self.map_entries: dict[int, dict] = {int(k): v for k, v in store.get("maps", {}).items()}
+
+        mode_of = {m["id"]: (m.get("gameMode") or {}).get("name") for m in maps}
+        # モード単位の合算（試合の少ないマップの代用 & 新マップの初日用）
+        self.mode_entries: dict[str, dict] = {}
+        overall: dict[str, list[float]] = {}
+        for mid, entry in self.map_entries.items():
+            mode = mode_of.get(mid)
+            for bid, (g, w) in entry["b"].items():
+                acc = overall.setdefault(bid, [0.0, 0.0])
+                acc[0] += g
+                acc[1] += w
+            if not mode:
+                continue
+            agg = self.mode_entries.setdefault(mode, {"battles": 0.0, "b": {}})
+            agg["battles"] += entry["battles"]
+            for bid, (g, w) in entry["b"].items():
+                acc = agg["b"].setdefault(bid, [0.0, 0.0])
+                acc[0] += g
+                acc[1] += w
+        # キャラ単体の全体勝率（相性の「素の強さ」を差し引くのに使う）
+        self.overall_rate = {int(b): shrunk_rate(g, w) for b, (g, w) in overall.items()}
+
+        latest = max((e.get("lastSeen", "") for e in self.map_entries.values()), default="")
+        self.rotation_ids: set[int] = set()
+        if latest:
+            cutoff = (dt.datetime.strptime(latest, "%Y%m%d")
+                      - dt.timedelta(days=ROTATION_RECENT_DAYS)).strftime("%Y%m%d")
+            self.rotation_ids = {mid for mid, e in self.map_entries.items()
+                                 if e.get("lastSeen", "") >= cutoff and e["battles"] >= 3}
+
+    @staticmethod
+    def _rows(entry: dict) -> list[dict]:
+        battles = entry["battles"] or 1.0
+        rows = []
+        for bid, (g, w) in entry["b"].items():
+            if g < 1:
+                continue
+            rows.append({
+                "id": int(bid),
+                "winRate": round(100 * w / g, 1),
+                "useRate": round(100 * g / battles, 1),
+                "games": int(round(g)),
+                "adjWinRate": 100 * shrunk_rate(g, w),
+            })
+        return rows
+
+    def stats_for(self, map_id: int, mode: str) -> tuple[list[dict], str, int]:
+        """(行, 範囲 "map" / "mode" / "", 試合数)"""
+        entry = self.map_entries.get(map_id)
+        if entry and entry["battles"] >= MIN_MAP_BATTLES:
+            return self._rows(entry), "map", int(round(entry["battles"]))
+        agg = self.mode_entries.get(mode)
+        if agg and agg["battles"] >= MIN_MAP_BATTLES:
+            return self._rows(agg), "mode", int(round(agg["battles"]))
+        return [], "", 0
+
+    def _pairs(self, table: dict, residual) -> dict[str, list]:
+        out: dict[str, list] = {}
+        for a, row in table.items():
+            for b, (g, w) in row.items():
+                if g < PAIR_MIN_GAMES:
+                    continue
+                ia, ib = int(a), int(b)
+                delta = residual(ia, ib, shrunk_rate(g, w, k=15))
+                if abs(delta) < 1.0:
+                    continue
+                out[f"{ia}-{ib}"] = [round(delta, 1), round(100 * w / g, 1), int(round(g))]
+        return out
+
+    def matchups(self) -> dict:
+        """キャラ同士の相性（実測）。素の強さの差を引いた「残差」を相性とみなす。
+
+        vs["a-b"]   = [a から見た相性(%pt), a の対 b 実測勝率(%), 試合数]   a < b
+        with["a-b"] = [同じチームでの上振れ(%pt), 同チーム実測勝率(%), 試合数]
+        """
+        r = self.overall_rate
+
+        def vs_residual(a: int, b: int, rate: float) -> float:
+            expected = 0.5 + (r.get(a, 0.5) - 0.5) - (r.get(b, 0.5) - 0.5)
+            return 100 * (rate - expected)
+
+        def with_residual(a: int, b: int, rate: float) -> float:
+            expected = 0.5 + (r.get(a, 0.5) - 0.5) + (r.get(b, 0.5) - 0.5)
+            return 100 * (rate - expected)
+
+        return {
+            "vs": self._pairs(self.store.get("vs", {}), vs_residual),
+            "with": self._pairs(self.store.get("with", {}), with_residual),
+        }
+
+
+def load_ranked_stats(maps: list[dict], path: Path = RANKED_STATS_PATH) -> RankedStats | None:
+    store = load_json(path, None)
+    if not store or not store.get("maps"):
+        return None
+    return RankedStats(store, maps)
+
+
 def download_thumb(map_doc: dict) -> Path | None:
     url = map_doc.get("imageUrl")
     if not url:
@@ -262,8 +382,14 @@ def download_item_image(item: dict, out_dir: Path, prefix: str) -> str | None:
 # スコアリング
 # --------------------------------------------------------------------------
 
-def quality_note(maps_with_stats: int, tier_count: int) -> str:
+def quality_note(maps_with_stats: int, tier_count: int, battles: int = 0) -> str:
     """rules.json を読む側（アプリ・人間）へ、スコアの出どころを正確に伝える。"""
+    if maps_with_stats and battles:
+        return (
+            f"ガチバトルの実際の対戦 約{battles:,}試合（公式API・直近2週間ほどの重み）から"
+            "マップ別の勝率と使用率を集計しています。"
+            "スコア = 実測勝率z値×0.65 + 役割適性×0.35 + 手動ティア×0.20。"
+        )
     if maps_with_stats:
         return (
             "スコア = 実測勝率z値×0.65 + アーキタイプ適性×0.35 + 手動ティア×0.20。"
@@ -294,12 +420,14 @@ def meta_scores(stats: list[dict]) -> dict[int, dict]:
     """勝率・使用率を z 値へ。勝率を主、使用率を従とする。"""
     if not stats:
         return {}
-    wins = zscore([s["winRate"] for s in stats])
+    # 試合数の少ないキャラは縮小済みの勝率（adjWinRate）で比べる。表示は生の勝率。
+    wins = zscore([s.get("adjWinRate", s["winRate"]) for s in stats])
     uses = zscore([s["useRate"] for s in stats])
     return {
         s["id"]: {
             "winRate": round(s["winRate"], 2),
             "useRate": round(s["useRate"], 2),
+            "games": s.get("games"),
             "z": round(0.75 * w + 0.25 * u, 4),
             "pressure": round(0.5 * w + 0.5 * u, 4),  # BAN 判定用（強さ×人気）
         }
@@ -327,6 +455,8 @@ def build_map_entry(
     in_rotation: bool,
     thumb: Path | None,
     map_names_ja: dict[str, str],
+    stats_scope: str = "",
+    stats_battles: int = 0,
 ) -> dict:
     mode_name = (map_doc.get("gameMode") or {}).get("name") or "Unknown"
     mode_cfg = arch["modes"].get(mode_name, {})
@@ -362,6 +492,7 @@ def build_map_entry(
             "tier": round(tier, 4),
             "winRate": (m or {}).get("winRate"),
             "useRate": (m or {}).get("useRate"),
+            "games": (m or {}).get("games"),
             "pressure": (m or {}).get("pressure", 0.0) or 0.0,
         })
 
@@ -392,6 +523,10 @@ def build_map_entry(
     candidate_pool.sort(key=lambda e: (-e["base"], e["name"]))
 
     mode_ja = mode_cfg.get("ja", mode_name)
+    scope_label = {"map": "実測 ", "mode": f"{mode_ja}全体の実測 "}.get(stats_scope, "実測 ")
+
+    def games_label(e: dict) -> str:
+        return f"・{e['games']:,}戦" if e.get("games") else ""
 
     def candidate_reason(e: dict) -> str:
         """ブラインドピック候補（candidates[]）の素点 base の内訳を人間可読にする。
@@ -401,7 +536,7 @@ def build_map_entry(
         iOS 側がライブ計算で別途加味する）。"""
         parts: list[str] = []
         if e.get("winRate") is not None:
-            parts.append(f"実測 勝率{e['winRate']}% / 使用率{e['useRate']}%")
+            parts.append(f"{scope_label}勝率{e['winRate']}% / 使用率{e['useRate']}%{games_label(e)}")
         if abs(e["fit"]) > 0.001:
             parts.append(f"{mode_ja}での役割適性 {e['fit']:+.2f}")
         if abs(e["tier"]) > 0.001:
@@ -413,7 +548,7 @@ def build_map_entry(
     def stat_phrase(e: dict) -> str:
         if e.get("winRate") is None:
             return ""
-        return f"（勝率 {e['winRate']}% / 使用率 {e['useRate']}%）"
+        return f"（{scope_label}勝率 {e['winRate']}% / 使用率 {e['useRate']}%{games_label(e)}）"
 
     def full(e: dict, score: float, reason: str, **extra) -> dict:
         out = {"id": e["id"], "name": e["name"], "role": e["role"], "roleJa": e["roleJa"],
@@ -421,6 +556,8 @@ def build_map_entry(
         if e.get("winRate") is not None:
             out["winRate"] = e["winRate"]
             out["useRate"] = e["useRate"]
+            if e.get("games") is not None:
+                out["games"] = e["games"]
         out.update(extra)
         return out
 
@@ -519,6 +656,9 @@ def build_map_entry(
         "environment": (map_doc.get("environment") or {}).get("name"),
         "inRotation": in_rotation,
         "hasLiveStats": has_stats,
+        # "map" = このマップの実測 / "mode" = 試合が少ないのでモード全体の実測で代用 / "" = 実測なし
+        "statsScope": stats_scope if has_stats else "",
+        "statsBattles": stats_battles if has_stats else 0,
         "imageUrl": map_doc.get("imageUrl"),
         "nameAliases": [],   # 日本語マップ名などを手で追記できる欄
         "bans": ban_list,
@@ -534,6 +674,7 @@ def build_map_entry(
         "candidates": [
             {"id": e["id"], "name": e["name"], "role": e["role"], "base": e["base"],
              "winRate": e.get("winRate"), "useRate": e.get("useRate"),
+             "games": e.get("games"),
              "reason": candidate_reason(e)}
             for e in candidate_pool
         ],
@@ -640,8 +781,25 @@ def main() -> int:
     if not official_token():
         print(f"  · {OFFICIAL_TOKEN_ENV} 未設定（公式 API を使うとローテーションが確実に取れます）")
 
+    ranked = load_ranked_stats(maps, Path(args.ranked_stats))
+    if ranked:
+        print(f"▶ ガチバトル実測データ: 約{ranked.total_battles:,.0f} 試合"
+              f"（{len(ranked.map_entries)} マップ / 更新 {ranked.updated_at}）")
+    else:
+        print("  · data/ranked_stats.json が無いため実測勝率なし（scripts/ranked_stats.py を参照）")
+
     print("▶ 現在のローテーションを取得中 …")
-    rotation_ids, rotation_detail = fetch_rotation()
+    if ranked and ranked.rotation_ids:
+        # 実際にランク戦で直近使われたマップ = いまのガチバトル用マップ。公式の
+        # /events/rotation はトロフィー戦の枠なので、ガチバトルにはこちらが正確。
+        rotation_ids = set(ranked.rotation_ids)
+        rotation_detail = {
+            "active": [{"mapId": mid} for mid in sorted(rotation_ids)],
+            "upcoming": [],
+            "source": "ranked-battlelog",
+        }
+    else:
+        rotation_ids, rotation_detail = fetch_rotation()
     print(f"  ローテ入り {len(rotation_ids)} マップ"
           + ("" if rotation_ids else " … 取得できなかったのでランクモード全マップを対象にします"))
 
@@ -659,13 +817,25 @@ def main() -> int:
 
     print("▶ マップ別の統計と画像を取得中 …")
     stats_by_map: dict[int, list[dict]] = {}
+    stats_scope: dict[int, tuple[str, int]] = {}
+    if ranked:
+        for m in targets:
+            rows, scope, battles = ranked.stats_for(m["id"], m["gameMode"]["name"])
+            if rows:
+                stats_by_map[m["id"]] = rows
+                stats_scope[m["id"]] = (scope, battles)
     thumbs: dict[int, Path | None] = {}
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        stat_futs = {pool.submit(fetch_map_stats, m["id"]): m["id"] for m in targets}
+        # 公式APIの実測が無いマップだけ Brawlify に問い合わせる（現状はほぼ取れない）
+        stat_futs = {pool.submit(fetch_map_stats, m["id"]): m["id"]
+                     for m in targets if m["id"] not in stats_by_map}
         thumb_futs = ({} if args.no_thumbs
                       else {pool.submit(download_thumb, m): m["id"] for m in targets})
         for fut in as_completed(stat_futs):
-            stats_by_map[stat_futs[fut]] = fut.result()
+            rows = fut.result()
+            if rows:
+                stats_by_map[stat_futs[fut]] = rows
+                stats_scope[stat_futs[fut]] = ("map", 0)
         for fut in as_completed(thumb_futs):
             thumbs[thumb_futs[fut]] = fut.result()
 
@@ -680,6 +850,7 @@ def main() -> int:
             stats_by_map.get(m["id"], []), args.top,
             m["id"] in rotation_ids, thumbs.get(m["id"]),
             map_names_ja,
+            *stats_scope.get(m["id"], ("", 0)),
         )
         for m in targets
     ]
@@ -698,10 +869,13 @@ def main() -> int:
     doc = {
         "schema": 2,
         "generatedAt": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
-        "source": "Brawlify API (api.brawlify.com / api.brawlapi.com)",
+        "source": ("Brawl Stars 公式 API（ガチバトル対戦履歴の集計）+ Brawlify（マップ・キャラ情報）"
+                   if ranked else "Brawlify API (api.brawlify.com / api.brawlapi.com)"),
         "dataQuality": {
             "liveStats": with_stats > 0,
             "mapsWithLiveStats": with_stats,
+            "battlesAnalyzed": int(ranked.total_battles) if ranked else 0,
+            "statsUpdatedAt": ranked.updated_at if ranked else None,
             "rotationKnown": bool(rotation_ids),
             "rotationSource": rotation_detail.get("source", "none"),
             "manualTiers": len(tiers),
@@ -709,8 +883,11 @@ def main() -> int:
                 "winRate" if with_stats
                 else ("manualTier" if tiers else "alphabetical")
             ),
-            "note": quality_note(with_stats, len(tiers)),
+            "note": quality_note(with_stats, len(tiers),
+                                 int(ranked.total_battles) if ranked else 0),
         },
+        # キャラ同士の実測相性（公式APIの対戦履歴）。無い組み合わせは iOS 側が役割相性で補う。
+        "matchups": ranked.matchups() if ranked else {"vs": {}, "with": {}},
         "draftOrder": arch["draftOrder"],
         "modes": modes_export,
         "archetypes": arch_ja,

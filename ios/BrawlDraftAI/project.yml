@@ -10,6 +10,10 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
+    # チーム募集（CloudKit）は Apple Developer 側で iCloud を有効にしてから
+    # Local.xcconfig で切り替える（README「チーム募集のセットアップ」）。未設定でもビルドは通る。
+    BDA_ENTITLEMENTS: Sources/BrawlDraftAI.entitlements
+    BDA_SWIFT_FLAGS: ""
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: minimal
 
@@ -35,7 +39,8 @@ targets:
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/Info.plist
-        CODE_SIGN_ENTITLEMENTS: Sources/BrawlDraftAI.entitlements
+        CODE_SIGN_ENTITLEMENTS: $(BDA_ENTITLEMENTS)
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) $(BDA_SWIFT_FLAGS)
         SWIFT_OPTIMIZATION_LEVEL: "-O"
       configs:
         Debug:
@@ -47,3 +52,5 @@ targets:
       - sdk: UserNotifications.framework
       - sdk: Accelerate.framework
       - sdk: Speech.framework
+      - sdk: CloudKit.framework
+      - sdk: MetalKit.framework

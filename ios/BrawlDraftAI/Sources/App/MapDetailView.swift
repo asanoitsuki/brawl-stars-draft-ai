@@ -30,7 +30,8 @@ struct MapDetailView: View {
                                 .foregroundStyle(.green)
                         }
                         if map.hasLiveStats {
-                            Label("実測勝率あり", systemImage: "chart.bar.fill")
+                            Label(map.statsScope == "mode" ? "モード全体の実測" : "実測 \((map.statsBattles ?? 0).formatted())試合",
+                                  systemImage: "chart.bar.fill")
                                 .foregroundStyle(.blue)
                         }
                     }
@@ -43,17 +44,6 @@ struct MapDetailView: View {
             }
 
             Section {
-                Text("ブラインドピック（below Elite）でこのマップが認識されたとき、"
-                     + "実際にこの数値でキャラを並び替えて提案しています。base はマップ適性、"
-                     + "winRate はこのマップでの実測勝率（あれば）です。")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-
-            Section {
-                Text("キャラをタップすると、スコアの内訳・相性データ・スターパワー/ガジェットが見られます。")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-            Section("候補スコア（\(map.candidates.count) 体）") {
                 ForEach(map.candidates.sorted { $0.base > $1.base }, id: \.id) { c in
                     if let full = brawlerByID[c.id] {
                         NavigationLink {
@@ -69,6 +59,14 @@ struct MapDetailView: View {
                         candidateRow(c)
                     }
                 }
+            } header: {
+                Text(map.hasLiveStats ? "このマップで強いキャラ（実測）" : "このマップの推定順位")
+            } footer: {
+                Text(map.hasLiveStats
+                     ? (map.statsScope == "mode"
+                        ? "このマップ単体の試合がまだ少ないため、同じモード全体のガチバトル実戦データで並べています。"
+                        : "ガチバトルの実際の対戦結果から集計した勝率と使用率で並べています。試合数が少ないキャラは勝率を50%寄りに補正して順位付けしています。")
+                     : "実戦データが未取得のため、役割の相性と手動ティアによる推定です。同じ役割のキャラは近い値になります。")
             }
 
             if !map.bans.isEmpty || !map.picks.first.isEmpty {
@@ -104,7 +102,7 @@ struct MapDetailView: View {
                     }
                     .font(.footnote)
                 }
-                LabeledContent("ルールデータ生成日時", value: rules.generatedAt)
+                LabeledContent("ルールデータ生成日時", value: RulesStore.displayDate(rules.generatedAt))
                 switch rules.document.dataQuality.confidence {
                 case .measured:
                     Text("このデータセットは実測勝率ベースです。").font(.caption2).foregroundStyle(.green)
@@ -126,16 +124,21 @@ struct MapDetailView: View {
             BrawlerIcon(id: c.id, size: 34)
             VStack(alignment: .leading, spacing: 1) {
                 Text(brawlerByID[c.id]?.nameJa ?? c.name)
-                Text(rules.japaneseRole(c.role)).font(.caption2).foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text(rules.japaneseRole(c.role))
+                    if let use = c.useRate {
+                        Text("使用率 \(String(format: "%.1f", use))%")
+                    }
+                }
+                .font(.caption2).foregroundStyle(.secondary)
             }
             Spacer()
-            VStack(alignment: .trailing, spacing: 1) {
-                Text("\(c.base >= 0 ? "+" : "")\(String(format: "%.1f", c.base))")
-                    .font(.footnote.monospacedDigit())
-                if let wr = c.winRate {
-                    Text("勝率 \(String(format: "%.1f", wr))%")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
+            if let wr = c.winRate {
+                WinRateBadge(winRate: wr, games: c.games)
+            } else {
+                Text("推定 \(c.base >= 0 ? "+" : "")\(String(format: "%.1f", c.base))")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -145,8 +148,10 @@ struct MapDetailView: View {
             HStack {
                 Text(brawlerByID[s.id]?.nameJa ?? s.name).font(.footnote)
                 Spacer()
-                Text(String(format: "%.2f", s.score)).font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                if let wr = s.winRate {
+                    Text("\(String(format: "%.1f", wr))%").font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
             }
             if let reason = s.reason, !reason.isEmpty {
                 Text(reason).font(.caption2).foregroundStyle(.secondary)

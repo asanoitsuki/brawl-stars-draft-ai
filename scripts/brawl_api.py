@@ -222,10 +222,18 @@ def save_json(path: Path, data: Any, compact: bool = False) -> None:
 #   2. 実行元のグローバル IP を許可した API キーを発行する
 #   3. export BRAWLSTARS_API_TOKEN='...'
 #
-# ⚠️ 公式キーは IP 固定のため、GitHub Actions のランナー（IP が毎回変わる）では使えない。
-#    ローカル cron 運用（scripts/install_cron.sh）向けの機能。
-OFFICIAL_API = "https://api.brawlstars.com/v1"
+# ⚠️ 公式キーは IP 固定。GitHub Actions のランナーは IP が毎回変わるので、
+#    既定では RoyaleAPI の固定 IP プロキシ経由で呼ぶ（official_base() を参照）。
 OFFICIAL_TOKEN_ENV = "BRAWLSTARS_API_TOKEN"
+OFFICIAL_BASE_ENV = "BRAWLSTARS_API_BASE"
+# 既定は RoyaleAPI の固定 IP プロキシ（キーの許可 IP に 45.79.218.79 を登録すれば
+# GitHub Actions のような IP が変わる環境からも呼べる）。自宅の固定 IP で直接叩くなら
+# BRAWLSTARS_API_BASE=https://api.brawlstars.com/v1 にする。
+DEFAULT_OFFICIAL_BASE = "https://bsproxy.royaleapi.dev/v1"
+
+
+def official_base() -> str:
+    return (os.environ.get(OFFICIAL_BASE_ENV, "").strip() or DEFAULT_OFFICIAL_BASE).rstrip("/")
 
 
 def official_token() -> str:
@@ -243,7 +251,7 @@ def fetch_official_rotation(timeout: int = DEFAULT_TIMEOUT) -> list[dict]:
     if not token:
         return []
 
-    url = f"{OFFICIAL_API}/events/rotation"
+    url = f"{official_base()}/events/rotation"
     req = urllib.request.Request(url, headers={
         "Authorization": f"Bearer {token}",
         "Accept": "application/json",

@@ -11,6 +11,8 @@ struct PickAdvice: Identifiable {
     let score: Double
     let reason: String
     let winRate: Double?
+    /// 実測の試合数（winRate の信頼度の目安）
+    var games: Int? = nil
 }
 
 /// 通知・読み上げに渡す最終結果。
@@ -148,13 +150,13 @@ enum Recommender {
         let allyRoles = snapshot.allies.map(\.role)
         // ステージ固有データ（実測勝率・手動ティア・BAN 済みキャラの除外など）が使えるときは
         // それを土台にする。読めていなければモード単位の大まかな適性にフォールバックする。
-        let candidateBase: [Int: (base: Double, winRate: Double?)] = map.map {
-            Dictionary(uniqueKeysWithValues: $0.candidates.map { c in (c.id, (c.base, c.winRate)) })
+        let candidateBase: [Int: (base: Double, winRate: Double?, games: Int?)] = map.map {
+            Dictionary(uniqueKeysWithValues: $0.candidates.map { c in (c.id, (c.base, c.winRate, c.games)) })
         } ?? [:]
 
         var scored: [(brawler: BrawlerRole, score: Double, synergy: Double, fit: Double, winRate: Double?)] = []
         for b in rules.document.brawlers where !taken.contains(b.id) && AppSettings.isOwned(b.id) {
-            let syn = allyRoles.reduce(0.0) { $0 + rules.synergy(b.role, with: $1) }
+            let syn = snapshot.allies.reduce(0.0) { $0 + synergyValue(b.id, b.role, with: $1, rules: rules) }
             let stageFit = candidateBase[b.id]
             let fit = stageFit?.base ?? modeWeights?[b.role] ?? 0
             // 味方シナジー 0.5 / ステージ(またはモード)適性 0.5 で合成。相手情報が無いのでカウンター項は無い。
@@ -186,7 +188,8 @@ enum Recommender {
                 parts.append("\(modeLabel)適性 \(item.fit >= 0 ? "+" : "")\(String(format: "%.1f", item.fit))")
             }
             if let wr = item.winRate {
-                parts.append("勝率 \(String(format: "%.1f", wr))%")
+                let games = candidateBase[item.brawler.id]?.games
+                parts.append("勝率 \(String(format: "%.1f", wr))%" + (games.map { "（\($0)戦）" } ?? ""))
             }
             if item.synergy >= 0.8, let ally = snapshot.allies.max(by: {
                 rules.synergy(item.brawler.role, with: $0.role) < rules.synergy(item.brawler.role, with: $1.role)
@@ -199,7 +202,8 @@ enum Recommender {
             return PickAdvice(
                 id: item.brawler.id, name: item.brawler.name, nameJa: item.brawler.nameJa,
                 role: item.brawler.role, roleJa: rules.japaneseRole(item.brawler.role),
-                score: item.score, reason: parts.joined(separator: " / "), winRate: item.winRate
+                score: item.score, reason: parts.joined(separator: " / "), winRate: item.winRate,
+                games: candidateBase[item.brawler.id]?.games
             )
         }
 
@@ -285,14 +289,12 @@ enum Recommender {
                                    rules: LoadedRules) -> [PickAdvice] {
         let taken = snapshot.takenIDs
         let w = weights(for: snapshot.phase)
-        let allyRoles = snapshot.allies.map(\.role)
-        let enemyRoles = snapshot.enemies.map(\.role)
 
         var scored: [(candidate: MapRules.Candidate, score: Double,
                       synergy: Double, advantage: Double)] = []
         for c in map.candidates where !taken.contains(c.id) && AppSettings.isOwned(c.id) {
-            let syn = allyRoles.reduce(0.0) { $0 + rules.synergy(c.role, with: $1) }
-            let adv = enemyRoles.reduce(0.0) { $0 + rules.advantage(c.role, vs: $1) }
+            let syn = snapshot.allies.reduce(0.0) { $0 + synergyValue(c.id, c.role, with: $1, rules: rules) }
+            let adv = snapshot.enemies.reduce(0.0) { $0 + advantageValue(c.id, c.role, vs: $1, rules: rules) }
             scored.append((c, c.base + w.synergy * syn + w.advantage * adv, syn, adv))
         }
         scored.sort { ($0.score, $0.candidate.name) > ($1.score, $1.candidate.name) }
@@ -321,10 +323,12 @@ enum Recommender {
                 role: item.candidate.role,
                 roleJa: rules.japaneseRole(item.candidate.role),
                 score: item.score,
-                reason: reasonText(role: item.candidate.role, snapshot: snapshot,
+                reason: reasonText(id: item.candidate.id, role: item.candidate.role, snapshot: snapshot,
                                    rules: rules, synergy: item.synergy, advantage: item.advantage,
-                                   winRate: item.candidate.winRate),
-                winRate: item.candidate.winRate
+                                   winRate: item.candidate.winRate, games: item.candidate.games,
+                                   scope: map.statsScope),
+                winRate: item.candidate.winRate,
+                games: item.candidate.games
             )
         }
     }
@@ -339,7 +343,8 @@ enum Recommender {
                 roleJa: s.roleJa ?? rules.japaneseRole(s.role),
                 score: s.score,
                 reason: s.reason ?? "",
-                winRate: s.winRate
+                winRate: s.winRate,
+                games: s.games
             )
         }
     }
@@ -369,9 +374,18 @@ enum Recommender {
 
     // MARK: - 文面
 
-    private static func reasonText(role: String, snapshot: DraftSnapshot, rules: LoadedRules,
-                                   synergy: Double, advantage: Double, winRate: Double?) -> String {
+    private static func reasonText(id: Int, role: String, snapshot: DraftSnapshot, rules: LoadedRules,
+                                   synergy: Double, advantage: Double, winRate: Double?,
+                                   games: Int?, scope: String?) -> String {
         var parts: [String] = []
+
+        // 実測の対面データがある相手のうち、いちばん刺さる相手を挙げる（役割の一般論より優先）
+        let measured = snapshot.enemies.compactMap { e in
+            rules.matchup(id, vs: e.id).map { (enemy: e, stat: $0) }
+        }.filter { $0.stat.games >= 15 && $0.stat.delta >= 2 }
+        if let best = measured.max(by: { $0.stat.delta < $1.stat.delta }) {
+            parts.append("相手の\(best.enemy.name)に実測で強い（対面勝率\(String(format: "%.0f", best.stat.winRate))%・\(best.stat.games)戦）")
+        }
 
         // 相手の役割ごとに、はっきり有利な相手だけ挙げる
         let enemyCounts = snapshot.enemies.reduce(into: [String: Int]()) { $0[$1.role, default: 0] += 1 }
@@ -379,7 +393,7 @@ enum Recommender {
             .map { (role: $0.key, count: $0.value, adv: rules.advantage(role, vs: $0.key)) }
             .filter { $0.adv >= 1 }
             .sorted { ($0.adv, $0.role) > ($1.adv, $1.role) }
-        if let top = strongAgainst.first {
+        if parts.isEmpty, let top = strongAgainst.first {
             let suffix = top.count > 1 ? "×\(top.count)" : ""
             parts.append("相手の\(rules.japaneseRole(top.role))\(suffix)に有利（\(signed(top.adv))）")
         }
@@ -392,7 +406,8 @@ enum Recommender {
         }
 
         if let winRate {
-            parts.append("このマップ勝率 \(String(format: "%.1f", winRate))%")
+            let label = scope == "mode" ? "このモードの勝率" : "このマップ勝率"
+            parts.append("\(label) \(String(format: "%.1f", winRate))%" + (games.map { "（\($0)戦）" } ?? ""))
         }
 
         if parts.isEmpty {
@@ -489,6 +504,28 @@ enum Recommender {
             notes.append("認識が曖昧: \(shaky.map(\.name).joined(separator: ", "))")
         }
         return notes.isEmpty ? nil : notes.joined(separator: " / ")
+    }
+
+    // MARK: - 相性（実測があれば実測、無ければ役割の一般論）
+
+    /// 実測の対面データ（%pt）を役割相性と同じ -2…+2 の物差しに直して混ぜる。
+    /// 試合数が少ないうちは役割の一般論に寄せる（40 戦で実測 100%）。
+    private static func advantageValue(_ id: Int, _ role: String, vs enemy: DetectedBrawler,
+                                       rules: LoadedRules) -> Double {
+        let general = rules.advantage(role, vs: enemy.role)
+        guard let m = rules.matchup(id, vs: enemy.id) else { return general }
+        let measured = max(-2.5, min(2.5, m.delta / 3.0))
+        let confidence = min(1.0, Double(m.games) / 40.0)
+        return confidence * measured + (1 - confidence) * general
+    }
+
+    private static func synergyValue(_ id: Int, _ role: String, with ally: DetectedBrawler,
+                                     rules: LoadedRules) -> Double {
+        let general = rules.synergy(role, with: ally.role)
+        guard let d = rules.duo(id, ally.id) else { return general }
+        let measured = max(-1.5, min(1.5, d.delta / 4.0))
+        let confidence = min(1.0, Double(d.games) / 40.0)
+        return confidence * measured + (1 - confidence) * general
     }
 
     private static func signed(_ value: Double) -> String {

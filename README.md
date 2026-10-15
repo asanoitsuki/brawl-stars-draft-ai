@@ -115,7 +115,9 @@ iOS 側はこれらを使って、実際の敵味方構成に合わせてスコ�
 - **相性表** `data/archetypes.json`: 反対称行列（A→B = -(B→A)）。生成時に検証される
 - **モード補正**: ブロストライカーならスナイパー +1.2 / タンク -1.0、といったモード別の素点
 - **スコア**: 実測勝率があるとき `勝率z×0.65 + 役割適性×0.35 + 手動ティア×0.20`、
-  無いとき `役割適性 + 手動ティア`
+  無いとき `役割適性 + 手動ティア`（実測の集め方は §8）
+- **キャラ同士の相性**: 実測の対面・同チーム勝率（`matchups`）があればそれを使い、
+  試合数が 40 戦に満たない組み合わせは役割の相性表と混ぜる
 - **多様性**: 同じ役割ばかり並ばないよう、既出ロールに減点しながら選ぶ
 
 手で調整できるファイル（自動更新で壊されない）:
@@ -140,8 +142,8 @@ iOS 側はこれらを使って、実際の敵味方構成に合わせてスコ�
 `.github/workflows/daily_update.yml` が **毎日 08:40 UTC（17:40 JST）** に実行される。
 ブロスタのデイリーリセット（08:00 UTC）の 40 分後。
 
-やること: アイコン差分取得 → ルール生成 → 検証 → 変更があればコミット＆プッシュ →
-実行サマリーに「実測勝率が取れたか」を出力。
+やること: アイコン差分取得 → **ガチバトル実戦データの集計（§8）** → ルール生成 → 検証 →
+変更があればコミット＆プッシュ → 実行サマリーに「実測勝率が取れたか・何試合か」を出力。
 
 セットアップ:
 
@@ -316,10 +318,41 @@ BAN: Angelo, Edgar, Tick, Max
 
 ---
 
-## 8. 実測勝率について（調査結果）
+## 8. 実測勝率について
 
-`rules/rules.json` は現在 **実測勝率なし / 手動ティア 84 件で補正** の状態で生成される。
-原因を切り分けたので、対処の当たりを付けやすいようにそのまま書いておく。
+### いまの方式 — 公式 API の対戦履歴を自前で集計（`scripts/ranked_stats.py`）
+
+Brawlify の勝率は取れない（下の調査結果）ので、**Supercell 公式 API の対戦履歴から自分で勝率を出す**。
+統計サイトも中身は同じ方法で作っている。
+
+1. 国別ランキング上位のプレイヤーと、前回見つけたランク勢の対戦履歴（直近 25 戦）を取得
+2. `battle.type == "soloRanked"`（ガチバトル）の試合だけを抜き出し、参加者を芋づる式に追加
+3. 同じ試合は最大 6 人の履歴に出るので、時刻＋参加者タグで重複を除く
+4. `data/ranked_stats.json` に **毎日 0.9 倍してから足す減衰付き累積**で保存
+   （実効的に直近 2 週間の重み。バランス調整後も数日で新環境に追従）
+5. `update_meta.py` がそれを読み、マップ別の勝率・使用率（25 試合未満のマップはモード全体で代用）、
+   キャラ同士の対面・同チーム相性、**直近 2 日にランク戦で使われたマップ＝いまのランク用マップ**を出力
+
+試合数の少ないキャラは勝率を 50% 側へ寄せて（ベイズ縮小）順位付けするので、
+3 戦 3 勝のキャラが 1 位になるようなことはない。表示はアプリ側で「勝率 54.2%・312戦」のように試合数付き。
+
+**必要なのは無料の API キーだけ**:
+
+1. https://developer.brawlstars.com/ でアカウントを作り「Create New Key」
+2. 許可 IP に **`45.79.218.79`** を入れる（RoyaleAPI の公開プロキシ。GitHub Actions は IP が毎回変わるため、
+   固定 IP のプロキシ `bsproxy.royaleapi.dev` 経由で呼ぶ）
+3. リポジトリの Secrets に登録:
+   ```bash
+   gh secret set BRAWLSTARS_API_TOKEN     # 聞かれたらキーを貼り付ける
+   gh workflow run daily_update.yml       # すぐ 1 回回す
+   ```
+
+自宅の固定 IP から直接叩く場合は、その IP を許可したキーを使い
+`BRAWLSTARS_API_BASE=https://api.brawlstars.com/v1` を設定する。
+キーが未設定の間は集計をスキップし、従来どおり「役割適性＋手動ティア」の推定で生成される
+（アプリには「推定データ」と表示される）。
+
+### 調査結果 — Brawlify から取れない理由
 
 ### 分かったこと
 
@@ -350,17 +383,9 @@ BAN: Angelo, Edgar, Tick, Max
    export BRAWLIFY_COOKIE='cf_clearance=...'          # ブラウザから取ってくる
    export BRAWLIFY_EXTRA_HEADERS='{"X-Foo":"bar"}'    # 追加ヘッダが要るとき
    ```
-4. **Supercell 公式 API によるローテーション取得**（任意）。
-   勝率は公式には無いが、**マップローテーションは公式から確実に取れる**:
-   ```bash
-   export BRAWLSTARS_API_TOKEN='...'    # https://developer.brawlstars.com/ で無料発行
-   python3 scripts/update_meta.py --rotation-out rules/rules_rotation.json
-   ```
-   ローテが判明すると `rules_rotation.json` が実際にローテ中のマップだけになり、
-   端末が落とすデータが 3.4 MB → 100 KB 程度まで小さくなる。
-   ⚠️ 公式キーは IP 固定なので、IP が毎回変わる GitHub Actions では使えない。
-   ローカル cron（`scripts/install_cron.sh`）向けの機能。
-   ⚠️ このプロジェクトの環境ではトークンを発行できなかったため、**この経路は未検証**。
+4. **Supercell 公式 API** → 上の「いまの方式」に発展させた。同じキーで、ガチバトルの実戦勝率に加えて
+   **いまランク戦で使われているマップ**も分かるので、`rules_rotation.json` が実際のランク用マップだけになり、
+   端末が落とすデータが 3.4 MB → 数百 KB まで小さくなる。
 
 ### 勝率が無い間の補強 — 手動ティア
 
@@ -407,6 +432,31 @@ python3 scripts/tiers.py unset Edgar         # 中立に戻す
 - **役割分類は 26 体が自動推定のまま**。`data/brawler_roles.json` で直せる
 - 相性表は「タンク⇄長射程」のような一般的なアーキタイプ相性であって、
   個別キャラ同士の細かい有利不利までは表現していない
+
+---
+
+## 8.5 チーム募集（CloudKit）のセットアップ
+
+アプリの「チーム募集」は、ブロスタの招待リンクを貼って募集を出し、見た人が「参加」を押すと
+ブロスタが開いてそのままチームに入れる掲示板。投稿は iCloud（CloudKit の公開データベース）で共有する。
+サーバー代はかからないが、**Apple Developer Program（有料）のチームが必要**。
+
+1. Xcode > Settings > Accounts で Apple ID にサインインしておく
+2. Apple Developer の Identifiers でこのアプリのバンドル ID を開き、**iCloud（CloudKit）** にチェック →
+   コンテナ `iCloud.<バンドルID>` を作って割り当てる（Xcode の Signing & Capabilities で iCloud を足しても同じ）
+3. `ios/BrawlDraftAI/Local.xcconfig` に次の 2 行を足してビルドし直す:
+   ```
+   BDA_ENTITLEMENTS = Sources/BrawlDraftAI-CloudKit.entitlements
+   BDA_SWIFT_FLAGS = CLOUDKIT_ENABLED
+   ```
+   （この 2 行が無い間はチーム募集が「準備中」表示になるだけで、ほかの機能は普通に使える）
+4. 実機で 1 回募集を出す（レコード型 `TeamPost` が自動で作られる）
+5. [CloudKit Console](https://icloud.developer.apple.com/) → Schema → Indexes → `TeamPost` に
+   **`expiresAt` の QUERYABLE と SORTABLE** を追加（一覧の読み込みに必要なのはこの 2 つだけ）
+6. App Store に出す前に CloudKit Console で **Deploy Schema Changes** を押して本番環境へ反映する
+
+不適切な投稿への対策（App Store ガイドライン 1.2）として、NG ワードの投稿拒否・通報（`TeamReport` に保存）・
+投稿者の非表示・初回投稿時のルール同意を入れてある。募集は 20 分で一覧から消える。
 
 ---
 

@@ -22,7 +22,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - uses: actions/checkout@v4
@@ -43,12 +43,17 @@ jobs:
           BRAWLIFY_EXTRA_HEADERS: ${{ secrets.BRAWLIFY_EXTRA_HEADERS }}
         run: python scripts/download_icons.py
 
+      - name: ガチバトルの実測勝率を集計（公式 API の対戦履歴）
+        env:
+          # https://developer.brawlstars.com/ で発行したキー（許可 IP に 45.79.218.79 を登録）。
+          # 公式キーは IP 固定なので、RoyaleAPI の固定 IP プロキシ経由で呼ぶ（scripts/ranked_stats.py）。
+          BRAWLSTARS_API_TOKEN: ${{ secrets.BRAWLSTARS_API_TOKEN }}
+        run: python scripts/ranked_stats.py --minutes 12 --max-requests 6000
+
       - name: ルールデータを生成
         env:
           BRAWLIFY_COOKIE: ${{ secrets.BRAWLIFY_COOKIE }}
           BRAWLIFY_EXTRA_HEADERS: ${{ secrets.BRAWLIFY_EXTRA_HEADERS }}
-          # 公式 API は IP 固定のキーなので Actions では基本使えない。
-          # セルフホストランナーなど IP が固定できる環境向け。
           BRAWLSTARS_API_TOKEN: ${{ secrets.BRAWLSTARS_API_TOKEN }}
         run: |
           python scripts/update_meta.py \
@@ -88,14 +93,14 @@ jobs:
           print(f"- 生成時刻: `{d['generatedAt']}`")
           print(f"- マップ数: **{len(d['maps'])}**")
           print(f"- 実測勝率: **{'あり' if q['liveStats'] else 'なし'}**"
-                f" ({q['mapsWithLiveStats']} マップ)")
+                f" ({q['mapsWithLiveStats']} マップ / 約 {q.get('battlesAnalyzed', 0):,} 試合)")
           print(f"- 手動ティア: **{q.get('manualTiers', 0)} 件**"
                 f" / 同点の解消方法: `{q.get('tiebreak', '?')}`")
           print(f"- ローテ判明: **{'はい' if q['rotationKnown'] else 'いいえ'}**"
                 f" (取得元: `{q.get('rotationSource', 'none')}`)")
           if not q["liveStats"]:
               print("")
-              print("> 実測勝率が取れていません。Cloudflare が TLS フィンガープリントで"
-                    "弾くため、ヘッダ調整では回避できません。README §8 を参照。")
+              print("> 実測勝率が取れていません。Repository secrets に BRAWLSTARS_API_TOKEN"
+                    "（許可 IP 45.79.218.79 のキー）を登録してください。README §8 を参照。")
           PY
           } >> "$GITHUB_STEP_SUMMARY"

@@ -2,9 +2,9 @@ import SwiftUI
 
 /// マイクに向かって状況を実況すると、その都度おすすめを声で返す対話モード。
 /// スマホでブロスタ本体を操作しながら、この画面は別端末（iPadなど）で開いておく運用を想定。
-/// 「このマップになった」「相手、二人はこれを選んだ」のように状況を伝えると、
-/// 聞き取った内容の確認と次のおすすめを声で返す。「おすすめは?」「なんで?」のような
-/// 質問にも答える。
+///
+/// 画面全体が GPU で描く宇宙（CosmosView）。球体は状態に合わせて
+/// 「聞いている = 吸い込む / 考え中 = 分裂して浮く / 答える = 破裂して再生」と動く。
 struct VoiceAssistantView: View {
     @ObservedObject private var assistant = VoiceAssistant.shared
 
@@ -16,135 +16,169 @@ struct VoiceAssistantView: View {
     }
 
     var body: some View {
-        ZStack {
-            SpaceBackdrop()
+        GeometryReader { geo in
+            ZStack {
+                CosmosView(mode: cosmosMode,
+                           center: CGPoint(x: 0.5, y: 0.30),
+                           radius: 0.19,
+                           level: { VoiceAssistant.currentLevel })
+                    .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                Text("この画面を開いている間だけ会話できます。スマホでブロスタを操作しながら、"
-                     + "この画面は別端末で開いておく使い方を想定しています。")
-                    .font(.caption2).foregroundStyle(.white.opacity(0.6))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .padding(.top, 8)
+                VStack(spacing: 0) {
+                    statusChip
+                        .padding(.top, 6)
 
-                ZStack {
-                    AICoreOrb(energy: energy, accent: accent)
-                        .frame(width: 300, height: 300)
-                    Text(label)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .offset(y: 150)
-                }
-                .frame(height: 240)
-                .padding(.vertical, 12)
+                    // 球体のぶんの空き
+                    Spacer(minLength: geo.size.height * 0.36)
 
-                if case .unavailable(let message) = assistant.state {
-                    Label(message, systemImage: "exclamationmark.triangle.fill")
-                        .font(.footnote).foregroundStyle(.red)
-                        .multilineTextAlignment(.leading)
-                        .padding(.horizontal)
-                        .padding(.bottom, 8)
-                }
+                    transcript
+                        .frame(minHeight: 44)
+                        .padding(.horizontal, 24)
 
-                if !assistant.liveTranscript.isEmpty {
-                    Text(assistant.liveTranscript)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.75))
-                        .padding(.horizontal)
-                        .padding(.bottom, 8)
-                        .transition(.opacity)
-                }
+                    conversation
+                        .frame(maxHeight: geo.size.height * 0.34)
 
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 12) {
-                        ForEach(assistant.turns.reversed()) { turn in
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Q. \(turn.question)")
-                                    .font(.footnote).foregroundStyle(.white.opacity(0.6))
-                                Text(turn.answer)
-                                    .font(.callout).foregroundStyle(.white)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(16)
-                            .glassCard(tint: .green.opacity(0.5))
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, 4)
+                    micButton
+                        .padding(.top, 8)
+                        .padding(.bottom, 12)
                 }
-                .overlay {
-                    if assistant.turns.isEmpty {
-                        ContentUnavailableView(
-                            "まだ会話がありません",
-                            systemImage: "mic.circle",
-                            description: Text("「このマップになった」「相手、二人はこれを選んだ」のように状況を教えるか、"
-                                             + "「おすすめは?」「なんで?」と聞いてみてください。")
-                        )
-                        .foregroundStyle(.white.opacity(0.7))
-                    }
-                }
-
-                Button {
-                    isActive ? assistant.stop() : assistant.start()
-                } label: {
-                    Label(isActive ? "対話を終了" : "対話を始める",
-                          systemImage: isActive ? "stop.fill" : "mic.fill")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .foregroundStyle(.white)
-                }
-                .background(
-                    Capsule().fill(isActive ? Color.red.opacity(0.85) : Color.green.opacity(0.85))
-                )
-                .overlay(Capsule().strokeBorder(.white.opacity(0.3), lineWidth: 1))
-                .shadow(color: (isActive ? Color.red : Color.green).opacity(0.5), radius: 20, y: 8)
-                .padding()
             }
         }
         .navigationTitle("対話モード")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     assistant.resetConversation()
                 } label: {
                     Label("リセット", systemImage: "arrow.counterclockwise")
                 }
+                .tint(.white)
             }
         }
         .preferredColorScheme(.dark)
         .onDisappear { assistant.stop() }
-        .animation(.default, value: assistant.liveTranscript)
+        .animation(.easeInOut(duration: 0.25), value: assistant.liveTranscript)
         .animation(.easeInOut(duration: 0.4), value: assistant.state)
     }
 
-    private var energy: Double {
+    // MARK: - パーツ
+
+    private var statusChip: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(accent)
+                .frame(width: 8, height: 8)
+                .shadow(color: accent, radius: 6)
+            Text(label)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.9))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial.opacity(0.6), in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
+    }
+
+    @ViewBuilder
+    private var transcript: some View {
+        if case .unavailable(let message) = assistant.state {
+            Label(message, systemImage: "exclamationmark.triangle.fill")
+                .font(.footnote)
+                .foregroundStyle(.orange)
+                .multilineTextAlignment(.center)
+        } else if !assistant.liveTranscript.isEmpty {
+            Text(assistant.liveTranscript)
+                .font(.title3.weight(.medium))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .shadow(color: .cyan.opacity(0.6), radius: 12)
+                .transition(.opacity)
+        } else if assistant.turns.isEmpty {
+            Text(isActive
+                 ? "例：「マップはハードロック鉱山。相手がガスを選んだ」"
+                 : "状況を話しかけると、次のピックを答えます")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.6))
+                .multilineTextAlignment(.center)
+        }
+    }
+
+    private var conversation: some View {
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                ForEach(Array(assistant.turns.reversed().enumerated()), id: \.element.id) { index, turn in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(turn.question)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.55))
+                        Text(turn.answer)
+                            .font(index == 0 ? .callout.weight(.medium) : .footnote)
+                            .foregroundStyle(.white.opacity(index == 0 ? 1 : 0.7))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .glassCard(tint: index == 0 ? .cyan.opacity(0.55) : .white.opacity(0.15),
+                               cornerRadius: 18)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+        .scrollIndicators(.hidden)
+        .animation(.spring(duration: 0.4), value: assistant.turns.count)
+    }
+
+    private var micButton: some View {
+        Button {
+            isActive ? assistant.stop() : assistant.start()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(isActive ? Color.red.opacity(0.85) : Color.cyan.opacity(0.85))
+                    .frame(width: 74, height: 74)
+                    .shadow(color: (isActive ? Color.red : Color.cyan).opacity(0.7), radius: 22)
+                Circle()
+                    .strokeBorder(.white.opacity(0.35), lineWidth: 1)
+                    .frame(width: 74, height: 74)
+                Image(systemName: isActive ? "stop.fill" : "mic.fill")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isActive ? "対話を終了" : "対話を始める")
+    }
+
+    // MARK: - 状態ごとの見た目
+
+    private var cosmosMode: CosmosMode {
         switch assistant.state {
-        case .idle: return 0.12
-        case .listening: return 0.55
-        case .thinking: return 0.35
-        case .speaking: return 0.85
-        case .unavailable: return 0.08
+        case .idle, .unavailable: return .idle
+        case .listening: return .listening
+        case .thinking: return .thinking
+        case .speaking: return .speaking
         }
     }
 
     private var accent: Color {
         switch assistant.state {
         case .listening: return .cyan
-        case .speaking: return .green
-        case .thinking: return .yellow
-        default: return .white.opacity(0.6)
+        case .speaking: return .mint
+        case .thinking: return .purple
+        case .unavailable: return .orange
+        case .idle: return .white.opacity(0.6)
         }
     }
 
     private var label: String {
         switch assistant.state {
-        case .idle: return "「対話を始める」を押して話しかけてください"
-        case .listening: return "聞いています…"
-        case .thinking: return "考え中…"
-        case .speaking: return "答えています…"
+        case .idle: return "待機中"
+        case .listening: return "聞いています"
+        case .thinking: return "考え中"
+        case .speaking: return "答えています"
         case .unavailable: return "使用できません"
         }
     }

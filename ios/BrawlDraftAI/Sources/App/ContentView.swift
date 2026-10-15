@@ -1,39 +1,84 @@
 import PhotosUI
 import SwiftUI
 
-/// Form 内の NavigationLink(destination:) は、行が画面に出た時点で遷移先を
-/// 先読み構築してしまう（SwiftUI の既知の挙動）。対話モードの遷移先は常時
-/// 描画し続ける TimelineView を2つ抱えているため、先読みされるとホーム画面が
-/// 表示された瞬間からバックグラウンドで描画ループが回り続け、メインスレッドを
-/// 圧迫してアプリ全体が固まる（実機で確認済みの不具合）。
-/// これを避けるため、このリンクだけ値ベースの遅延遷移にしている。
-private enum ContentRoute: Hashable {
+/// 画面遷移はすべて値ベース（NavigationLink(value:) + navigationDestination）。
+/// 対話モード・チーム募集は常時描画する重いビューを抱えるため、行が見えた時点で
+/// 遷移先が先読み構築されると描画ループが裏で回り続けてアプリ全体が固まる（実機で確認済み）。
+enum HomeRoute: Hashable {
     case voiceAssistant
+    case teamBoard
+    case maps
+    case brawlers
+    case roster
+    case settings
 }
 
+/// ホーム。見る場所を「対話」「スクショ解析」「チーム募集」の 3 つに絞り、
+/// 設定・手順・規約は SettingsView に逃がしてある。
 struct ContentView: View {
     @EnvironmentObject private var store: RulesStore
+    @State private var path = NavigationPath()
     @State private var pickedItem: PhotosPickerItem?
+    @State private var showsPhotoPicker = false
+    @State private var showsAnalyzeOptions = false
     @State private var busy = false
     @State private var errorText: String?
     @State private var result: (snapshot: DraftSnapshot, recommendation: Recommendation)?
-    @State private var resultExpanded = false
 
     var body: some View {
-        NavigationStack {
-            Form {
-                dataSection
-                testSection
-                if let result { resultSection(result) }
-                settingsSection
-                helpSection
-                legalSection
+        NavigationStack(path: $path) {
+            ZStack {
+                CosmosView(mode: .idle,
+                           center: CGPoint(x: 0.5, y: 0.16),
+                           radius: 0.13,
+                           framesPerSecond: 30,
+                           isPaused: !path.isEmpty)
+                    .ignoresSafeArea()
+
+                ScrollView {
+                    VStack(spacing: 14) {
+                        hero
+                        primaryCard
+                        HStack(spacing: 12) {
+                            analyzeCard
+                            teamCard
+                        }
+                        if let result { resultCard(result) }
+                        dataLinks
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 28)
+                }
+                .scrollIndicators(.hidden)
             }
-            .navigationTitle("ガチバトルピックAI")
-            .navigationDestination(for: ContentRoute.self) { route in
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(value: HomeRoute.settings) {
+                        Image(systemName: "gearshape.fill")
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                    .accessibilityLabel("設定")
+                }
+            }
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .navigationDestination(for: HomeRoute.self) { route in
                 switch route {
                 case .voiceAssistant: VoiceAssistantView()
+                case .teamBoard: TeamBoardView()
+                case .maps: MapListView()
+                case .brawlers: BrawlerListView()
+                case .roster: BrawlerRosterView()
+                case .settings: SettingsView()
                 }
+            }
+            .confirmationDialog("スクショ解析", isPresented: $showsAnalyzeOptions) {
+                Button("最新のスクリーンショットを解析") { Task { await analyzeLatest() } }
+                Button("写真から選ぶ") { showsPhotoPicker = true }
+            }
+            .photosPicker(isPresented: $showsPhotoPicker, selection: $pickedItem, matching: .screenshots)
+            .onChange(of: pickedItem) { _, item in
+                guard let item else { return }
+                Task { await analyze(item) }
             }
             .alert("エラー", isPresented: .constant(errorText != nil)) {
                 Button("OK") { errorText = nil }
@@ -41,207 +86,197 @@ struct ContentView: View {
                 Text(errorText ?? "")
             }
         }
+        .preferredColorScheme(.dark)
+        .tint(.cyan)
+        #if DEBUG
+        // 見た目確認用: SIMCTL_CHILD_BDA_ROUTE=voice などで起動すると直接その画面を開く
+        .task {
+            let routes: [String: HomeRoute] = ["voice": .voiceAssistant, "team": .teamBoard,
+                                               "maps": .maps, "settings": .settings]
+            if let key = ProcessInfo.processInfo.environment["BDA_ROUTE"], let route = routes[key] {
+                path.append(route)
+            }
+        }
+        #endif
     }
 
-    // MARK: - データ状態
+    // MARK: - ヒーロー
 
-    private var dataSection: some View {
-        Section("ルールデータ") {
-            switch store.state {
-            case .idle, .loading:
-                HStack { ProgressView(); Text("読み込み中 …").foregroundStyle(.secondary) }
-            case .failed(let message):
-                Label(message, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-            case .ready(let rules):
-                NavigationLink {
-                    MapListView()
+    private var hero: some View {
+        VStack(spacing: 10) {
+            // 球体（背景の CosmosView）のぶんの余白
+            Color.clear.frame(height: 150)
+            Text("ガチバトルピックAI")
+                .font(.system(size: 30, weight: .heavy, design: .rounded))
+                .foregroundStyle(
+                    LinearGradient(colors: [.white, Color(red: 0.6, green: 0.85, blue: 1)],
+                                   startPoint: .top, endPoint: .bottom)
+                )
+                .shadow(color: .cyan.opacity(0.5), radius: 14)
+            dataPill
+        }
+        .padding(.bottom, 6)
+    }
+
+    @ViewBuilder
+    private var dataPill: some View {
+        switch store.state {
+        case .ready(let rules):
+            let q = rules.document.dataQuality
+            let measured = (q.battlesAnalyzed ?? 0) > 0
+            HStack(spacing: 6) {
+                Circle().fill(measured ? Color.green : Color.orange).frame(width: 7, height: 7)
+                Text(measured
+                     ? "実測 \((q.battlesAnalyzed ?? 0).formatted())試合・\(RulesStore.displayDate(q.statsUpdatedAt ?? rules.generatedAt)) 更新"
+                     : "推定データ・\(RulesStore.displayDate(rules.generatedAt)) 更新")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(.ultraThinMaterial.opacity(0.7), in: Capsule())
+        case .failed(let message):
+            Text(message).font(.caption).foregroundStyle(.orange)
+        default:
+            ProgressView().tint(.white)
+        }
+    }
+
+    // MARK: - メインの 3 枚
+
+    private var primaryCard: some View {
+        NavigationLink(value: HomeRoute.voiceAssistant) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [.cyan, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 58, height: 58)
+                        .shadow(color: .cyan.opacity(0.7), radius: 14)
+                    Image(systemName: "waveform")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("対話モード")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.white)
+                    Text("状況を話すだけで、次のピックを提案")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.headline)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+            .padding(18)
+            .glassCard(tint: .cyan, cornerRadius: 24)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var analyzeCard: some View {
+        Button {
+            showsAnalyzeOptions = true
+        } label: {
+            tile(icon: busy ? nil : "camera.viewfinder",
+                 title: busy ? "解析中…" : "スクショ解析",
+                 subtitle: "ドラフト画面から判定",
+                 tint: .purple)
+        }
+        .buttonStyle(.plain)
+        .disabled(busy)
+    }
+
+    private var teamCard: some View {
+        NavigationLink(value: HomeRoute.teamBoard) {
+            tile(icon: "person.3.fill", title: "チーム募集", subtitle: "招待リンクで合流", tint: .mint)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func tile(icon: String?, title: String, subtitle: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Group {
+                if let icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(tint)
+                } else {
+                    ProgressView().tint(tint)
+                }
+            }
+            .frame(height: 26)
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.white)
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.65))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .glassCard(tint: tint, cornerRadius: 22)
+    }
+
+    // MARK: - 直近の解析結果
+
+    private func resultCard(_ value: (snapshot: DraftSnapshot, recommendation: Recommendation)) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("直近の解析").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
+                Spacer()
+                Button {
+                    result = nil
                 } label: {
-                    LabeledContent("マップ数", value: "\(rules.document.maps.count)")
-                }
-                NavigationLink {
-                    BrawlerListView()
-                } label: {
-                    LabeledContent("キャラ判定用テンプレ", value: "\(rules.brawlerMatcher.count)")
-                }
-                LabeledContent("生成日時", value: rules.generatedAt)
-                LabeledContent("取得元", value: rules.origin.rawValue)
-                LabeledContent("スコアの根拠") {
-                    switch rules.document.dataQuality.confidence {
-                    case .measured:
-                        Text("実測勝率あり").foregroundStyle(.green)
-                    case .manualTier(let count):
-                        Text("手動ティア \(count) 件で補正")
-                            .foregroundStyle(.yellow)
-                            .multilineTextAlignment(.trailing)
-                    case .roleOnly:
-                        Text("役割適性のみ（同点多数）").foregroundStyle(.orange)
-                    }
-                }
-                if case .manualTier = rules.document.dataQuality.confidence {
-                    Text("実測勝率は未取得です。data/tier_overrides.json の手入力値で"
-                         + "順位を付けています（測定値ではありません）。")
-                        .font(.caption2).foregroundStyle(.secondary)
+                    Image(systemName: "xmark").font(.caption).foregroundStyle(.white.opacity(0.5))
                 }
             }
-            if let message = store.lastRefreshMessage {
-                Text(message).font(.footnote).foregroundStyle(.secondary)
+            Text(value.recommendation.title)
+                .font(.headline)
+                .foregroundStyle(.white)
+            ForEach(value.recommendation.advices) { advice in
+                AdviceRow(advice: advice)
             }
-            Button {
-                Task { await store.refreshFromRemote(force: true) }
-            } label: {
-                Label("いま更新する", systemImage: "arrow.clockwise")
+            if let caution = value.recommendation.caution {
+                Text(caution).font(.caption2).foregroundStyle(.orange.opacity(0.9))
             }
         }
+        .padding(16)
+        .glassCard(tint: .purple, cornerRadius: 22)
     }
 
-    // MARK: - テスト
+    // MARK: - データ
 
-    private var testSection: some View {
-        Section("動作テスト") {
-            PhotosPicker(selection: $pickedItem, matching: .screenshots) {
-                Label("スクリーンショットを選んで解析", systemImage: "photo.on.rectangle.angled")
-            }
-            .onChange(of: pickedItem) { _, item in
-                guard let item else { return }
-                Task { await analyze(item) }
-            }
-
-            Button {
-                Task { await analyzeLatest() }
-            } label: {
-                Label("最新のスクショを解析（本番と同じ経路）", systemImage: "bolt.fill")
-            }
-
-            NavigationLink {
-                CalibrationView()
-            } label: {
-                Label("枠合わせ（初回は必須）", systemImage: "viewfinder.rectangular")
-            }
-
-            NavigationLink {
-                BrawlerRosterView()
-            } label: {
-                Label("持っているキャラを管理", systemImage: "checklist")
-            }
-
-            Button {
-                SpeechAnnouncer.shared.announceTest()
-            } label: {
-                Label("読み上げテスト", systemImage: "speaker.wave.2.fill")
-            }
-
-            NavigationLink(value: ContentRoute.voiceAssistant) {
-                Label("対話モードで質問する", systemImage: "waveform.and.mic")
-            }
-
-            if busy { HStack { ProgressView(); Text("解析中 …") } }
+    private var dataLinks: some View {
+        VStack(spacing: 0) {
+            linkRow(.maps, icon: "map.fill", title: "マップ別データ")
+            Divider().overlay(.white.opacity(0.08))
+            linkRow(.brawlers, icon: "person.crop.square.fill", title: "キャラ一覧")
+            Divider().overlay(.white.opacity(0.08))
+            linkRow(.roster, icon: "checklist", title: "持っているキャラ")
         }
+        .glassCard(tint: .white.opacity(0.4), cornerRadius: 20)
+        .padding(.top, 4)
     }
 
-    // MARK: - 結果
-
-    private func resultSection(_ value: (snapshot: DraftSnapshot, recommendation: Recommendation)) -> some View {
-        Section {
-            DisclosureGroup(isExpanded: $resultExpanded) {
-                Text(value.recommendation.title).font(.headline)
-                ForEach(value.recommendation.advices) { advice in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(advice.name)（\(advice.roleJa)）  \(String(format: "%.2f", advice.score))")
-                            .font(.subheadline.weight(.semibold))
-                        if !advice.reason.isEmpty {
-                            Text(advice.reason).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                if let caution = value.recommendation.caution {
-                    Label(caution, systemImage: "exclamationmark.triangle")
-                        .font(.caption).foregroundStyle(.orange)
-                }
-                Text(value.snapshot.diagnosticSummary)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("直近の解析結果").font(.subheadline)
-                    Text(value.recommendation.title)
-                        .font(.caption).foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+    private func linkRow(_ route: HomeRoute, icon: String, title: String) -> some View {
+        NavigationLink(value: route) {
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .frame(width: 24)
+                    .foregroundStyle(.cyan)
+                Text(title).foregroundStyle(.white)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.4))
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
         }
-    }
-
-    // MARK: - 設定
-
-    private var settingsSection: some View {
-        Section("設定") {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("rules.json の URL").font(.caption).foregroundStyle(.secondary)
-                TextField("https://raw.githubusercontent.com/…", text: Binding(
-                    get: { AppSettings.rulesURL },
-                    set: { AppSettings.rulesURL = $0 }
-                ))
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .font(.footnote)
-                if !AppSettings.isRulesURLConfigured {
-                    Text("未設定です。GitHub の raw URL を入れると毎日の更新が反映されます。")
-                        .font(.caption2).foregroundStyle(.orange)
-                }
-            }
-
-            Toggle("通知バナーを出す", isOn: Binding(
-                get: { AppSettings.notificationEnabled },
-                set: { AppSettings.notificationEnabled = $0 }
-            ))
-            Toggle("音声で読み上げる", isOn: Binding(
-                get: { AppSettings.speechEnabled },
-                set: { AppSettings.speechEnabled = $0 }
-            ))
-            Stepper(value: Binding(
-                get: { AppSettings.maxAnnouncedPicks },
-                set: { AppSettings.maxAnnouncedPicks = $0 }
-            ), in: 1...3) {
-                Text("読み上げるキャラ数: \(AppSettings.maxAnnouncedPicks)")
-            }
-            VStack(alignment: .leading) {
-                Text("読み上げ速度: \(String(format: "%.2f", AppSettings.speechRate))")
-                    .font(.caption)
-                Slider(value: Binding(
-                    get: { AppSettings.speechRate },
-                    set: { AppSettings.speechRate = $0 }
-                ), in: 0.40...0.70)
-            }
-        }
-    }
-
-    private var legalSection: some View {
-        Section("このアプリについて") {
-            Link(destination: URL(string: "https://asanoitsuki.github.io/brawl-stars-draft-ai/privacy-policy.html")!) {
-                Label("プライバシーポリシー", systemImage: "hand.raised")
-            }
-            Link(destination: URL(string: "https://asanoitsuki.github.io/brawl-stars-draft-ai/terms.html")!) {
-                Label("利用規約", systemImage: "doc.text")
-            }
-            Text("本アプリは Brawl Stars（Supercell社）の非公式ファンツールです。"
-                 + "Supercell社とは一切関係ありません。")
-                .font(.caption2).foregroundStyle(.secondary)
-        }
-    }
-
-    private var helpSection: some View {
-        Section("背面タップの設定手順") {
-            Text("""
-            1. ショートカットアプリで新規ショートカットを作る
-            2. アクション「最新スクショでドラフト解析」を追加
-            3. 設定 > アクセシビリティ > タッチ > 背面タップ を開く
-            4. 「ダブルタップ」→「スクリーンショット」（iOS 標準機能）を選ぶ
-            5. 「トリプルタップ」→ さっき作ったショートカットを選ぶ
-            6. 対戦中: 背面ダブルタップ（撮影）→ すぐに背面トリプルタップ（解析）
-            """)
-            .font(.footnote)
-        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - 実行
@@ -266,6 +301,58 @@ struct ContentView: View {
             result = DraftService.lastResult
         } catch {
             errorText = error.localizedDescription
+        }
+    }
+}
+
+/// 提案 1 体ぶんの行。点数ではなく「実測勝率と試合数」を主役にする。
+struct AdviceRow: View {
+    let advice: PickAdvice
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            BrawlerIcon(id: advice.id, size: 40)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(advice.nameJa ?? advice.name).font(.subheadline.weight(.semibold))
+                    Text(advice.roleJa).font(.caption2).foregroundStyle(.secondary)
+                }
+                if !advice.reason.isEmpty {
+                    Text(advice.reason).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 4)
+            if let wr = advice.winRate {
+                WinRateBadge(winRate: wr, games: advice.games)
+            }
+        }
+    }
+}
+
+/// 勝率を色付きで見せるバッジ。試合数が少ないときは信頼度が低いことも出す。
+struct WinRateBadge: View {
+    let winRate: Double
+    let games: Int?
+
+    private var color: Color {
+        switch winRate {
+        case 55...: return .green
+        case 51..<55: return .mint
+        case 48..<51: return .white
+        default: return .orange
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            Text("\(String(format: "%.1f", winRate))%")
+                .font(.callout.monospacedDigit().weight(.bold))
+                .foregroundStyle(color)
+            if let games {
+                Text("\(games.formatted())戦")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(games < 30 ? .orange : .secondary)
+            }
         }
     }
 }

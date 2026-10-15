@@ -19,3 +19,9 @@ PRODUCT_BUNDLE_IDENTIFIER = com.example.brawldraftai
 // と言われたら、Sources/BrawlDraftAI.entitlements から
 // com.apple.developer.usernotifications.time-sensitive を削除する。
 // （通知は出るが、ゲーム中の割り込み度が下がる）
+
+// チーム募集（CloudKit）を有効にする。先に Apple Developer で
+//   Identifiers > このバンドル ID > iCloud（CloudKit）にチェック > コンテナ iCloud.<バンドルID> を作成して割り当て
+// を済ませてから、次の 2 行のコメントを外す（README「チーム募集のセットアップ」）。
+// BDA_ENTITLEMENTS = Sources/BrawlDraftAI-CloudKit.entitlements
+// BDA_SWIFT_FLAGS = CLOUDKIT_ENABLED

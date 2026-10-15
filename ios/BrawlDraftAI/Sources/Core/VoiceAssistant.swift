@@ -41,6 +41,10 @@ final class VoiceAssistant: NSObject, ObservableObject {
     @Published private(set) var liveTranscript: String = ""
     @Published private(set) var turns: [Turn] = []
 
+    /// マイク入力の大きさ（0〜1）。演出（CosmosView）が毎フレーム読むだけの値なので
+    /// @Published にしない — 1 秒に 40 回以上変わる値で SwiftUI を再描画させないため。
+    nonisolated(unsafe) static var currentLevel: Float = 0
+
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP"))
     private let audioEngine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -107,6 +111,7 @@ final class VoiceAssistant: NSObject, ObservableObject {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         state = .idle
         liveTranscript = ""
+        Self.currentLevel = 0
     }
 
     private func requestMicAndBegin() {
@@ -198,7 +203,11 @@ final class VoiceAssistant: NSObject, ObservableObject {
     /// 「マップは○○、味方はコレとコレを選んだ、相手はコレをバンした」のような長い複合文を
     /// 言い切る前に区切ってしまわないよう、単発の質問より少し長めに待つ。
     private func registerAudioLevel(_ level: Float) {
-        guard state == .listening else { return }
+        guard state == .listening else {
+            Self.currentLevel = 0
+            return
+        }
+        Self.currentLevel = min(1, max(0, (level - 0.006) * 9))
         let isQuiet = level < 0.015
         if isQuiet {
             guard hasHeardSpeech else { return }

@@ -39,7 +39,8 @@ struct MapListView: View {
             ForEach(modeOrder, id: \.self) { modeJa in
                 if let maps = grouped[modeJa], !maps.isEmpty {
                     Section(modeJa) {
-                        ForEach(maps.sorted { $0.name < $1.name }, id: \.id) { map in
+                        ForEach(maps.sorted { ($0.inRotation ? 0 : 1, $0.name) < ($1.inRotation ? 0 : 1, $1.name) },
+                                id: \.id) { map in
                             NavigationLink {
                                 MapDetailView(map: map, rules: rules)
                             } label: {
@@ -63,8 +64,13 @@ struct MapListView: View {
                 }
             }
             Spacer()
-            if map.inRotation {
-                Text("ローテ中").font(.caption2).foregroundStyle(.green)
+            VStack(alignment: .trailing, spacing: 2) {
+                if map.inRotation {
+                    Text("ランク対象").font(.caption2.weight(.semibold)).foregroundStyle(.green)
+                }
+                if map.hasLiveStats, let n = map.statsBattles, map.statsScope == "map" {
+                    Text("実測 \(n.formatted())試合").font(.caption2).foregroundStyle(.secondary)
+                }
             }
         }
     }

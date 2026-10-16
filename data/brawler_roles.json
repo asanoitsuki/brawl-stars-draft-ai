@@ -10,7 +10,7 @@
     "support",
     "damage"
   ],
-  "count": 109,
+  "count": 108,
   "brawlers": [
     {
       "id": 16000000,
@@ -705,15 +705,6 @@
       "source": "manual",
       "confidence": 1.0,
       "tip": "Use Terrain Unleash Gris-Gris"
-    },
-    {
-      "id": 16000088,
-      "name": "Buzz Lightyear",
-      "role": "damage",
-      "source": "heuristic",
-      "confidence": 0.0,
-      "tip": "Damage Dealer",
-      "matched": []
     },
     {
       "id": 16000089,

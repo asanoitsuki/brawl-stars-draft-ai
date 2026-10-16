@@ -8,152 +8,155 @@
   :root { color-scheme: light dark; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
-    line-height: 1.8;
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 32px 20px 80px;
-    color: #1c1c1e;
-    background: #fff;
+    line-height: 1.8; max-width: 720px; margin: 0 auto; padding: 32px 20px 80px;
+    color: #1c1c1e; background: #fff;
   }
   @media (prefers-color-scheme: dark) {
     body { color: #f2f2f7; background: #000; }
     a { color: #6ab0ff; }
-    .box { background: #1c1c1e !important; }
+    .box, table td, table th { background: #1c1c1e !important; }
   }
   h1 { font-size: 1.5rem; margin-bottom: 4px; }
   h2 { font-size: 1.15rem; margin-top: 2.2em; border-left: 4px solid #4a90d9; padding-left: 10px; }
+  h3 { font-size: 1rem; margin-top: 1.4em; }
   .updated { color: #888; font-size: 0.9rem; margin-bottom: 2em; }
   .box { background: #f2f2f7; border-radius: 10px; padding: 16px 18px; margin: 1em 0; }
   a { color: #0066cc; }
   ul { padding-left: 1.3em; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { border: 1px solid #8884; padding: 8px 10px; text-align: left; vertical-align: top; background: #f9f9fb; }
   footer { margin-top: 4em; color: #888; font-size: 0.85rem; }
 </style>
 </head>
 <body>
 
 <h1>プライバシーポリシー</h1>
-<p class="updated">Brawl Board（旧名: ガチバトルピックAI。以下「本アプリ」）／最終更新日: 2026年10月16日</p>
+<p class="updated">Brawl Board（以下「本アプリ」）／最終更新日: 2026年10月17日</p>
 
 <div class="box">
-  <strong>結論から言うと、本アプリは利用者の個人情報や利用データを一切収集しません。</strong>
-  サーバーへのアップロード、アカウント登録、ログイン、アプリ内解析（アナリティクス）、
-  広告表示、クラッシュレポート送信のいずれも行っていません。
+  <strong>かんたんに言うと</strong>
+  <ul>
+    <li>広告はなく、利用者を追跡する仕組みもありません。</li>
+    <li>スクリーンショットの解析・持っているキャラの設定は<strong>すべて端末の中だけ</strong>で行い、外へ送りません。</li>
+    <li>「プロフィール」「チーム募集」「チャット」を使ったときだけ、入力した内容が<strong>iCloud の公開データベースに保存され、他の利用者にも見えます</strong>。</li>
+    <li>それらは、アプリの「設定 ＞ プロフィールとデータを削除」でいつでも消せます。</li>
+  </ul>
 </div>
 
 <h2>1. 本アプリについて</h2>
 <p>
-  本アプリは、Brawl Stars（Supercell社）のランクモード「ガチバトル」のドラフト画面を
-  端末内で解析し、おすすめキャラを提案する非公式のファンメイドツールです。
-  Supercell社が開発・提供・監修しているものではなく、Supercell社とは一切関係ありません。
-  Brawl Stars は Supercell社の商標です。
+  本アプリは、Brawl Stars（Supercell社）のプレイヤー向けの<strong>非公式ファンツール</strong>です。
+  ガチバトルの実戦データの閲覧、スクリーンショットからのキャラ提案、プロフィール作成、チーム募集の掲示板を提供します。
+  Supercell社とは一切関係ありません。開発者は個人です。
 </p>
 
-<h2>2. アクセスする情報とその扱い</h2>
+<h2>2. 取得する情報と使いみち</h2>
 
-<h3 style="margin-top:1.2em;">2-1. 写真（スクリーンショット）</h3>
+<h3>2-1. 端末の中だけで扱うもの（開発者には届きません）</h3>
+<table>
+  <tr><th>情報</th><th>使いみち</th></tr>
+  <tr><td>写真（スクリーンショット）</td>
+      <td>ドラフト画面の解析、プロフィール画面の文字の読み取り。<strong>解析・文字認識は端末内で行い、画像は外部に送信しません。</strong>
+          写真へのアクセスは、利用者が選んだ画像、または「最新のスクリーンショットを解析」を押したときのスクリーンショットだけです。</td></tr>
+  <tr><td>写真への保存</td><td>作成したプロフィール画像を保存するときだけ（書き込みのみ。写真の一覧は読みません）。</td></tr>
+  <tr><td>通知</td><td>解析結果のお知らせ。端末内で作られるローカル通知です。</td></tr>
+  <tr><td>持っているキャラ・設定値</td><td>おすすめから外すキャラや読み上げ設定などを、端末の設定領域に保存します。</td></tr>
+</table>
+
+<h3>2-2. 公開される情報（任意・プロフィール／チーム募集／チャットを使ったとき）</h3>
+<p>次の内容は <strong>Apple の iCloud（CloudKit の公開データベース）に保存され、本アプリの他の利用者が閲覧できます</strong>。
+  使うかどうかは利用者が選べ、使わなければ何も送信されません。</p>
+<table>
+  <tr><th>情報</th><th>内容</th></tr>
+  <tr><td>プロフィール</td>
+      <td>ブロスタのプレイヤータグ、ゲーム内の名前、アイコン、クラブ名、トロフィー・勝利数・レベルなどの公開プロフィール、
+          全ブロウラーの状態（パワー・トロフィー等）、ガチバトルの最高ランク／ポイント（画像から読み取った場合）、
+          ひとこと、フレンド招待リンク、Discord のユーザー名・招待リンク（入力した場合）</td></tr>
+  <tr><td>チーム募集</td><td>募集の種類・モード・ランク帯・参加条件・ひとこと・ブロスタのチーム招待リンクまたはチームコード・Discord リンク、投稿時刻</td></tr>
+  <tr><td>チャット</td><td>募集ごとのチャットに書いたメッセージ、表示名、アイコン、時刻</td></tr>
+  <tr><td>識別子</td><td>iCloud が発行する<strong>匿名のユーザー ID</strong>（投稿者の判別・ブロック・削除のために使用）。Apple ID のメールアドレスや氏名は取得せず、他の利用者にも見えません。</td></tr>
+  <tr><td>通報</td><td>他の利用者を通報したとき、通報理由と対象の投稿・メッセージの内容。不適切な投稿への対応のためだけに開発者が参照します。</td></tr>
+</table>
 <p>
-  ドラフト画面を解析するため、本アプリは端末の写真ライブラリへのアクセス許可を求めます。
-  読み込んだスクリーンショットは<strong>端末内でのみ画像解析（テンプレートマッチング・
-  文字認識）に使われ、外部のサーバーへ送信されることは一切ありません</strong>。
-  解析結果（提案内容）も端末内にのみ保存されます。
+  <strong>パスワード・メールアドレス・電話番号・位置情報・連絡先は取得しません。</strong>
+  プロフィールのひとこと・チャットには、個人を特定できる情報（本名・住所・電話番号など）を書かないでください。
 </p>
 
-<h3 style="margin-top:1.2em;">2-2. 通知</h3>
+<h3>2-3. 外部サービスとの通信</h3>
+<table>
+  <tr><th>通信先</th><th>目的・送る内容</th></tr>
+  <tr><td>GitHub（raw.githubusercontent.com）</td><td>ゲームの戦略データ（ルールデータ）の取得。個人を特定する情報は含みません。</td></tr>
+  <tr><td>Brawlify（cdn.brawlify.com）</td><td>プロフィールアイコンなどの画像の表示。画像の URL が通信先に届きます。</td></tr>
+  <tr><td>プロフィール取得用の中継サーバー（Vercel）</td>
+      <td>プロフィール作成時に、入力した<strong>プレイヤータグ</strong>を送り、Brawl Stars 公式 API から公開プロフィールを取得します。
+          中継サーバーはタグや結果を保存しません。ただし Vercel の標準のアクセスログに、通信元 IP アドレスとタグを含む URL が一定期間残ることがあります。</td></tr>
+  <tr><td>Supercell社の Brawl Stars 公式 API</td><td>上記の中継サーバー経由で、プレイヤータグに対応する公開プロフィールを取得します。</td></tr>
+  <tr><td>Apple（iCloud / CloudKit）</td><td>2-2 の公開情報の保存・取得。Apple のプライバシーポリシーが適用されます。</td></tr>
+</table>
+<p>対戦結果の統計は、開発者が公式 API の公開データを集計したもので、利用者の端末からは何も送信されません。</p>
+
+<h3>2-4. 現在提供していない機能</h3>
 <p>
-  解析結果をバナー通知でお知らせするため、通知の許可を求めます。通知はすべて端末内で
-  生成されるローカル通知で、外部サーバーは関与しません。
+  音声で状況を伝える「対話モード」は現在提供していません（画面から利用できません）。将来提供する場合は、
+  マイクと音声認識の許可を求め、本ポリシーを更新します。許可を求める文言はアプリに残っていますが、現在マイク・音声認識は使用していません。
 </p>
 
-<h3 style="margin-top:1.2em;">2-3. マイク・音声認識（対話モード）</h3>
+<h2>3. 保存期間と削除</h2>
+<ul>
+  <li><strong>チーム募集</strong>は投稿から約 20 分で一覧に表示されなくなります。「締め切る」でいつでも削除できます。</li>
+  <li><strong>プロフィール・募集・チャットのメッセージ</strong>は、アプリの<strong>「設定 ＞ プライバシー ＞ プロフィールとデータを削除」</strong>（またはプロフィール画面の同じボタン）で、
+      端末と iCloud の両方から削除できます。</li>
+  <li>アプリを削除すると端末内のデータは消えます。iCloud に残った公開データは、削除ボタンで消してください。
+      操作できない場合は、下記のお問い合わせから依頼してください。</li>
+  <li>通報の記録は、不正行為の対応のため必要な期間保存します。</li>
+</ul>
+
+<h2>4. 第三者への提供・販売</h2>
+<p>利用者の情報を、販売したり、広告目的で第三者に提供したりすることはありません。2-3 の外部サービスへの送信は、機能の提供に必要な範囲に限ります。
+  公開情報は、設計上、本アプリの他の利用者に見えます。</p>
+
+<h2>5. 広告・トラッキング</h2>
+<p>本アプリは広告を表示せず、利用者やデバイスを追跡する仕組み（トラッキング SDK、広告識別子の利用など）を含みません。</p>
+
+<h2>6. 利用者が書き込む内容について</h2>
 <p>
-  「対話モード」を使うと、話しかけた内容を聞き取るためにマイクへのアクセスと音声認識の
-  許可を求めます。認識は端末が対応している場合、<strong>端末内だけで処理（オンデバイス認識）
-  され、音声データが外部のサーバーへ送信されることはありません</strong>。対話モードは
-  このアプリの画面を開いている間のみ動作し、他のアプリに切り替えたりバックグラウンドに
-  なったりすると自動的に停止します（マイクを裏で聞き続けることはありません）。
-  回答の生成にもクラウドAIは使わず、端末内のデータのみで組み立てています。
+  プロフィール・募集・チャットは不特定多数の利用者に公開されます。暴言・嫌がらせ・出会い目的・外部への誘導・個人情報の書き込みは禁止です
+  （詳細は<a href="./terms.html">利用規約</a>）。不適切な内容は、アプリ内の「通報」「この人を非表示」で報告・遮断でき、
+  開発者は通報を受けて 24 時間以内を目安に確認・削除します。
 </p>
 
-<h3 style="margin-top:1.2em;">2-4. ネットワーク通信</h3>
+<h2>7. お子様のプライバシー</h2>
 <p>
-  本アプリが行う通信は、設定画面で指定した URL から「ルールデータ（rules.json）」という
-  ゲームの一般的な戦略データ（マップ名・キャラの相性表など、個人と紐づかない公開情報）を
-  読み込む処理のみです。この通信に利用者個人を特定する情報は含まれません。
-  この URL は既定では未設定で、GitHub 上で公開されているデータファイルを指す想定です。
-</p>
-<p>
-  それ以外の外部API・クラウドサービス（音声合成サービスなどを含む）は、次の 2-5・2-6 の機能
-  （Apple の iCloud、プロフィール取得用の中継サーバー、プロフィールアイコン画像を表示するための Brawlify の画像配信）を除き、
-  使用していません。
+  本アプリは 13 歳未満の方を対象としていません。公開機能（プロフィール・募集・チャット）は、
+  保護者の方がご本人の年齢に応じて利用の可否を判断してください。13 歳未満の方の情報を意図して取得することはありません。
+  お心当たりがある場合は、下記のお問い合わせからご連絡ください。削除いたします。
 </p>
 
-<h3 style="margin-top:1.2em;">2-5. チーム募集（任意）</h3>
-<p>
-  「チーム募集」で募集を投稿すると、入力した<strong>ゲーム内の名前・目的・モード・ランク帯・ひとこと・
-  Brawl Stars の招待リンク（またはチームコード）</strong>が Apple の iCloud（CloudKit の公開データベース）に
-  保存され、<strong>本アプリの全ユーザーに公開</strong>されます。投稿の識別には iCloud が発行する匿名の
-  ユーザーIDが使われ、Apple ID のメールアドレスや氏名が他のユーザーに公開されることはありません。
-</p>
-<p>
-  募集は投稿から 20 分で一覧に表示されなくなり、「締め切る」でいつでも削除できます。
-  他のユーザーの投稿を「通報」した場合は、通報理由と対象投稿の内容が同じ iCloud に保存され、
-  開発者が不適切な投稿への対応のためだけに参照します。投稿を閲覧するだけなら iCloud へのサインインは不要です。
-</p>
+<h2>8. 安全管理</h2>
+<p>通信は暗号化（HTTPS）されます。保存先は Apple の iCloud で、開発者が独自のサーバーに利用者の情報を保管することはありません。
+  プロフィール取得用の中継サーバーはタグを保存しません。</p>
 
-<h3 style="margin-top:1.2em;">2-6. プロフィール・チャット（任意）</h3>
+<h2>9. データの出典</h2>
 <p>
-  プロフィールを作成すると、入力したブロスタのプレイヤータグを開発者が運営する中継サーバー（Vercel）に送り、
-  Brawl Stars 公式APIから公開プロフィール（名前・トロフィー・よく使うキャラなど）を取得します。
-  中継サーバーはタグを受け取って結果を返すだけで、タグや結果を保存しません。
-  保存したプロフィール（取得した内容、ランク帯、ひとこと、フレンド招待リンク、Discord のユーザー名・招待リンク）は
-  iCloud（CloudKit の公開データベース）に保存され、本アプリの全ユーザーが閲覧できます。
-</p>
-<p>
-  募集ごとのチャットに書き込んだ内容と表示名も、同じ公開データベースに保存され、その募集を見た全ユーザーが閲覧できます。
-  不適切なメッセージは通報・非表示にでき、通報内容は開発者が対応のためだけに参照します。
-</p>
-
-<h2>3. 第三者への情報提供</h2>
-<p>
-  本アプリの開発者が、利用者の情報を第三者に提供・販売・共有することはありません
-  （そもそも収集していないためです）。チーム募集の投稿は、利用者自身の操作で他のユーザーに公開されるものです。
-</p>
-
-<h2>4. 広告・トラッキング</h2>
-<p>本アプリは広告を表示せず、利用者やデバイスを追跡する仕組み（トラッキングSDK等）も含みません。</p>
-
-<h2>5. お子様のプライバシー</h2>
-<p>本アプリは個人情報を収集しないため、年齢を問わずご利用いただけます。</p>
-
-<h2>6. データの出典</h2>
-<p>
-  マップ・キャラクターの画像や基礎データは
-  <a href="https://brawlify.com" target="_blank" rel="noopener">Brawlify</a> の公開APIから取得しています。
-  ガチバトルのマップ別勝率・キャラ同士の相性は、Supercell 社の
-  <a href="https://developer.brawlstars.com" target="_blank" rel="noopener">Brawl Stars 公式API</a>
-  で公開されている対戦履歴を開発者側で集計したものです（集計はサーバー側で行い、利用者の端末からは送信しません）。
-  ガジェット・スターパワーの実測勝率統計は
-  <a href="https://brawltime.ninja" target="_blank" rel="noopener">Brawl Time Ninja</a> の公開データを参照しています。
+  マップ・キャラクターの画像や基礎データは <a href="https://brawlify.com" target="_blank" rel="noopener">Brawlify</a> の公開 API から取得しています。
+  ガチバトルのマップ別勝率・キャラ同士の相性は、Supercell社の
+  <a href="https://developer.brawlstars.com" target="_blank" rel="noopener">Brawl Stars 公式 API</a> で公開されている対戦履歴を開発者が集計したものです。
+  ガジェット・スターパワーの実測勝率は <a href="https://brawltime.ninja" target="_blank" rel="noopener">Brawl Time Ninja</a> の公開データを参照しています。
   これらは本アプリの開発者が運営するサービスではありません。
 </p>
 
-<h2>7. このポリシーの変更</h2>
-<p>
-  本ポリシーの内容は、本アプリの機能追加・変更にあわせて更新することがあります。
-  重要な変更がある場合は、このページの内容を更新し、最終更新日を変更します。
-</p>
+<h2>10. このポリシーの変更</h2>
+<p>機能の追加・変更にあわせて更新することがあります。重要な変更があるときは、このページを更新して最終更新日を変えます。</p>
 
-<h2>8. お問い合わせ</h2>
+<h2>11. お問い合わせ</h2>
 <p>
-  本アプリに関するご質問は、GitHub リポジトリの
-  <a href="https://github.com/asanoitsuki/brawl-stars-draft-ai/issues" target="_blank" rel="noopener">Issues</a>
-  よりお願いします。
+  ご質問・削除のご依頼・不適切な投稿の報告は、<a href="https://github.com/asanoitsuki/brawl-stars-draft-ai/issues" target="_blank" rel="noopener">GitHub の Issues</a> または <a href="./support.html">サポートページ</a>からお願いします。
 </p>
 
 <footer>
-  ガチバトルピックAI is an unofficial fan-made tool and is not affiliated with, endorsed, sponsored,
-  or specifically approved by Supercell. Brawl Stars is a trademark of Supercell.
+  Brawl Board is an unofficial fan-made tool and is not affiliated with, endorsed, sponsored,
+  or specifically approved by Supercell. Brawl Stars is a trademark of Supercell.<br>
+  Brawl Board は Brawl Stars（Supercell社）の非公式ファンツールです。Supercell社とは一切関係ありません。
 </footer>
-
 </body>
 </html>

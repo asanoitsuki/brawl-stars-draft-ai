@@ -298,10 +298,10 @@ final class ProfileStore: ObservableObject {
                                          trophies: max(200, 2402 - i * 45), highestTrophies: 2500 - i * 40,
                                          gears: 2, gadgets: 2, starPowers: 2, hyperCharges: 1, buffies: 3)
             }
-            me = PlayerProfile(tag: "#PCJJPRP", name: "7位傀儡", iconID: 28000000, trophies: 83_845,
+            me = PlayerProfile(tag: "#2PP0Y8LQ", name: "ほしのこ", iconID: 28000000, trophies: 83_845,
                                highestTrophies: 83_845, expLevel: 40, expPoints: 33_680,
-                               trioVictories: 17_485, soloVictories: 10_594, duoVictories: 4_734, club: "worthwhile",
-                               brawlerCount: 48, topBrawlers: Array(all.prefix(5)), bio: "ガチバトル毎日やってます",
+                               trioVictories: 17_485, soloVictories: 10_594, duoVictories: 4_734, club: "Brawl Board JP",
+                               brawlerCount: 48, topBrawlers: Array(all.prefix(5)), bio: "ミシック帯。ガス・ベル得意",
                                highestRank: 20, rankedHighest: 9294, rankedCurrent: 6304, brawlers: all)
         }
         #endif
@@ -333,6 +333,47 @@ final class ProfileStore: ObservableObject {
         record["json"] = String(decoding: try JSONEncoder().encode(profile), as: UTF8.self) as CKRecordValue
         record["updatedAt"] = Date() as CKRecordValue
         _ = try await Cloud.database.modifyRecords(saving: [record], deleting: [], savePolicy: .allKeys)
+    }
+
+    /// 自分のデータをすべて消す（プロフィール・募集・チャットのメッセージ）。
+    /// 端末内のプロフィールと、iCloud の公開データベースに載せたものの両方。
+    /// App Store の「アプリ内でアカウント（データ）の削除を開始できること」の要件に対応する。
+    /// 戻り値は iCloud 側の削除に失敗したかどうか（端末内は必ず消す）。
+    @discardableResult
+    func deleteAllMyData() async -> Bool {
+        var cloudFailed = false
+        if Cloud.isEnabled, let user = await Cloud.myUserRecordName() {
+            var ids: [CKRecord.ID] = [CKRecord.ID(recordName: Self.recordName(forUser: user))]
+            let me = CKRecord.ID(recordName: user)
+            // 自分が作った募集・メッセージを、作成者で探して全部消す（端末に ID を覚えていなくても消せる）
+            for type in ["TeamPost", "TeamMessage"] {
+                let query = CKQuery(recordType: type, predicate: NSPredicate(format: "creatorUserRecordID == %@", me))
+                do {
+                    let (results, _) = try await Cloud.database.records(matching: query, resultsLimit: 400)
+                    ids += results.compactMap { try? $0.1.get().recordID }
+                } catch let error as CKError where error.code == .unknownItem {
+                    continue   // まだ 1 件も無い種類
+                } catch {
+                    cloudFailed = true
+                }
+            }
+            if let name = UserDefaults.standard.string(forKey: "teamMyPostRecordName") {
+                ids.append(CKRecord.ID(recordName: name))
+            }
+            do {
+                _ = try await Cloud.database.modifyRecords(saving: [], deleting: ids)
+            } catch {
+                // 既に無いレコードが混ざっていても、他は消えているので失敗扱いにしない
+                if (error as? CKError)?.code != .unknownItem { cloudFailed = true }
+            }
+        } else if Cloud.isEnabled {
+            cloudFailed = true   // iCloud にサインインしていない
+        }
+        UserDefaults.standard.removeObject(forKey: Self.localKey)
+        UserDefaults.standard.removeObject(forKey: "teamMyPostRecordName")
+        UserDefaults.standard.removeObject(forKey: "teamAgreedRules")
+        me = PlayerProfile()
+        return !cloudFailed
     }
 
     /// 自分のプロフィールのレコード名（iCloud のユーザー ID から決まる。ID で直接引けるので索引が要らない）

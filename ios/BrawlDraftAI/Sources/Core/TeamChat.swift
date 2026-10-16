@@ -67,9 +67,9 @@ final class TeamChatStore: ObservableObject {
         #if DEBUG
         if ProcessInfo.processInfo.environment["BDA_DEMO"] != nil {
             if messages.isEmpty {
-                messages = [TeamMessage(demo: "ミシック帯です！入っていいですか？", sender: "ころね", ago: 120),
-                            TeamMessage(demo: "どうぞ！ガスとベル取れる人だと助かる", sender: "あと1人・たった今", ago: 90),
-                            TeamMessage(demo: "ガス使えます。いま入ります", sender: "ころね", ago: 40)]
+                messages = [TeamMessage(demo: "ミシック帯です！入っていいですか？", sender: "Taiga", ago: 120),
+                            TeamMessage(demo: "どうぞ！ガスとベル取れる人だと助かる", sender: "ほしのこ", ago: 90),
+                            TeamMessage(demo: "ガス使えます。いま入ります", sender: "Taiga", ago: 40)]
             }
             return
         }

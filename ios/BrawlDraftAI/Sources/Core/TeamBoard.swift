@@ -207,6 +207,9 @@ final class TeamBoardStore: ObservableObject {
     }
 
     func checkAccount() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["BDA_DEMO"] != nil { canPost = true; accountMessage = nil; return }
+        #endif
         guard Self.isCloudEnabled else {
             canPost = false
             accountMessage = nil
@@ -245,14 +248,14 @@ final class TeamBoardStore: ObservableObject {
                          creatorID: nil, profileRecordName: "demo", iconID: 28000000, trophies: 38_420,
                          highestRank: slots == 1 ? 20 : 15, discordURL: "https://discord.gg/example")
             }
-            var strict = demo("条件あり・たった今", .ranked, 1, 20, "プロ目指してる人")
+            var strict = demo("Kuro", .ranked, 1, 20, "マスター帯。プロ目指してます")
             strict.minTrophies = 60_000
             strict.minRank = 19
             posts = [strict,
-                     demo("あと1人・たった今", .ranked, 1, 5, "ミシック帯 VCなし"),
-                     demo("あと2人・たった今", .trophy, 2, 5, "トロ上げ行こう"),
-                     demo("あと2人・5分前", .casual, 2, 300, "まったり"),
-                     demo("あと1人・5分前", .ranked, 1, 300, "あと1人で出発")]
+                     demo("ほしのこ", .ranked, 1, 5, "ミシック帯 VCなし。ガスかベル使える人"),
+                     demo("Taiga", .trophy, 2, 40, "トロ上げ行こう"),
+                     demo("まろん", .casual, 2, 300, "まったりやりましょう"),
+                     demo("Ren", .club, 1, 700, "クラブメンバー募集中")]
             loadState = .loaded
             return
         }

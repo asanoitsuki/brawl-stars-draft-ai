@@ -30,6 +30,13 @@ struct SettingsView: View {
             } header: {
                 Text("スクショ解析")
             }
+            Section {
+                DeleteMyDataButton()
+            } header: {
+                Text("プライバシー")
+            } footer: {
+                Text("チーム募集で公開したプロフィール・募集・チャットのメッセージを、端末と iCloud から削除します。")
+            }
             legalSection
             Section {
                 DisclosureGroup("開発者向け", isExpanded: $showsAdvanced) {
@@ -145,8 +152,11 @@ struct SettingsView: View {
             Link(destination: URL(string: "https://asanoitsuki.github.io/brawl-stars-draft-ai/terms.html")!) {
                 Label("利用規約", systemImage: "doc.text")
             }
+            Link(destination: URL(string: "https://asanoitsuki.github.io/brawl-stars-draft-ai/support.html")!) {
+                Label("サポート・お問い合わせ", systemImage: "questionmark.circle")
+            }
             Text("Brawl Board は Brawl Stars（Supercell社）の非公式ファンツールです。"
-                 + "Supercell社とは一切関係ありません。")
+                 + "Supercell社とは一切関係ありません。ゲーム内の画像・名称はSupercell社に帰属します。")
                 .font(.caption2).foregroundStyle(.secondary)
         }
     }

@@ -302,6 +302,9 @@ struct MyProfileView: View {
                         if store.me.isComplete {
                             ProfileShareButton(profile: store.me)
                         }
+                        DeleteMyDataButton(onDeleted: { draft = PlayerProfile(); editing = false })
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 8)
                     } else {
                         setupCard
                     }

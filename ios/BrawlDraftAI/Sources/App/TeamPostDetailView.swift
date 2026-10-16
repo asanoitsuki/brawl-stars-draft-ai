@@ -18,6 +18,9 @@ struct TeamPostDetailView: View {
     @State private var draft = ""
     @State private var toast: String?
     @State private var reportingMessage: TeamMessage?
+    /// 利用規約（不適切な投稿の禁止）への同意。初めて書き込む前に 1 回だけ確認する
+    @AppStorage("teamAgreedRules") private var agreedRules = false
+    @State private var asksAgreement = false
     /// 最初の読み込みでは一番下へ飛ばさない（プロフィールから読んでほしいので）。新着が来たときだけ追う。
     @State private var seenMessageCount: Int?
     @FocusState private var inputFocused: Bool
@@ -78,6 +81,12 @@ struct TeamPostDetailView: View {
                         .padding(.top, 6)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
+            }
+            .alert("チャットのルール", isPresented: $asksAgreement) {
+                Button("同意して送信") { agreedRules = true }
+                Button("やめる", role: .cancel) {}
+            } message: {
+                Text("暴言・嫌がらせ・出会い目的・外部への誘導・個人情報の書き込みは禁止です。違反したメッセージは通報により非表示になり、投稿者は利用できなくなることがあります。利用規約に同意しますか？")
             }
             .confirmationDialog("このメッセージを通報しますか？", isPresented: Binding(
                 get: { reportingMessage != nil }, set: { if !$0 { reportingMessage = nil } }
@@ -279,6 +288,7 @@ struct TeamPostDetailView: View {
                     if v.count > TeamMessage.maxLength { draft = String(v.prefix(TeamMessage.maxLength)) }
                 }
             Button {
+                guard agreedRules else { asksAgreement = true; return }
                 let text = draft
                 Task {
                     if let error = await chat.send(text, as: me.me) {

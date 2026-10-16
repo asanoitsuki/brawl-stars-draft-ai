@@ -9,6 +9,7 @@ struct TeamComposeView: View {
 
     @ObservedObject private var profiles = ProfileStore.shared
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @AppStorage("teamAgreedRules") private var agreedRules = false
     @State private var purpose: TeamPost.Purpose = .ranked
     @State private var mode = ""
@@ -129,10 +130,31 @@ struct TeamComposeView: View {
                         .autocorrectionDisabled()
                         .keyboardType(.URL)
                         .font(.footnote)
+                    HStack(spacing: 10) {
+                        Button {
+                            openURL(URL(string: "discord://")!) { accepted in
+                                if !accepted { openURL(URL(string: "https://discord.com/app")!) }
+                            }
+                        } label: {
+                            Label("Discord を開く", systemImage: "arrow.up.forward.app")
+                        }
+                        Button {
+                            if let text = UIPasteboard.general.string,
+                               let link = TeamInvite.discordURL(from: text) {
+                                discordText = link
+                            } else {
+                                errorText = "コピーした Discord のリンクが見つかりません"
+                            }
+                        } label: {
+                            Label("コピーしたリンクを貼る", systemImage: "doc.on.clipboard")
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.footnote)
                 } header: {
                     Text("Discord で通話")
                 } footer: {
-                    Text("サーバーの招待リンクやボイスチャンネルのリンクを貼ると、見た人が「Discordで通話」からそのまま入れます。")
+                    Text("Discord でサーバーの招待リンクやボイスチャンネルのリンクをコピーして戻り、「コピーしたリンクを貼る」を押すと、見た人が募集カードからそのまま入れます。")
                 }
 
                 Section {

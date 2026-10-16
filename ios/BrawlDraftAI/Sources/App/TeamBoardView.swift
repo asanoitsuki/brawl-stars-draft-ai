@@ -304,7 +304,11 @@ private struct TeamPostCard: View {
     let onReport: () -> Void
     let onBlock: () -> Void
 
+    @Environment(\.openURL) private var openURL
     private var tint: Color { post.purpose.tint }
+    private var discordLink: URL? {
+        post.discordURL.flatMap(TeamInvite.discordURL(from:)).flatMap(URL.init(string:))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -363,6 +367,18 @@ private struct TeamPostCard: View {
                 Label("詳細・チャット", systemImage: "bubble.left.and.bubble.right")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.5))
+                if let discordLink {
+                    Button {
+                        openURL(discordLink)
+                    } label: {
+                        Image(systemName: "headphones")
+                            .font(.footnote.weight(.bold))
+                            .frame(width: 34, height: 34)
+                            .background(Color(red: 0.45, green: 0.54, blue: 1), in: Circle())
+                            .foregroundStyle(.white)
+                    }
+                    .accessibilityLabel("Discordで通話")
+                }
                 if isMine {
                     Button("締め切る", action: onClose)
                         .font(.footnote.weight(.semibold))

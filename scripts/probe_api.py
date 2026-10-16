@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -19,8 +20,13 @@ from brawl_api import _SSL_CONTEXT, USER_AGENT, official_base, official_token  #
 def get(path: str):
     req = urllib.request.Request(f"{official_base()}/{path}", headers={
         "Authorization": f"Bearer {official_token()}", "Accept": "application/json", "User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30, context=_SSL_CONTEXT) as res:
-        return json.loads(res.read())
+    try:
+        with urllib.request.urlopen(req, timeout=30, context=_SSL_CONTEXT) as res:
+            return json.loads(res.read())
+    except urllib.error.HTTPError as exc:
+        body = exc.read()[:300].decode("utf-8", "replace")
+        print(f"!! {path} → HTTP {exc.code} {body}")
+        raise
 
 
 def shape(v, depth=0):
@@ -34,7 +40,11 @@ def shape(v, depth=0):
 def main() -> None:
     tag = sys.argv[1] if len(sys.argv) > 1 else None
     if not tag:
-        tag = get("rankings/global/players?limit=1")["items"][0]["tag"]
+        try:
+            tag = get("rankings/global/players?limit=1")["items"][0]["tag"]
+        except Exception:  # noqa: BLE001
+            tag = "#PCJJPRP"   # ランキングが取れない日は、公開プロフィールの既知のタグで調べる
+            print("ランキングが取れなかったので既知のタグで調べます:", tag)
     q = urllib.parse.quote(tag)
     p = get(f"players/{q}")
     print("== /players: トップレベルの項目 ==")
@@ -62,8 +72,8 @@ def main() -> None:
             print("チーム 0 のプレイヤー値:", json.dumps(teams[0], ensure_ascii=False)[:600])
         print("battle の直下の値:", json.dumps({k: v for k, v in battle.items() if k not in ("teams", "players")}, ensure_ascii=False))
     print("== クラブ ==", json.dumps(p.get("club"), ensure_ascii=False))
-    print("プレイヤーランキング項目:", json.dumps(shape(get("rankings/global/players?limit=1")["items"][0]), ensure_ascii=False))
-    for ep in ("rankings/global/brawlers/16000000?limit=1", "rankings/JP/clubs?limit=1"):
+    for ep in ("rankings/global/players?limit=1", "rankings/global/brawlers/16000000?limit=1",
+               "rankings/JP/clubs?limit=1"):
         try:
             print(ep, "→", json.dumps(shape(get(ep)["items"][0]), ensure_ascii=False))
         except Exception as e:  # noqa: BLE001

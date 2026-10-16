@@ -37,6 +37,13 @@ struct TeamPost: Identifiable, Equatable {
     var expiresAt: Date
     /// 投稿者（ブロック用）。自分の投稿かどうかの判定にも使う
     var creatorID: String?
+    /// 投稿者のプロフィール（Profile レコード名）。タップで詳しく見られる
+    var profileRecordName: String? = nil
+    /// 投稿時点のプロフィールの写し（一覧で毎回プロフィールを引かずに済むように）
+    var iconID: Int? = nil
+    var trophies: Int? = nil
+    /// Discord のサーバー招待やボイスチャンネルのリンク
+    var discordURL: String? = nil
 
     var isExpired: Bool { expiresAt < Date() }
 
@@ -62,6 +69,10 @@ extension TeamPost {
         self.createdAt = created
         self.expiresAt = expires
         self.creatorID = record.creatorUserRecordID?.recordName
+        self.profileRecordName = record["profileRecordName"] as? String
+        self.iconID = (record["iconID"] as? Int64).map(Int.init)
+        self.trophies = (record["trophies"] as? Int64).map(Int.init)
+        self.discordURL = record["discordURL"] as? String
     }
 
     func makeRecord() -> CKRecord {
@@ -76,6 +87,10 @@ extension TeamPost {
         if let teamCode { record["teamCode"] = teamCode as CKRecordValue }
         record["createdAt"] = createdAt as CKRecordValue
         record["expiresAt"] = expiresAt as CKRecordValue
+        if let profileRecordName { record["profileRecordName"] = profileRecordName as CKRecordValue }
+        if let iconID { record["iconID"] = Int64(iconID) as CKRecordValue }
+        if let trophies { record["trophies"] = Int64(trophies) as CKRecordValue }
+        if let discordURL { record["discordURL"] = discordURL as CKRecordValue }
         return record
     }
 }
@@ -106,6 +121,14 @@ enum TeamInvite {
             return URL(string: "https://link.brawlstars.com/invite/gameroom/ja?tag=\(code)")
         }
         return nil
+    }
+
+    /// Discord のリンクとして受け付けるもの（サーバー招待・チャンネル・アプリ内リンク）
+    static func discordURL(from text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let range = trimmed.range(of: #"https?://(discord\.gg|discord\.com|discordapp\.com)/\S+"#,
+                                        options: .regularExpression) else { return nil }
+        return String(trimmed[range])
     }
 }
 
@@ -145,19 +168,10 @@ final class TeamBoardStore: ObservableObject {
     @Published private(set) var canPost = false
     @Published private(set) var accountMessage: String?
 
-    /// CloudKit を有効にしたビルドか（Local.xcconfig の BDA_SWIFT_FLAGS = CLOUDKIT_ENABLED）。
-    /// iCloud の権限が無いビルドで CKContainer.default() に触るとアプリが落ちるため、
-    /// 無効なビルドではコンテナに一切触れない。
-    static var isCloudEnabled: Bool {
-        #if CLOUDKIT_ENABLED
-        return true
-        #else
-        return false
-        #endif
-    }
+    static var isCloudEnabled: Bool { Cloud.isEnabled }
 
-    private lazy var container = CKContainer.default()
-    private var database: CKDatabase { container.publicCloudDatabase }
+    private var container: CKContainer { Cloud.container }
+    private var database: CKDatabase { Cloud.database }
     private var myUserID: String?
 
     private static let myPostKey = "teamMyPostRecordName"
@@ -179,7 +193,7 @@ final class TeamBoardStore: ObservableObject {
             case .available:
                 canPost = true
                 accountMessage = nil
-                myUserID = try? await container.userRecordID().recordName
+                myUserID = await Cloud.myUserRecordName()
             case .noAccount:
                 canPost = false
                 accountMessage = "投稿するには iPhone の設定で iCloud にサインインしてください（見るだけならそのまま使えます）"
@@ -204,7 +218,8 @@ final class TeamBoardStore: ObservableObject {
                 TeamPost(id: CKRecord.ID(recordName: n), playerName: n, purpose: purpose, mode: "Gem Grab",
                          rank: 5, slots: slots, comment: c, inviteURL: nil, teamCode: "ABC12345",
                          createdAt: now.addingTimeInterval(-ago), expiresAt: now.addingTimeInterval(900),
-                         creatorID: nil)
+                         creatorID: nil, profileRecordName: "demo", iconID: 28000000, trophies: 38_420,
+                         discordURL: "https://discord.gg/example")
             }
             posts = [demo("あと1人・たった今", .ranked, 1, 5, "ミシック帯 VCなし"),
                      demo("あと2人・たった今", .trophy, 2, 5, "トロ上げ行こう"),

@@ -43,6 +43,16 @@ struct SettingsView: View {
                         .autocorrectionDisabled()
                         .font(.footnote)
                     }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("プロフィール取得サーバー").font(.caption).foregroundStyle(.secondary)
+                        TextField("https://brawl-board-api.vercel.app", text: Binding(
+                            get: { AppSettings.profileAPIBase },
+                            set: { AppSettings.profileAPIBase = $0 }
+                        ))
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(.footnote)
+                    }
                     if case .ready(let rules) = store.state {
                         LabeledContent("生成日時", value: RulesStore.displayDate(rules.generatedAt))
                         LabeledContent("取得元", value: rules.origin.rawValue)
@@ -135,7 +145,7 @@ struct SettingsView: View {
             Link(destination: URL(string: "https://asanoitsuki.github.io/brawl-stars-draft-ai/terms.html")!) {
                 Label("利用規約", systemImage: "doc.text")
             }
-            Text("本アプリは Brawl Stars（Supercell社）の非公式ファンツールです。"
+            Text("Brawl Board は Brawl Stars（Supercell社）の非公式ファンツールです。"
                  + "Supercell社とは一切関係ありません。")
                 .font(.caption2).foregroundStyle(.secondary)
         }

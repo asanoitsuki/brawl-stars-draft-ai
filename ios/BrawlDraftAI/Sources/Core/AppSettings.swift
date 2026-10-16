@@ -27,6 +27,12 @@ enum AppSettings {
     static let defaultRulesURL =
         "https://raw.githubusercontent.com/asanoitsuki/brawl-stars-draft-ai/main/rules/rules_rotation.json"
 
+    /// プロフィール自動入力の中継サーバー（server/api/player.js を Vercel に置いたもの）
+    static var profileAPIBase: String {
+        get { defaults.string(forKey: "profileAPIBase") ?? "https://brawl-board-api.vercel.app" }
+        set { defaults.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "profileAPIBase") }
+    }
+
     static var isRulesURLConfigured: Bool {
         !rulesURL.contains("YOUR_NAME") && URL(string: rulesURL) != nil
     }

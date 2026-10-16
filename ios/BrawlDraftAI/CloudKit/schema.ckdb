@@ -17,6 +17,10 @@ RECORD TYPE TeamPost (
     "teamCode"      STRING,
     "createdAt"     TIMESTAMP,
     "expiresAt"     TIMESTAMP QUERYABLE SORTABLE,
+    "profileRecordName" STRING,
+    "iconID"        INT64,
+    "trophies"      INT64,
+    "discordURL"    STRING,
     GRANT READ   TO "_world",
     GRANT CREATE TO "_icloud",
     GRANT WRITE  TO "_creator"
@@ -35,5 +39,39 @@ RECORD TYPE TeamReport (
     "snapshot"       STRING,
     GRANT CREATE TO "_icloud",
     GRANT READ   TO "_creator",
+    GRANT WRITE  TO "_creator"
+);
+
+RECORD TYPE Profile (
+    "___createTime" TIMESTAMP,
+    "___createdBy"  REFERENCE,
+    "___etag"       STRING,
+    "___modTime"    TIMESTAMP,
+    "___modifiedBy" REFERENCE,
+    "___recordID"   REFERENCE,
+    "name"          STRING,
+    "tag"           STRING,
+    "json"          STRING,
+    "updatedAt"     TIMESTAMP,
+    GRANT READ   TO "_world",
+    GRANT CREATE TO "_icloud",
+    GRANT WRITE  TO "_creator"
+);
+
+RECORD TYPE TeamMessage (
+    "___createTime"  TIMESTAMP,
+    "___createdBy"   REFERENCE QUERYABLE,
+    "___etag"        STRING,
+    "___modTime"     TIMESTAMP,
+    "___modifiedBy"  REFERENCE,
+    "___recordID"    REFERENCE QUERYABLE,
+    "postRecordName" STRING QUERYABLE,
+    "text"           STRING,
+    "senderName"     STRING,
+    "senderIconID"   INT64,
+    "senderProfile"  STRING,
+    "createdAt"      TIMESTAMP QUERYABLE SORTABLE,
+    GRANT READ   TO "_world",
+    GRANT CREATE TO "_icloud",
     GRANT WRITE  TO "_creator"
 );

@@ -2,21 +2,24 @@ import PhotosUI
 import SwiftUI
 
 /// 画面遷移はすべて値ベース（NavigationLink(value:) + navigationDestination）。
-/// 対話モード・チーム募集は常時描画する重いビューを抱えるため、行が見えた時点で
-/// 遷移先が先読み構築されると描画ループが裏で回り続けてアプリ全体が固まる（実機で確認済み）。
+/// 常時描画する重いビューを抱える画面があるため、行が見えた時点で遷移先が
+/// 先読み構築されると描画ループが裏で回り続けてアプリ全体が固まる（実機で確認済み）。
 enum HomeRoute: Hashable {
+    /// 対話モード（未搭載。ホームからは外してある）
     case voiceAssistant
     case teamBoard
+    case profile
     case maps
     case brawlers
     case roster
     case settings
 }
 
-/// ホーム。見る場所を「対話」「スクショ解析」「チーム募集」の 3 つに絞り、
-/// 設定・手順・規約は SettingsView に逃がしてある。
+/// ホーム（Brawl Board）。スクロールさせず 1 画面に収める。
+/// 主役はチーム募集。ドラフト用のデータ類は下段の小さなタイルにまとめた。
 struct ContentView: View {
     @EnvironmentObject private var store: RulesStore
+    @ObservedObject private var profiles = ProfileStore.shared
     @State private var path = NavigationPath()
     @State private var pickedItem: PhotosPickerItem?
     @State private var showsPhotoPicker = false
@@ -24,34 +27,49 @@ struct ContentView: View {
     @State private var busy = false
     @State private var errorText: String?
     @State private var result: (snapshot: DraftSnapshot, recommendation: Recommendation)?
+    @State private var showsResult = false
 
     var body: some View {
         NavigationStack(path: $path) {
-            ZStack {
-                CosmosView(mode: .idle,
-                           center: CGPoint(x: 0.5, y: 0.16),
-                           radius: 0.13,
-                           framesPerSecond: 30,
-                           isPaused: !path.isEmpty)
-                    .ignoresSafeArea()
+            GeometryReader { geo in
+                // iPhone SE のような背の低い画面では余白と球を詰めて、必ず 1 画面に収める
+                let compact = geo.size.height < 640
+                ZStack {
+                    CosmosView(mode: .idle,
+                               center: CGPoint(x: 0.5, y: compact ? 0.13 : 0.16),
+                               radius: compact ? 0.11 : 0.13,
+                               framesPerSecond: 30,
+                               isPaused: !path.isEmpty)
+                        .ignoresSafeArea()
 
-                ScrollView {
-                    VStack(spacing: 14) {
-                        hero
-                        primaryCard
+                    VStack(spacing: compact ? 10 : 14) {
+                        hero(orbSpace: compact ? 96 : 140)
+                        // 大きい画面では余った高さをタイルの上下に配り、下に偏った空白を作らない
+                        Spacer(minLength: compact ? 4 : 10)
+                        teamCard
                         HStack(spacing: 12) {
-                            analyzeCard
-                            teamCard
+                            profileTile
+                            analyzeTile
                         }
-                        if let result { resultCard(result) }
-                        dataLinks
+                        HStack(spacing: 10) {
+                            smallTile(.maps, icon: "map.fill", title: "マップ")
+                            smallTile(.brawlers, icon: "person.crop.square.fill", title: "キャラ")
+                            smallTile(.roster, icon: "checklist", title: "持ちキャラ")
+                        }
+                        Spacer(minLength: 0)
+                        Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 28)
+                    .padding(.bottom, 8)
                 }
-                .scrollIndicators(.hidden)
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink(value: HomeRoute.profile) {
+                        ProfileAvatar(iconID: profiles.me.iconID, size: 32)
+                    }
+                    .accessibilityLabel("プロフィール")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink(value: HomeRoute.settings) {
                         Image(systemName: "gearshape.fill")
@@ -65,6 +83,7 @@ struct ContentView: View {
                 switch route {
                 case .voiceAssistant: VoiceAssistantView()
                 case .teamBoard: TeamBoardView()
+                case .profile: MyProfileView()
                 case .maps: MapListView()
                 case .brawlers: BrawlerListView()
                 case .roster: BrawlerRosterView()
@@ -80,6 +99,9 @@ struct ContentView: View {
                 guard let item else { return }
                 Task { await analyze(item) }
             }
+            .sheet(isPresented: $showsResult) {
+                if let result { resultSheet(result) }
+            }
             .alert("エラー", isPresented: .constant(errorText != nil)) {
                 Button("OK") { errorText = nil }
             } message: {
@@ -89,9 +111,9 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .tint(.cyan)
         #if DEBUG
-        // 見た目確認用: SIMCTL_CHILD_BDA_ROUTE=voice などで起動すると直接その画面を開く
+        // 見た目確認用: SIMCTL_CHILD_BDA_ROUTE=team などで起動すると直接その画面を開く
         .task {
-            let routes: [String: HomeRoute] = ["voice": .voiceAssistant, "team": .teamBoard,
+            let routes: [String: HomeRoute] = ["voice": .voiceAssistant, "team": .teamBoard, "profile": .profile,
                                                "maps": .maps, "settings": .settings]
             if let key = ProcessInfo.processInfo.environment["BDA_ROUTE"], let route = routes[key] {
                 path.append(route)
@@ -102,20 +124,20 @@ struct ContentView: View {
 
     // MARK: - ヒーロー
 
-    private var hero: some View {
-        VStack(spacing: 10) {
+    private func hero(orbSpace: CGFloat) -> some View {
+        VStack(spacing: 8) {
             // 球体（背景の CosmosView）のぶんの余白
-            Color.clear.frame(height: 150)
-            Text("ガチバトルピックAI")
-                .font(.system(size: 30, weight: .heavy, design: .rounded))
+            Color.clear.frame(height: orbSpace)
+            Text("Brawl Board")
+                .font(.system(size: 38, weight: .black, design: .rounded))
                 .foregroundStyle(
-                    LinearGradient(colors: [.white, Color(red: 0.6, green: 0.85, blue: 1)],
+                    LinearGradient(colors: [.white, Color(red: 1, green: 0.86, blue: 0.3)],
                                    startPoint: .top, endPoint: .bottom)
                 )
-                .shadow(color: .cyan.opacity(0.5), radius: 14)
+                .shadow(color: .black.opacity(0.9), radius: 0, x: 0, y: 3)
+                .shadow(color: .purple.opacity(0.7), radius: 16)
             dataPill
         }
-        .padding(.bottom, 6)
     }
 
     @ViewBuilder
@@ -127,13 +149,13 @@ struct ContentView: View {
             HStack(spacing: 6) {
                 Circle().fill(measured ? Color.green : Color.orange).frame(width: 7, height: 7)
                 Text(measured
-                     ? "実測 \((q.battlesAnalyzed ?? 0).formatted())試合・\(RulesStore.displayDate(q.statsUpdatedAt ?? rules.generatedAt)) 更新"
+                     ? "ガチバトル実測 \((q.battlesAnalyzed ?? 0).formatted())試合・\(RulesStore.displayDate(q.statsUpdatedAt ?? rules.generatedAt)) 更新"
                      : "推定データ・\(RulesStore.displayDate(rules.generatedAt)) 更新")
-                    .font(.caption.weight(.medium))
+                    .font(.caption2.weight(.medium))
                     .foregroundStyle(.white.opacity(0.8))
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
             .background(.ultraThinMaterial.opacity(0.7), in: Capsule())
         case .failed(let message):
             Text(message).font(.caption).foregroundStyle(.orange)
@@ -142,25 +164,25 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - メインの 3 枚
+    // MARK: - タイル
 
-    private var primaryCard: some View {
-        NavigationLink(value: HomeRoute.voiceAssistant) {
+    private var teamCard: some View {
+        NavigationLink(value: HomeRoute.teamBoard) {
             HStack(spacing: 16) {
                 ZStack {
-                    Circle()
-                        .fill(LinearGradient(colors: [.cyan, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(LinearGradient(colors: [.mint, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 58, height: 58)
-                        .shadow(color: .cyan.opacity(0.7), radius: 14)
-                    Image(systemName: "waveform")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(.white)
+                        .shadow(color: .mint.opacity(0.7), radius: 14)
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.black.opacity(0.8))
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("対話モード")
-                        .font(.title3.weight(.bold))
+                    Text("チーム募集")
+                        .font(.title3.weight(.heavy))
                         .foregroundStyle(.white)
-                    Text("状況を話すだけで、次のピックを提案")
+                    Text("募集を見て、ブロスタで即参加")
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.7))
                 }
@@ -170,33 +192,36 @@ struct ContentView: View {
                     .foregroundStyle(.white.opacity(0.5))
             }
             .padding(18)
-            .glassCard(tint: .cyan, cornerRadius: 24)
+            .glassCard(tint: .mint, cornerRadius: 24)
         }
         .buttonStyle(.plain)
     }
 
-    private var analyzeCard: some View {
+    private var profileTile: some View {
+        NavigationLink(value: HomeRoute.profile) {
+            tile(icon: "person.crop.circle.badge.checkmark",
+                 title: "プロフィール",
+                 subtitle: profiles.me.isEmpty ? "ブロスタと連携" : profiles.me.name,
+                 tint: .purple)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var analyzeTile: some View {
         Button {
             showsAnalyzeOptions = true
         } label: {
             tile(icon: busy ? nil : "camera.viewfinder",
                  title: busy ? "解析中…" : "スクショ解析",
-                 subtitle: "ドラフト画面から判定",
-                 tint: .purple)
+                 subtitle: "ドラフトで次のピック",
+                 tint: .cyan)
         }
         .buttonStyle(.plain)
         .disabled(busy)
     }
 
-    private var teamCard: some View {
-        NavigationLink(value: HomeRoute.teamBoard) {
-            tile(icon: "person.3.fill", title: "チーム募集", subtitle: "招待リンクで合流", tint: .mint)
-        }
-        .buttonStyle(.plain)
-    }
-
     private func tile(icon: String?, title: String, subtitle: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let icon {
                     Image(systemName: icon)
@@ -206,77 +231,55 @@ struct ContentView: View {
                     ProgressView().tint(tint)
                 }
             }
-            .frame(height: 26)
+            .frame(height: 24)
             Text(title)
                 .font(.headline)
                 .foregroundStyle(.white)
             Text(subtitle)
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.65))
+                .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(14)
         .glassCard(tint: tint, cornerRadius: 22)
     }
 
-    // MARK: - 直近の解析結果
-
-    private func resultCard(_ value: (snapshot: DraftSnapshot, recommendation: Recommendation)) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("直近の解析").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
-                Spacer()
-                Button {
-                    result = nil
-                } label: {
-                    Image(systemName: "xmark").font(.caption).foregroundStyle(.white.opacity(0.5))
-                }
-            }
-            Text(value.recommendation.title)
-                .font(.headline)
-                .foregroundStyle(.white)
-            ForEach(value.recommendation.advices) { advice in
-                AdviceRow(advice: advice)
-            }
-            if let caution = value.recommendation.caution {
-                Text(caution).font(.caption2).foregroundStyle(.orange.opacity(0.9))
-            }
-        }
-        .padding(16)
-        .glassCard(tint: .purple, cornerRadius: 22)
-    }
-
-    // MARK: - データ
-
-    private var dataLinks: some View {
-        VStack(spacing: 0) {
-            linkRow(.maps, icon: "map.fill", title: "マップ別データ")
-            Divider().overlay(.white.opacity(0.08))
-            linkRow(.brawlers, icon: "person.crop.square.fill", title: "キャラ一覧")
-            Divider().overlay(.white.opacity(0.08))
-            linkRow(.roster, icon: "checklist", title: "持っているキャラ")
-        }
-        .glassCard(tint: .white.opacity(0.4), cornerRadius: 20)
-        .padding(.top, 4)
-    }
-
-    private func linkRow(_ route: HomeRoute, icon: String, title: String) -> some View {
+    private func smallTile(_ route: HomeRoute, icon: String, title: String) -> some View {
         NavigationLink(value: route) {
-            HStack(spacing: 14) {
+            VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .frame(width: 24)
-                    .foregroundStyle(.cyan)
-                Text(title).foregroundStyle(.white)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.4))
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.85))
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.85))
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .contentShape(Rectangle())
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .glassCard(tint: .white.opacity(0.35), cornerRadius: 18)
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - 解析結果（固定レイアウトを崩さないようシートで出す）
+
+    private func resultSheet(_ value: (snapshot: DraftSnapshot, recommendation: Recommendation)) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("解析結果").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text(value.recommendation.title).font(.title3.weight(.bold))
+                ForEach(value.recommendation.advices) { advice in
+                    AdviceRow(advice: advice)
+                }
+                if let caution = value.recommendation.caution {
+                    Text(caution).font(.caption2).foregroundStyle(.orange.opacity(0.9))
+                }
+            }
+            .padding(20)
+        }
+        .presentationDetents([.medium, .large])
+        .preferredColorScheme(.dark)
     }
 
     // MARK: - 実行
@@ -288,6 +291,7 @@ struct ContentView: View {
             guard let data = try await item.loadTransferable(type: Data.self) else { return }
             _ = try await DraftService.analyze(data: data)
             result = DraftService.lastResult
+            showsResult = result != nil
         } catch {
             errorText = error.localizedDescription
         }
@@ -299,6 +303,7 @@ struct ContentView: View {
         do {
             _ = try await DraftService.analyzeLatestScreenshot()
             result = DraftService.lastResult
+            showsResult = result != nil
         } catch {
             errorText = error.localizedDescription
         }

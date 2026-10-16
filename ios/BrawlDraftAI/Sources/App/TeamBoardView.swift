@@ -3,8 +3,10 @@ import SwiftUI
 
 /// チーム募集の掲示板。ブロスタ本体の「チームに招待 → 招待リンクを共有」で作ったリンクを貼って募集し、
 /// 見た人は「参加」を押すとブロスタが開いてそのままチームに入れる。
+/// 募集をタップすると、投稿者のプロフィール・フレンド申請・Discord・チャットが開く。
 struct TeamBoardView: View {
     @StateObject private var board = TeamBoardStore()
+    @ObservedObject private var profiles = ProfileStore.shared
     @EnvironmentObject private var rules: RulesStore
     @Environment(\.openURL) private var openURL
     @State private var modeFilter = ""
@@ -12,6 +14,7 @@ struct TeamBoardView: View {
     @State private var showsComposer = false
     @State private var toast: String?
     @State private var reporting: TeamPost?
+    @State private var opened: TeamPost?
 
     private let refreshTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
@@ -67,6 +70,14 @@ struct TeamBoardView: View {
         .navigationTitle("チーム募集")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink(value: HomeRoute.profile) {
+                    ProfileAvatar(iconID: profiles.me.iconID, size: 30)
+                }
+                .accessibilityLabel("プロフィール")
+            }
+        }
         .preferredColorScheme(.dark)
         .task {
             await board.checkAccount()
@@ -78,6 +89,16 @@ struct TeamBoardView: View {
                 show(message)
             }
             .presentationDetents([.large])
+        }
+        .sheet(item: $opened) { post in
+            TeamPostDetailView(
+                post: post,
+                modeJa: modes.first { $0.key == post.mode }?.ja,
+                isMine: board.isMine(post),
+                onJoin: { join(post) }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
         }
         .confirmationDialog("この投稿を通報しますか？", isPresented: Binding(
             get: { reporting != nil }, set: { if !$0 { reporting = nil } }
@@ -150,18 +171,20 @@ struct TeamBoardView: View {
                 VStack(spacing: 10) {
                     Image(systemName: "person.3").font(.largeTitle).foregroundStyle(.white.opacity(0.4))
                     Text("いまは募集がありません").font(.headline).foregroundStyle(.white.opacity(0.8))
-                    Text("右下の「募集する」から、ブロスタの招待リンクを貼って募集できます")
+                    Text("下の「募集する」から、ブロスタの招待リンクを貼って募集できます")
                         .font(.caption).foregroundStyle(.white.opacity(0.55))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 60)
             } else {
-                LazyVStack(spacing: 10) {
+                // 光が外ににじむぶん、カードの間を少し広めに取る
+                LazyVStack(spacing: 18) {
                     ForEach(filtered) { post in
                         TeamPostCard(
                             post: post,
                             modeJa: modes.first { $0.key == post.mode }?.ja,
                             isMine: board.isMine(post),
+                            onOpen: { opened = post },
                             onJoin: { join(post) },
                             onClose: { Task { await board.closeMyPost(); show("募集を締め切りました") } },
                             onReport: { reporting = post },
@@ -169,6 +192,7 @@ struct TeamBoardView: View {
                         )
                     }
                 }
+                .padding(.top, 6)
             }
         }
     }
@@ -209,30 +233,44 @@ struct TeamBoardView: View {
 
 // MARK: - 投稿カード
 
-private struct TeamPostCard: View {
-    let post: TeamPost
-    let modeJa: String?
-    let isMine: Bool
-    let onJoin: () -> Void
-    let onClose: () -> Void
-    let onReport: () -> Void
-    let onBlock: () -> Void
-
-    private var tint: Color {
-        switch post.purpose {
+extension TeamPost.Purpose {
+    var tint: Color {
+        switch self {
         case .ranked: return .pink
         case .trophy: return .yellow
         case .casual: return .mint
         case .club: return .purple
         }
     }
+}
+
+private struct TeamPostCard: View {
+    let post: TeamPost
+    let modeJa: String?
+    let isMine: Bool
+    let onOpen: () -> Void
+    let onJoin: () -> Void
+    let onClose: () -> Void
+    let onReport: () -> Void
+    let onBlock: () -> Void
+
+    private var tint: Color { post.purpose.tint }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                badge(post.purpose.label, color: tint)
-                if let modeJa { badge(modeJa, color: .cyan) }
-                if post.rank > 0 { badge(TeamPost.ranks[post.rank] + "帯", color: .orange) }
+            HStack(spacing: 10) {
+                ProfileAvatar(iconID: post.iconID, size: 38)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(post.playerName)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    if let trophies = post.trophies {
+                        Label(trophies.formatted(), systemImage: "trophy.fill")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.yellow)
+                    }
+                }
                 Spacer()
                 TimelineView(.periodic(from: .now, by: 30)) { _ in
                     Text(ago(post.createdAt))
@@ -250,16 +288,26 @@ private struct TeamPostCard: View {
                     }
                 }
             }
+
+            HStack(spacing: 6) {
+                badge(post.purpose.label, color: tint)
+                if let modeJa { badge(modeJa, color: .cyan) }
+                if post.rank > 0 { badge(TeamPost.ranks[post.rank] + "帯", color: .orange) }
+                if post.discordURL != nil { badge("Discord", color: Color(red: 0.45, green: 0.54, blue: 1)) }
+            }
+
             if !post.comment.isEmpty {
                 Text(post.comment)
                     .font(.callout)
                     .foregroundStyle(.white)
             }
+
             HStack {
-                Image(systemName: "person.fill").font(.caption).foregroundStyle(.white.opacity(0.5))
-                Text(post.playerName).font(.footnote).foregroundStyle(.white.opacity(0.75))
-                Text("あと\(post.slots)人").font(.footnote.weight(.semibold)).foregroundStyle(tint)
+                SlotsBadge(slots: post.slots, tint: tint)
                 Spacer()
+                Label("詳細・チャット", systemImage: "bubble.left.and.bubble.right")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.5))
                 if isMine {
                     Button("締め切る", action: onClose)
                         .font(.footnote.weight(.semibold))
@@ -280,6 +328,8 @@ private struct TeamPostCard: View {
         .padding(14)
         .glassCard(tint: isMine ? .white : tint.opacity(0.7), cornerRadius: 20)
         .background { AuraGlow(post: post, tint: isMine ? .white : tint) }
+        .contentShape(RoundedRectangle(cornerRadius: 20))
+        .onTapGesture(perform: onOpen)
     }
 
     private func badge(_ text: String, color: Color) -> some View {
@@ -296,183 +346,25 @@ private struct TeamPostCard: View {
     }
 }
 
-// MARK: - 募集の作成
-
-private struct TeamComposeView: View {
-    @ObservedObject var board: TeamBoardStore
-    let modes: [(key: String, ja: String)]
-    let onDone: (String) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage("teamPlayerName") private var playerName = ""
-    @AppStorage("teamAgreedRules") private var agreedRules = false
-    @State private var purpose: TeamPost.Purpose = .ranked
-    @State private var mode = ""
-    @State private var rank = 0
-    @State private var slots = 2
-    @State private var comment = ""
-    @State private var inviteText = ""
-    @State private var sending = false
-    @State private var errorText: String?
-
-    private var parsed: (url: String?, code: String?) { TeamInvite.parse(inviteText) }
-
-    private var problems: [String] {
-        var out: [String] = []
-        if playerName.trimmingCharacters(in: .whitespaces).isEmpty { out.append("名前を入れてください") }
-        if parsed.url == nil && parsed.code == nil { out.append("招待リンクかチームコードを貼ってください") }
-        if TeamModeration.containsBlockedWord(comment) || TeamModeration.containsBlockedWord(playerName) {
-            out.append("使えない言葉が含まれています")
-        }
-        if !agreedRules { out.append("ルールに同意してください") }
-        return out
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    PasteButton(payloadType: String.self) { strings in
-                        if let first = strings.first { inviteText = first }
-                    }
-                    .labelStyle(.titleAndIcon)
-                    TextField("招待リンク または チームコード", text: $inviteText, axis: .vertical)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .font(.footnote)
-                    if let url = parsed.url {
-                        Label(url, systemImage: "checkmark.circle.fill").font(.caption2).foregroundStyle(.green)
-                    } else if let code = parsed.code {
-                        Label("チームコード \(code)", systemImage: "checkmark.circle.fill").font(.caption2).foregroundStyle(.green)
-                    }
-                } header: {
-                    Text("招待リンク")
-                } footer: {
-                    Text("ブロスタでチームを作り「招待」→「リンクを共有」→「コピー」してから貼り付けてください。")
-                }
-
-                Section("募集内容") {
-                    TextField("ゲーム内の名前", text: $playerName)
-                        .onChange(of: playerName) { _, v in if v.count > 20 { playerName = String(v.prefix(20)) } }
-                    Picker("目的", selection: $purpose) {
-                        ForEach(TeamPost.Purpose.allCases) { Text($0.label).tag($0) }
-                    }
-                    Picker("モード", selection: $mode) {
-                        Text("指定なし").tag("")
-                        ForEach(modes, id: \.key) { Text($0.ja).tag($0.key) }
-                    }
-                    Picker("ランク帯", selection: $rank) {
-                        ForEach(TeamPost.ranks.indices, id: \.self) { Text(TeamPost.ranks[$0]).tag($0) }
-                    }
-                    Stepper("あと \(slots) 人", value: $slots, in: 1...2)
-                    TextField("ひとこと（40文字まで）", text: $comment, axis: .vertical)
-                        .onChange(of: comment) { _, v in if v.count > 40 { comment = String(v.prefix(40)) } }
-                }
-
-                Section {
-                    Toggle(isOn: $agreedRules) {
-                        Text("暴言・出会い目的・外部への誘導をしないことに同意します。違反した投稿は通報により非表示になります。")
-                            .font(.caption)
-                    }
-                } footer: {
-                    Text("募集は \(Int(TeamPost.lifetime / 60)) 分で自動的に消えます。投稿は iCloud を通じて全ユーザーに公開されます。")
-                }
-
-                if let errorText {
-                    Text(errorText).font(.footnote).foregroundStyle(.red)
-                }
-            }
-            .navigationTitle("募集する")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    if sending {
-                        ProgressView()
-                    } else {
-                        Button("投稿") { Task { await send() } }
-                            .disabled(!problems.isEmpty)
-                    }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                if let first = problems.first {
-                    Text(first).font(.caption).foregroundStyle(.secondary).padding(.bottom, 8)
-                }
-            }
-        }
-    }
-
-    private func send() async {
-        sending = true
-        defer { sending = false }
-        let now = Date()
-        let post = TeamPost(
-            id: CKRecord.ID(recordName: UUID().uuidString),
-            playerName: playerName.trimmingCharacters(in: .whitespacesAndNewlines),
-            purpose: purpose, mode: mode, rank: rank, slots: slots,
-            comment: comment.trimmingCharacters(in: .whitespacesAndNewlines),
-            inviteURL: parsed.url, teamCode: parsed.code,
-            createdAt: now, expiresAt: now.addingTimeInterval(TeamPost.lifetime),
-            creatorID: nil
-        )
-        do {
-            try await board.publish(post)
-            onDone("募集を出しました")
-            dismiss()
-        } catch {
-            errorText = TeamBoardStore.describe(error)
-        }
-    }
-}
-
-// MARK: - 投稿直後のオーラ
-
-/// 投稿された直後に、カードの枠から光がにじみ出て、少しずつ静まっていく演出。
-/// 「あと1人」の募集は埋まる寸前＝急ぎなので、光が強く・長く続き、静まったあとも淡く脈打つ。
-private struct AuraGlow: View {
-    let post: TeamPost
+/// 「あと○人」の表示。あと1人はひと目で分かるよう塗りつぶしで強調する。
+struct SlotsBadge: View {
+    let slots: Int
     let tint: Color
 
-    /// 光が出ている秒数（投稿からの経過）。あと1人は長め。
-    private var fadeSeconds: Double { post.slots == 1 ? 150 : 60 }
-    private var peak: Double { post.slots == 1 ? 1.0 : 0.5 }
-
     var body: some View {
-        let age = Date().timeIntervalSince(post.createdAt)
-        // 光が完全に消えるのは、あと1人 以外だけ。あと1人は常に淡く残す。
-        if age < fadeSeconds || post.slots == 1 {
-            TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
-                glow(at: context.date)
-            }
-            .allowsHitTesting(false)
+        if slots == 1 {
+            Label("あと1人！", systemImage: "flame.fill")
+                .font(.footnote.weight(.heavy))
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .foregroundStyle(.black)
+                .background(
+                    LinearGradient(colors: [.yellow, .orange], startPoint: .leading, endPoint: .trailing),
+                    in: Capsule()
+                )
+        } else {
+            Text("あと\(slots)人")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(tint)
         }
-    }
-
-    private func glow(at date: Date) -> some View {
-        let age = max(0, date.timeIntervalSince(post.createdAt))
-        let fresh = max(0, 1 - age / fadeSeconds)            // 1 → 0 に静まる
-        let floor = post.slots == 1 ? 0.22 : 0.0              // あと1人の最低ライン
-        let level = max(fresh * peak, floor)
-        let speed = post.slots == 1 ? 3.2 : 2.0               // 脈打つ速さ
-        let pulse = 0.78 + 0.22 * sin(date.timeIntervalSinceReferenceDate * speed)
-        let strength = level * pulse
-        let corner: CGFloat = 20
-
-        return ZStack {
-            // 外側のにじみ
-            RoundedRectangle(cornerRadius: corner, style: .continuous)
-                .strokeBorder(tint, lineWidth: 3)
-                .blur(radius: 6 + 10 * strength)
-                .opacity(0.9 * strength)
-            // 枠そのものの光
-            RoundedRectangle(cornerRadius: corner, style: .continuous)
-                .strokeBorder(tint.opacity(0.95), lineWidth: 1.5)
-                .opacity(strength)
-        }
-        .padding(-2)
-        .shadow(color: tint.opacity(0.7 * strength), radius: 10 + 22 * strength)
     }
 }

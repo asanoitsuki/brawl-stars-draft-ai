@@ -1,0 +1,39 @@
+DEFINE SCHEMA
+
+RECORD TYPE TeamPost (
+    "___createTime" TIMESTAMP QUERYABLE SORTABLE,
+    "___createdBy"  REFERENCE QUERYABLE,
+    "___etag"       STRING,
+    "___modTime"    TIMESTAMP QUERYABLE SORTABLE,
+    "___modifiedBy" REFERENCE,
+    "___recordID"   REFERENCE QUERYABLE,
+    "playerName"    STRING,
+    "purpose"       STRING,
+    "mode"          STRING,
+    "rank"          INT64,
+    "slots"         INT64,
+    "comment"       STRING,
+    "inviteURL"     STRING,
+    "teamCode"      STRING,
+    "createdAt"     TIMESTAMP,
+    "expiresAt"     TIMESTAMP QUERYABLE SORTABLE,
+    GRANT READ   TO "_world",
+    GRANT CREATE TO "_icloud",
+    GRANT WRITE  TO "_creator"
+);
+
+RECORD TYPE TeamReport (
+    "___createTime"  TIMESTAMP,
+    "___createdBy"   REFERENCE,
+    "___etag"        STRING,
+    "___modTime"     TIMESTAMP,
+    "___modifiedBy"  REFERENCE,
+    "___recordID"    REFERENCE,
+    "postRecordName" STRING,
+    "reportedCreator" STRING,
+    "reason"         STRING,
+    "snapshot"       STRING,
+    GRANT CREATE TO "_icloud",
+    GRANT READ   TO "_creator",
+    GRANT WRITE  TO "_creator"
+);

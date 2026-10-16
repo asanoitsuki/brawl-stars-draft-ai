@@ -450,9 +450,17 @@ python3 scripts/tiers.py unset Edgar         # 中立に戻す
    BDA_SWIFT_FLAGS = CLOUDKIT_ENABLED
    ```
    （この 2 行が無い間はチーム募集が「準備中」表示になるだけで、ほかの機能は普通に使える）
-4. 実機で 1 回募集を出す（レコード型 `TeamPost` が自動で作られる）
-5. [CloudKit Console](https://icloud.developer.apple.com/) → Schema → Indexes → `TeamPost` に
-   **`expiresAt` の QUERYABLE と SORTABLE** を追加（一覧の読み込みに必要なのはこの 2 つだけ）
+4. 保存先（レコード型とインデックス）を登録する。CloudKit Console の「Tokens & Keys」で
+   **Management Token** を作り、コピーした状態で実行する（`--type management` が必須）:
+   ```bash
+   $(xcrun --find cktool) save-token --type management --method keychain --force "$(pbpaste)"
+   cd ios/BrawlDraftAI
+   $(xcrun --find cktool) import-schema --team-id <チームID> --container-id iCloud.<バンドルID> \
+     --environment development --validate --file CloudKit/schema.ckdb
+   ```
+   これで `TeamPost` の `expiresAt`（QUERYABLE・SORTABLE）と通報用の `TeamReport` が作られる。
+   手作業なら、実機で 1 回募集を出してから Console の Schema > Indexes で同じ 2 つを足してもよい
+5. 実機で募集を 1 回出して、一覧に出ることを確認する
 6. App Store に出す前に CloudKit Console で **Deploy Schema Changes** を押して本番環境へ反映する
 
 不適切な投稿への対策（App Store ガイドライン 1.2）として、NG ワードの投稿拒否・通報（`TeamReport` に保存）・

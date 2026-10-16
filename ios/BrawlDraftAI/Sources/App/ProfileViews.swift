@@ -78,6 +78,21 @@ struct ProfileSummary: View {
                 }
             }
 
+            if profile.rankedHighest != nil || profile.rankedCurrent != nil {
+                HStack(spacing: 14) {
+                    Text("ガチバトル").font(.caption.weight(.bold)).foregroundStyle(.pink)
+                    if let v = profile.rankedHighest {
+                        Text("最高 \(v.formatted())").font(.subheadline.weight(.heavy).monospacedDigit()).foregroundStyle(.white)
+                    }
+                    if let v = profile.rankedCurrent {
+                        Text("現在 \(v.formatted())").font(.subheadline.weight(.heavy).monospacedDigit()).foregroundStyle(.white.opacity(0.8))
+                    }
+                    Spacer()
+                }
+                .padding(10)
+                .background(Color.pink.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+
             if !profile.topBrawlers.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("よく使うキャラ").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
@@ -147,6 +162,9 @@ struct MyProfileView: View {
                             .glassCard(tint: .purple, cornerRadius: 22)
                         editCard
                         saveButton
+                        if store.me.isComplete {
+                            ProfileShareButton(profile: store.me)
+                        }
                     } else {
                         setupCard
                     }
@@ -200,7 +218,7 @@ struct MyProfileView: View {
                 Text("ブロスタと連携してプロフィールを作ろう")
                     .font(.title3.weight(.heavy))
                     .foregroundStyle(.white)
-                Text("下のどれか 1 つで、トロフィー・ランク・アイコンが自動で入ります。")
+                Text("下のどれか 1 つで、トロフィー・ランク・アイコンが自動で入ります。Brawl Insights で作ったプロフィール画像でも読み取れます。")
                     .font(.footnote)
                     .foregroundStyle(.white.opacity(0.7))
             }
@@ -218,8 +236,8 @@ struct MyProfileView: View {
             }
 
             // 2. スクショ
-            step(number: 2, title: "プロフィール画面のスクショを選ぶ", tint: .cyan,
-                 detail: "ブロスタで自分のプロフィールを開いてスクショ → ここで選ぶと文字を読み取ります") {
+            step(number: 2, title: "プロフィールのスクショ・画像を選ぶ", tint: .cyan,
+                 detail: "ブロスタのプロフィール画面のスクショか、Brawl Insights のプロフィール画像を選ぶと文字を読み取ります") {
                 PhotosPicker(selection: $screenshotItem, matching: .images) {
                     Label("スクショを選ぶ", systemImage: "photo.on.rectangle.angled")
                         .font(.subheadline.weight(.bold))
@@ -283,6 +301,10 @@ struct MyProfileView: View {
             HStack(spacing: 10) {
                 intField("総トロフィー", value: $draft.trophies)
                 intField("最高トロフィー", value: $draft.highestTrophies)
+            }
+            HStack(spacing: 10) {
+                intField("ガチバトル 最高pt", value: $draft.rankedHighest)
+                intField("ガチバトル 現在pt", value: $draft.rankedCurrent)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -394,6 +416,9 @@ struct MyProfileView: View {
         if let t = r.trophies { base.trophies = t }
         if let t = r.highestTrophies { base.highestTrophies = t }
         if let rank = r.highestRank { base.highestRank = rank }
+        if let club = r.club, !club.isEmpty { base.club = club }
+        if let v = r.rankedHighest { base.rankedHighest = v }
+        if let v = r.rankedCurrent { base.rankedCurrent = v }
         if let tag = r.tag {
             await fill(from: base, tag: tag, ocrFallback: true)
         } else {
@@ -409,8 +434,10 @@ struct MyProfileView: View {
         defer { working = nil }
         do {
             var filled = try await ProfileAPI.lookup(tag: tag, into: base)
-            // 公式 API に無い項目（最高ランク）はスクショや手入力の値を残す
+            // 公式 API に無い項目（最高ランク・ガチバトルのポイント）はスクショや手入力の値を残す
             filled.highestRank = base.highestRank
+            filled.rankedHighest = base.rankedHighest
+            filled.rankedCurrent = base.rankedCurrent
             draft = filled
             show("\(filled.name) のプロフィールを読み込みました。確認して保存してください", error: false)
         } catch {

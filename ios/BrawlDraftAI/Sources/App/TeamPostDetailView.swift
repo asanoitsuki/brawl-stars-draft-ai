@@ -142,6 +142,7 @@ struct TeamPostDetailView: View {
             if !post.comment.isEmpty {
                 Text(post.comment).font(.callout).foregroundStyle(.white)
             }
+            ConditionRow(post: post, unmet: isMine ? nil : post.unmetCondition(for: me.me))
             if let code = post.teamCode {
                 Label("チームコード \(code)", systemImage: "number")
                     .font(.caption.monospaced())
@@ -156,7 +157,14 @@ struct TeamPostDetailView: View {
 
     private var actions: some View {
         VStack(spacing: 10) {
-            if !isMine {
+            if !isMine, let unmet = post.unmetCondition(for: me.me) {
+                Label(unmet, systemImage: "lock.fill")
+                    .font(.subheadline.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.white.opacity(0.08), in: Capsule())
+                    .foregroundStyle(.orange)
+            } else if !isMine {
                 Button {
                     onJoin()
                 } label: {

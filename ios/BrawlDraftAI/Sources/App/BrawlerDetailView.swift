@@ -66,9 +66,17 @@ struct BrawlerDetailView: View {
             }
 
             if !brawler.starPowers.isEmpty {
+                Section {
+                    Text("スターパワー・ガジェットをタップすると、向いているステージや相手が見られます。")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
                 Section("スターパワー") {
                     ForEach(brawler.starPowers) { sp in
-                        loadoutRow(sp)
+                        NavigationLink {
+                            LoadoutDetailView(brawler: brawler, item: sp, isGadget: false, rules: rules)
+                        } label: {
+                            loadoutRow(sp)
+                        }
                     }
                 }
             }
@@ -76,7 +84,11 @@ struct BrawlerDetailView: View {
             if !brawler.gadgets.isEmpty {
                 Section("ガジェット") {
                     ForEach(brawler.gadgets) { gd in
-                        loadoutRow(gd)
+                        NavigationLink {
+                            LoadoutDetailView(brawler: brawler, item: gd, isGadget: true, rules: rules)
+                        } label: {
+                            loadoutRow(gd)
+                        }
                     }
                 }
             }

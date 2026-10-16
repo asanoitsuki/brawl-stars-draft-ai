@@ -26,10 +26,14 @@ struct TeamBoardView: View {
         return doc.modes.map { ($0.key, $0.value.ja) }.sorted { $0.ja < $1.ja }
     }
 
+    /// 自分が参加条件（最低トロフィー・最低ランク）を満たす募集だけにする
+    @State private var onlyJoinable = false
+
     private var filtered: [TeamPost] {
         board.posts.filter {
             (modeFilter.isEmpty || $0.mode == modeFilter || $0.mode.isEmpty)
                 && (purposeFilter == nil || $0.purpose == purposeFilter)
+                && (!onlyJoinable || $0.unmetCondition(for: profiles.me) == nil)
         }
     }
 
@@ -164,6 +168,11 @@ struct TeamBoardView: View {
             .scrollIndicators(.hidden)
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
+                    if profiles.me.isComplete {
+                        chip(onlyJoinable ? "✓ 参加できる募集だけ" : "参加できる募集だけ", selected: onlyJoinable) {
+                            onlyJoinable.toggle()
+                        }
+                    }
                     chip("全モード", selected: modeFilter.isEmpty) { modeFilter = "" }
                     ForEach(modes, id: \.key) { m in
                         chip(m.ja, selected: modeFilter == m.key) { modeFilter = m.key }
@@ -217,6 +226,7 @@ struct TeamBoardView: View {
                             modeJa: modes.first { $0.key == post.mode }?.ja,
                             isMine: board.isMine(post),
                             onOpen: { opened = post },
+                            unmet: board.isMine(post) ? nil : post.unmetCondition(for: profiles.me),
                             onJoin: { join(post) },
                             onClose: { Task { await board.closeMyPost(); show("募集を締め切りました") } },
                             onReport: { reporting = post },
@@ -287,6 +297,8 @@ private struct TeamPostCard: View {
     let modeJa: String?
     let isMine: Bool
     let onOpen: () -> Void
+    /// 自分が参加条件を満たしていない理由（nil = 参加できる）
+    let unmet: String?
     let onJoin: () -> Void
     let onClose: () -> Void
     let onReport: () -> Void
@@ -343,6 +355,8 @@ private struct TeamPostCard: View {
                     .foregroundStyle(.white)
             }
 
+            ConditionRow(post: post, unmet: unmet)
+
             HStack {
                 SlotsBadge(slots: post.slots, tint: tint)
                 Spacer()
@@ -355,6 +369,12 @@ private struct TeamPostCard: View {
                         .padding(.horizontal, 14).padding(.vertical, 8)
                         .background(Color.white.opacity(0.12), in: Capsule())
                         .foregroundStyle(.white)
+                } else if unmet != nil {
+                    Text("条件外")
+                        .font(.footnote.weight(.bold))
+                        .padding(.horizontal, 16).padding(.vertical, 8)
+                        .background(Color.white.opacity(0.1), in: Capsule())
+                        .foregroundStyle(.white.opacity(0.5))
                 } else {
                     Button(action: onJoin) {
                         Label("参加", systemImage: "arrow.up.forward.app")
@@ -406,6 +426,40 @@ struct SlotsBadge: View {
             Text("あと\(slots)人")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(tint)
+        }
+    }
+}
+
+/// 募集の参加条件（最低トロフィー・最低ランク）。満たしていなければ理由も出す。
+struct ConditionRow: View {
+    let post: TeamPost
+    let unmet: String?
+
+    var body: some View {
+        if post.minTrophies != nil || (post.minRank ?? 0) > 0 {
+            HStack(spacing: 10) {
+                Text("参加条件").font(.caption2.weight(.bold)).foregroundStyle(.white.opacity(0.6))
+                if let min = post.minTrophies {
+                    HStack(spacing: 2) {
+                        TrophyLabel(trophies: min, size: 11)
+                        Text("以上").font(.caption2).foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                if let rank = post.minRank, rank > 0 {
+                    HStack(spacing: 2) {
+                        RankBadge(tier: rank, size: 16)
+                        Text("以上").font(.caption2).foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                Spacer(minLength: 0)
+                if unmet != nil {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.orange).font(.caption)
+                } else {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).font(.caption)
+                }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(Color.black.opacity(0.25), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
 }

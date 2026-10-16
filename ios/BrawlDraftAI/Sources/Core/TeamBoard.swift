@@ -46,6 +46,22 @@ struct TeamPost: Identifiable, Equatable {
     var highestRank: Int? = nil
     /// Discord のサーバー招待やボイスチャンネルのリンク
     var discordURL: String? = nil
+    /// 参加条件（nil = 条件なし）。最低トロフィーと、ガチバトル最高ランクの下限（RankTier）
+    var minTrophies: Int? = nil
+    var minRank: Int? = nil
+
+    /// このプロフィールの人が条件を満たすか。満たさない理由を返す（nil = 参加できる）
+    func unmetCondition(for p: PlayerProfile) -> String? {
+        if let min = minTrophies, (p.trophies ?? 0) < min {
+            return "トロフィー \(min.formatted()) 以上が条件です"
+        }
+        if let min = minRank, min > 0, (p.highestRank ?? 0) < min {
+            return "最高ランク \(RankTier.label(min)) 以上が条件です"
+        }
+        return nil
+    }
+
+    static let trophyThresholds = [5_000, 10_000, 20_000, 30_000, 40_000, 50_000, 60_000, 70_000, 80_000, 90_000]
 
     var isExpired: Bool { expiresAt < Date() }
 
@@ -76,6 +92,8 @@ extension TeamPost {
         self.trophies = (record["trophies"] as? Int64).map(Int.init)
         self.highestRank = (record["highestRank"] as? Int64).map(Int.init)
         self.discordURL = record["discordURL"] as? String
+        self.minTrophies = (record["minTrophies"] as? Int64).map(Int.init)
+        self.minRank = (record["minRank"] as? Int64).map(Int.init)
     }
 
     func makeRecord() -> CKRecord {
@@ -95,6 +113,8 @@ extension TeamPost {
         if let trophies { record["trophies"] = Int64(trophies) as CKRecordValue }
         if let highestRank, highestRank > 0 { record["highestRank"] = Int64(highestRank) as CKRecordValue }
         if let discordURL { record["discordURL"] = discordURL as CKRecordValue }
+        if let minTrophies { record["minTrophies"] = Int64(minTrophies) as CKRecordValue }
+        if let minRank, minRank > 0 { record["minRank"] = Int64(minRank) as CKRecordValue }
         return record
     }
 }
@@ -225,7 +245,11 @@ final class TeamBoardStore: ObservableObject {
                          creatorID: nil, profileRecordName: "demo", iconID: 28000000, trophies: 38_420,
                          highestRank: slots == 1 ? 20 : 15, discordURL: "https://discord.gg/example")
             }
-            posts = [demo("あと1人・たった今", .ranked, 1, 5, "ミシック帯 VCなし"),
+            var strict = demo("条件あり・たった今", .ranked, 1, 20, "プロ目指してる人")
+            strict.minTrophies = 60_000
+            strict.minRank = 19
+            posts = [strict,
+                     demo("あと1人・たった今", .ranked, 1, 5, "ミシック帯 VCなし"),
                      demo("あと2人・たった今", .trophy, 2, 5, "トロ上げ行こう"),
                      demo("あと2人・5分前", .casual, 2, 300, "まったり"),
                      demo("あと1人・5分前", .ranked, 1, 300, "あと1人で出発")]

@@ -288,6 +288,8 @@ class RankedStats:
                 if g < PAIR_MIN_GAMES:
                     continue
                 ia, ib = int(a), int(b)
+                if ia == ib:
+                    continue  # ミラー対決
                 delta = residual(ia, ib, shrunk_rate(g, w, k=15))
                 if abs(delta) < 1.0:
                     continue

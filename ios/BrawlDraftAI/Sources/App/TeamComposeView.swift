@@ -14,6 +14,8 @@ struct TeamComposeView: View {
     @State private var mode = ""
     @State private var rank = 0
     @State private var slots = 2
+    @State private var minTrophies = 0
+    @State private var minRank = 0
     @State private var comment = ""
     @State private var inviteText = ""
     @State private var discordText = ""
@@ -99,6 +101,29 @@ struct TeamComposeView: View {
                 }
 
                 Section {
+                    Picker("最低トロフィー", selection: $minTrophies) {
+                        Text("条件なし").tag(0)
+                        ForEach(TeamPost.trophyThresholds, id: \.self) { Text("\($0.formatted()) 以上").tag($0) }
+                    }
+                    Picker("最低ランク（ガチバトル最高）", selection: $minRank) {
+                        Text("条件なし").tag(0)
+                        ForEach(1...RankTier.count, id: \.self) { Text("\(RankTier.label($0)) 以上").tag($0) }
+                    }
+                    if minRank > 0 {
+                        HStack {
+                            Spacer()
+                            RankBadge(tier: minRank, size: 30)
+                            Text("以上").font(.caption)
+                            Spacer()
+                        }
+                    }
+                } header: {
+                    Text("参加条件")
+                } footer: {
+                    Text("条件を満たさない人には「条件外」と表示され、参加ボタンが押せなくなります。")
+                }
+
+                Section {
                     TextField("https://discord.gg/…（任意）", text: $discordText)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -164,6 +189,8 @@ struct TeamComposeView: View {
             creatorID: nil
         )
         post.discordURL = TeamInvite.discordURL(from: discordText)
+        post.minTrophies = minTrophies > 0 ? minTrophies : nil
+        post.minRank = minRank > 0 ? minRank : nil
         post.iconID = profile.iconID
         post.trophies = profile.trophies
         post.highestRank = profile.highestRank

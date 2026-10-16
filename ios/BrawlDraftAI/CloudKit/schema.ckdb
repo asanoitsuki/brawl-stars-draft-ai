@@ -22,6 +22,8 @@ RECORD TYPE TeamPost (
     "trophies"      INT64,
     "highestRank"   INT64,
     "discordURL"    STRING,
+    "minTrophies"   INT64,
+    "minRank"       INT64,
     GRANT READ   TO "_world",
     GRANT CREATE TO "_icloud",
     GRANT WRITE  TO "_creator"

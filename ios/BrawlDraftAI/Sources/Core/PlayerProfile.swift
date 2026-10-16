@@ -63,6 +63,11 @@ struct PlayerProfile: Codable, Equatable {
     var fetchedAt: Date?
     /// ガチバトルの最高ランク（RankTier: 1 = ブロンズⅠ … 22 = プロ）。古い保存データには無いので任意
     var highestRank: Int?
+    /// ガチバトルのポイント（最高 / 現在）。Brawl Insights などの画像から読めたときだけ入る
+    var rankedHighest: Int?
+    var rankedCurrent: Int?
+    /// 全キャラのトロフィー（プロフィール画像用）。公式 API から取れたときだけ入る
+    var brawlers: [TopBrawler]?
 
     var isEmpty: Bool { name.isEmpty }
     /// 募集に出せる状態か（名前とタグがそろっている）
@@ -137,6 +142,7 @@ enum ProfileAPI {
         let club: String?
         let brawlerCount: Int?
         let topBrawlers: [PlayerProfile.TopBrawler]
+        let brawlers: [PlayerProfile.TopBrawler]?
     }
 
     /// タグから公式のプロフィールを取り、既存のプロフィールの「自分で足した部分」は残して上書きする。
@@ -186,6 +192,7 @@ enum ProfileAPI {
         p.club = r.club
         p.brawlerCount = r.brawlerCount
         p.topBrawlers = r.topBrawlers
+        if let all = r.brawlers, !all.isEmpty { p.brawlers = all }
         p.fetchedAt = Date()
         return p
     }
@@ -209,6 +216,19 @@ final class ProfileStore: ObservableObject {
         } else {
             me = PlayerProfile()
         }
+        #if DEBUG
+        // 見た目確認用: BDA_DEMO_PROFILE=1 で起動するとサンプルのプロフィールを入れる
+        if ProcessInfo.processInfo.environment["BDA_DEMO_PROFILE"] != nil {
+            let all = (0..<48).map { i in
+                PlayerProfile.TopBrawler(id: 16_000_000 + i, name: "B\(i)", power: 11, rank: 30,
+                                         trophies: max(200, 2402 - i * 45))
+            }
+            me = PlayerProfile(tag: "#PCJJPRP", name: "7位傀儡", iconID: 28000000, trophies: 83_845,
+                               highestTrophies: 83_845, trioVictories: 17_485, club: "worthwhile",
+                               brawlerCount: 48, topBrawlers: Array(all.prefix(5)), bio: "ガチバトル毎日やってます",
+                               highestRank: 20, rankedHighest: 9294, rankedCurrent: 6304, brawlers: all)
+        }
+        #endif
     }
 
     /// 端末に保存し、iCloud にも公開する（募集を見た人がプロフィールを開けるように）。

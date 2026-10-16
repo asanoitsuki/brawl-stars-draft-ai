@@ -260,6 +260,8 @@ def add_battle(store: dict, b: dict) -> None:
     # 対面: 小さい ID 側から見た勝敗だけを持つ（逆向きは 1 - 勝率で引ける）
     for x in b["winners"]:
         for y in b["losers"]:
+            if x == y:
+                continue  # 同キャラ対決（ミラー）は相性にならない
             a, c = (x, y) if x < y else (y, x)
             won = 1 if a == x else 0
             row = store["vs"].setdefault(str(a), {})

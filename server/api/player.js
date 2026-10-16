@@ -45,10 +45,16 @@ export default async function handler(req, res) {
 
   const p = await upstream.json();
   const brawlers = Array.isArray(p.brawlers) ? p.brawlers : [];
-  const topBrawlers = [...brawlers]
-    .sort((a, b) => (b.trophies || 0) - (a.trophies || 0))
-    .slice(0, 5)
-    .map((b) => ({ id: b.id, name: b.name, power: b.power, rank: b.rank, trophies: b.trophies }));
+  const slim = (b) => ({ id: b.id, name: b.name, power: b.power, rank: b.rank, trophies: b.trophies });
+  const sorted = [...brawlers].sort((a, b) => (b.trophies || 0) - (a.trophies || 0));
+  const topBrawlers = sorted.slice(0, 5).map(slim);
+
+  // 公式 API にまだ知らない項目（ガチバトル関連など）が増えていたら、そのまま渡して確認できるようにする
+  const known = new Set(["tag", "name", "nameColor", "icon", "trophies", "highestTrophies", "expLevel",
+    "expPoints", "3vs3Victories", "soloVictories", "duoVictories", "club", "brawlers",
+    "isQualifiedFromChampionshipChallenge", "bestRoboRumbleTime", "bestTimeAsBigBrawler",
+    "highestPowerPlayPoints"]);
+  const extra = Object.fromEntries(Object.entries(p).filter(([k]) => !known.has(k)));
 
   // 公開プロフィールなので数分キャッシュしてよい（公式 API への負荷も減る）
   res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
@@ -66,5 +72,8 @@ export default async function handler(req, res) {
     club: p.club && p.club.name ? p.club.name : null,
     brawlerCount: brawlers.length,
     topBrawlers,
+    // プロフィール画像用に全キャラのトロフィー（多い順）
+    brawlers: sorted.map(slim),
+    extra,
   });
 }

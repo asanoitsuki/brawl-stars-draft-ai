@@ -17,6 +17,7 @@ struct ProfileCardImage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
+            infoPanels
             if !grid.isEmpty {
                 LazyVGrid(columns: columns, spacing: 8) {
                     ForEach(grid) { tile($0) }
@@ -86,6 +87,64 @@ struct ProfileCardImage: View {
                 }
             }
         }
+    }
+
+    /// Brawl Insights のように、基本データと育成状況を並べる
+    @ViewBuilder
+    private var infoPanels: some View {
+        let basic = basicLines()
+        let growth = growthLines()
+        if !basic.isEmpty || !growth.isEmpty {
+            HStack(alignment: .top, spacing: 16) {
+                if !basic.isEmpty { panel("基本データ", basic) }
+                if !growth.isEmpty { panel("育成状況", growth) }
+            }
+        }
+    }
+
+    private func basicLines() -> [(String, String)] {
+        var out: [(String, String)] = []
+        if let v = profile.expLevel { out.append(("レベル", "\(v)")) }
+        if let v = profile.expPoints { out.append(("経験値", v.formatted())) }
+        if let v = profile.trioVictories { out.append(("3vs3 勝利数", v.formatted())) }
+        if let v = profile.soloVictories { out.append(("ソロ 勝利数", v.formatted())) }
+        if let v = profile.duoVictories { out.append(("デュオ 勝利数", v.formatted())) }
+        if let v = profile.bestRoboRumbleTime, v > 0 { out.append(("ロボットパニック最高", ProfileSummary.time(v))) }
+        if let v = profile.bestTimeAsBigBrawler, v > 0 { out.append(("ビッグブロウラー最高", ProfileSummary.time(v))) }
+        return out
+    }
+
+    private func growthLines() -> [(String, String)] {
+        guard let g = profile.growth else { return [] }
+        var out: [(String, String)] = [("ブロウラー", "\(g.owned)")]
+        if let v = g.gadgets { out.append(("ガジェット", "\(v)")) }
+        if let v = g.starPowers { out.append(("スターパワー", "\(v)")) }
+        if let v = g.gears { out.append(("ギア", "\(v)")) }
+        if let v = g.hyperCharges { out.append(("ハイパーチャージ", "\(v)")) }
+        if let v = g.buffies { out.append(("バフィー", "\(v)")) }
+        out.append(("パワー11", "\(g.power11)"))
+        if let a = g.averagePower { out.append(("平均パワー", String(format: "%.2f", a))) }
+        return out
+    }
+
+    private func panel(_ title: String, _ lines: [(String, String)]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 18, weight: .heavy))
+                .foregroundStyle(.white.opacity(0.85))
+                .padding(.horizontal, 14).padding(.vertical, 3)
+                .background(Color.black.opacity(0.3), in: Capsule())
+            ForEach(lines.indices, id: \.self) { i in
+                HStack {
+                    Text(lines[i].0).font(.system(size: 20, weight: .bold)).foregroundStyle(.white.opacity(0.7))
+                    Spacer()
+                    Text(lines[i].1).font(.system(size: 24, weight: .black).monospacedDigit()).foregroundStyle(.white)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func bigStat(title: String, value: Int?) -> some View {

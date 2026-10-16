@@ -33,12 +33,20 @@ enum Cloud {
 /// 自分のブロスタのプロフィール。プレイヤータグから公式 API の値を自動で埋め、
 /// フレンド招待リンク・Discord・ひとことは自分で足す。
 struct PlayerProfile: Codable, Equatable {
+    /// 1 キャラの状態（公式 API の brawlers[] から）。古い保存データには無い項目が多いので全部任意。
     struct TopBrawler: Codable, Equatable, Identifiable {
         var id: Int
         var name: String
         var power: Int?
+        /// キャラのランク（プレステージ）
         var rank: Int?
         var trophies: Int?
+        var highestTrophies: Int?
+        var gears: Int?
+        var gadgets: Int?
+        var starPowers: Int?
+        var hyperCharges: Int?
+        var buffies: Int?
     }
 
     var tag: String = ""
@@ -47,12 +55,19 @@ struct PlayerProfile: Codable, Equatable {
     var trophies: Int?
     var highestTrophies: Int?
     var expLevel: Int?
+    var expPoints: Int?
     var trioVictories: Int?
     var soloVictories: Int?
     var duoVictories: Int?
     var club: String?
     var brawlerCount: Int?
     var topBrawlers: [TopBrawler] = []
+    /// ロボットパニックの最高記録（秒）/ ビッグブロウラーの最高時間（秒）。公式 API に項目があるとき
+    var bestRoboRumbleTime: Int?
+    var bestTimeAsBigBrawler: Int?
+    /// 公式 API が返した、アプリがまだ名前を知らない項目（ガチバトルのレートなどが追加されたとき用）。
+    /// 値は文字列にして持ち、プロフィールの「公式のその他の項目」に出す。
+    var officialExtra: [String: String]?
     /// ブロスタの「フレンド招待」リンク。開くと相手にフレンド申請が飛ぶ。
     var friendLink: String?
     var discordName: String?
@@ -68,6 +83,36 @@ struct PlayerProfile: Codable, Equatable {
     var rankedCurrent: Int?
     /// 全キャラのトロフィー（プロフィール画像用）。公式 API から取れたときだけ入る
     var brawlers: [TopBrawler]?
+
+    /// 育成状況（公式の brawlers[] から集計）。全キャラ分が取れていないときは nil
+    var growth: Growth? {
+        guard let list = brawlers, !list.isEmpty else { return nil }
+        func total(_ key: KeyPath<TopBrawler, Int?>) -> Int? {
+            let values = list.compactMap { $0[keyPath: key] }
+            return values.isEmpty ? nil : values.reduce(0, +)
+        }
+        let powers = list.compactMap(\.power)
+        return Growth(
+            owned: list.count,
+            gadgets: total(\.gadgets), starPowers: total(\.starPowers), gears: total(\.gears),
+            hyperCharges: total(\.hyperCharges), buffies: total(\.buffies),
+            power11: powers.filter { $0 >= 11 }.count,
+            averagePower: powers.isEmpty ? nil : Double(powers.reduce(0, +)) / Double(powers.count),
+            highestBrawlerTrophies: list.compactMap(\.highestTrophies).max()
+        )
+    }
+
+    struct Growth: Equatable {
+        let owned: Int
+        let gadgets: Int?
+        let starPowers: Int?
+        let gears: Int?
+        let hyperCharges: Int?
+        let buffies: Int?
+        let power11: Int
+        let averagePower: Double?
+        let highestBrawlerTrophies: Int?
+    }
 
     var isEmpty: Bool { name.isEmpty }
     /// 募集に出せる状態か（名前とタグがそろっている）
@@ -115,13 +160,14 @@ enum ProfileLink {
 
 enum ProfileAPI {
     enum LookupError: LocalizedError {
-        case invalidTag, notFound, notConfigured, rateLimited, network, server(Int)
+        case invalidTag, notFound, notConfigured, maintenance, rateLimited, network, server(Int)
 
         var errorDescription: String? {
             switch self {
             case .invalidTag: return "タグの形式が正しくありません（例: #2PP0Y8LQ）"
             case .notFound: return "このタグのプレイヤーが見つかりません"
-            case .notConfigured: return "自動取得サーバーの準備中です。プロフィール画面のスクショか手入力で作れます"
+            case .notConfigured: return "自動取得サーバーが未設定です。プロフィール画面のスクショから作れます"
+            case .maintenance: return "ブロスタ公式がメンテナンス中です。終わってからもう一度試してください（画像からは作れます）"
             case .rateLimited: return "混み合っています。少し待ってからもう一度試してください"
             case .network: return "サーバーに接続できません"
             case .server(let code): return "取得に失敗しました（\(code)）"
@@ -136,13 +182,32 @@ enum ProfileAPI {
         let trophies: Int?
         let highestTrophies: Int?
         let expLevel: Int?
+        let expPoints: Int?
         let trioVictories: Int?
         let soloVictories: Int?
         let duoVictories: Int?
+        let bestRoboRumbleTime: Int?
+        let bestTimeAsBigBrawler: Int?
         let club: String?
         let brawlerCount: Int?
         let topBrawlers: [PlayerProfile.TopBrawler]
         let brawlers: [PlayerProfile.TopBrawler]?
+        let extra: [String: JSONScalar]?
+    }
+
+    /// extra に来る値を「文字列にできるもの」だけ受ける（入れ子は無視）
+    private enum JSONScalar: Decodable {
+        case text(String)
+        case none
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.singleValueContainer()
+            if let v = try? c.decode(String.self) { self = .text(v) }
+            else if let v = try? c.decode(Int.self) { self = .text(String(v)) }
+            else if let v = try? c.decode(Double.self) { self = .text(String(v)) }
+            else if let v = try? c.decode(Bool.self) { self = .text(v ? "はい" : "いいえ") }
+            else { self = .none }
+        }
     }
 
     /// タグから公式のプロフィールを取り、既存のプロフィールの「自分で足した部分」は残して上書きする。
@@ -175,6 +240,7 @@ enum ProfileAPI {
         case 404 where serverError == "not_found": throw LookupError.notFound
         case 404: throw LookupError.notConfigured
         case 429: throw LookupError.rateLimited
+        case 503 where serverError == "maintenance": throw LookupError.maintenance
         case 503: throw LookupError.notConfigured
         default: throw LookupError.server(status)
         }
@@ -186,6 +252,14 @@ enum ProfileAPI {
         p.trophies = r.trophies
         p.highestTrophies = r.highestTrophies
         p.expLevel = r.expLevel
+        p.expPoints = r.expPoints
+        p.bestRoboRumbleTime = r.bestRoboRumbleTime
+        p.bestTimeAsBigBrawler = r.bestTimeAsBigBrawler
+        if let extra = r.extra {
+            var flat: [String: String] = [:]
+            for (k, v) in extra { if case .text(let t) = v { flat[k] = t } }
+            p.officialExtra = flat.isEmpty ? nil : flat
+        }
         p.trioVictories = r.trioVictories
         p.soloVictories = r.soloVictories
         p.duoVictories = r.duoVictories
@@ -221,14 +295,29 @@ final class ProfileStore: ObservableObject {
         if ProcessInfo.processInfo.environment["BDA_DEMO_PROFILE"] != nil {
             let all = (0..<48).map { i in
                 PlayerProfile.TopBrawler(id: 16_000_000 + i, name: "B\(i)", power: 11, rank: 30,
-                                         trophies: max(200, 2402 - i * 45))
+                                         trophies: max(200, 2402 - i * 45), highestTrophies: 2500 - i * 40,
+                                         gears: 2, gadgets: 2, starPowers: 2, hyperCharges: 1, buffies: 3)
             }
             me = PlayerProfile(tag: "#PCJJPRP", name: "7位傀儡", iconID: 28000000, trophies: 83_845,
-                               highestTrophies: 83_845, trioVictories: 17_485, club: "worthwhile",
+                               highestTrophies: 83_845, expLevel: 40, expPoints: 33_680,
+                               trioVictories: 17_485, soloVictories: 10_594, duoVictories: 4_734, club: "worthwhile",
                                brawlerCount: 48, topBrawlers: Array(all.prefix(5)), bio: "ガチバトル毎日やってます",
                                highestRank: 20, rankedHighest: 9294, rankedCurrent: 6304, brawlers: all)
         }
         #endif
+    }
+
+    /// 公式の最新の値に更新する。アプリを開いたときに呼び、前回から 3 時間以内なら何もしない。
+    /// 名前・トロフィーなどの公式の値は、自分では書き換えられず、ここでだけ変わる。
+    func refreshFromOfficial(force: Bool = false) async {
+        guard me.isComplete else { return }
+        if !force, let last = me.fetchedAt, Date().timeIntervalSince(last) < 3 * 3600 { return }
+        guard var latest = try? await ProfileAPI.lookup(tag: me.tag, into: me) else { return }
+        // 公式の項目が新しく取れなかった場合に備え、画像から読んだ値は残す
+        latest.highestRank = me.highestRank
+        latest.rankedHighest = me.rankedHighest
+        latest.rankedCurrent = me.rankedCurrent
+        try? await save(latest)
     }
 
     /// 端末に保存し、iCloud にも公開する（募集を見た人がプロフィールを開けるように）。

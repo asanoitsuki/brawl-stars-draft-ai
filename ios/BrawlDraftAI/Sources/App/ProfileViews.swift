@@ -44,73 +44,210 @@ struct ProfileAvatar: View {
 // MARK: - 表示用カード
 
 /// プロフィールの中身（自分の画面と、募集をタップしたときの相手の画面で共通）。
+/// 公式データで取れるもの（トロフィー・勝利数・レベル・育成状況・全キャラ）をすべて並べる。
 struct ProfileSummary: View {
     let profile: PlayerProfile
+    /// ルールデータの読み込みが終わったら分母（全ブロウラー数など）を出すため、変化を監視する
+    @ObservedObject private var rulesStore = RulesStore.shared
+
+    /// 全体の数（所持率の分母）。ルールデータから数える
+    private var totals: (brawlers: Int, gadgets: Int, starPowers: Int)? {
+        guard let rules = RulesStore.shared.loaded else { return nil }
+        let list = rules.document.brawlers
+        return (list.count, list.reduce(0) { $0 + $1.gadgets.count }, list.reduce(0) { $0 + $1.starPowers.count })
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 14) {
-                ProfileAvatar(iconID: profile.iconID, size: 64)
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(profile.name)
-                        .font(.title3.weight(.heavy))
-                        .foregroundStyle(.white)
-                    if !profile.tag.isEmpty {
-                        Text(profile.tag).font(.caption.monospaced()).foregroundStyle(.white.opacity(0.6))
-                    }
-                    if let club = profile.club {
-                        Label(club, systemImage: "shield.lefthalf.filled")
-                            .font(.caption).foregroundStyle(.white.opacity(0.7))
-                    }
-                }
-                Spacer(minLength: 0)
-            }
-
-            HStack(spacing: 10) {
-                statBox("総トロフィー") {
-                    if let t = profile.trophies { TrophyLabel(trophies: t, size: 16) } else { dash }
-                }
-                statBox("最高トロフィー") {
-                    if let t = profile.highestTrophies { TrophyLabel(trophies: t, size: 16) } else { dash }
-                }
-                statBox("最高ランク") {
-                    if let r = profile.highestRank, r > 0 { RankBadge(tier: r, size: 26) } else { dash }
-                }
-            }
-
-            if profile.rankedHighest != nil || profile.rankedCurrent != nil {
-                HStack(spacing: 14) {
-                    Text("ガチバトル").font(.caption.weight(.bold)).foregroundStyle(.pink)
-                    if let v = profile.rankedHighest {
-                        Text("最高 \(v.formatted())").font(.subheadline.weight(.heavy).monospacedDigit()).foregroundStyle(.white)
-                    }
-                    if let v = profile.rankedCurrent {
-                        Text("現在 \(v.formatted())").font(.subheadline.weight(.heavy).monospacedDigit()).foregroundStyle(.white.opacity(0.8))
-                    }
-                    Spacer()
-                }
-                .padding(10)
-                .background(Color.pink.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-
-            if !profile.topBrawlers.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("よく使うキャラ").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
-                    HStack(spacing: 10) {
-                        ForEach(profile.topBrawlers.prefix(5)) { b in
-                            VStack(spacing: 3) {
-                                BrawlerIcon(id: b.id, size: 46)
-                                if let t = b.trophies { TrophyLabel(trophies: t, size: 10) }
-                            }
-                        }
-                    }
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 16) {
+            header
+            trophyRow
+            rankedRow
+            basicData
+            growthData
+            brawlerGrid
+            if let extra = profile.officialExtra, !extra.isEmpty { extraData(extra) }
             if !profile.bio.isEmpty {
                 Text(profile.bio).font(.callout).foregroundStyle(.white.opacity(0.9))
             }
         }
+    }
+
+    // MARK: 上段
+
+    private var header: some View {
+        HStack(spacing: 14) {
+            ProfileAvatar(iconID: profile.iconID, size: 64)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(profile.name)
+                    .font(.title3.weight(.heavy))
+                    .foregroundStyle(.white)
+                if !profile.tag.isEmpty {
+                    Text(profile.tag).font(.caption.monospaced()).foregroundStyle(.white.opacity(0.6))
+                }
+                if let club = profile.club {
+                    Label(club, systemImage: "shield.lefthalf.filled")
+                        .font(.caption).foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var trophyRow: some View {
+        HStack(spacing: 10) {
+            statBox("現在のトロフィー") {
+                if let t = profile.trophies { TrophyLabel(trophies: t, size: 16) } else { dash }
+            }
+            statBox("最多トロフィー") {
+                if let t = profile.highestTrophies { TrophyLabel(trophies: t, size: 16) } else { dash }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var rankedRow: some View {
+        if profile.highestRank != nil || profile.rankedHighest != nil || profile.rankedCurrent != nil {
+            HStack(spacing: 12) {
+                if let r = profile.highestRank, r > 0 { RankBadge(tier: r, size: 40, showsLabel: false) }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("ガチバトル").font(.caption.weight(.bold)).foregroundStyle(.pink)
+                    HStack(spacing: 14) {
+                        if let r = profile.highestRank, r > 0 {
+                            Text("最高 \(RankTier.label(r))").font(.subheadline.weight(.heavy)).foregroundStyle(.white)
+                        }
+                        if let v = profile.rankedHighest {
+                            Text("最高 \(v.formatted())").font(.subheadline.weight(.heavy).monospacedDigit()).foregroundStyle(.white)
+                        }
+                        if let v = profile.rankedCurrent {
+                            Text("現在 \(v.formatted())").font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(.white.opacity(0.8))
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(10)
+            .background(Color.pink.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    // MARK: 基本データ
+
+    @ViewBuilder
+    private var basicData: some View {
+        let rows = basicRows()
+        if !rows.isEmpty {
+            section("基本データ") {
+                if let level = profile.expLevel {
+                    HStack(spacing: 8) {
+                        Text("レベル").font(.caption).foregroundStyle(.white.opacity(0.65))
+                        Text("\(level)").font(.headline.weight(.heavy).monospacedDigit()).foregroundStyle(.cyan)
+                        if let xp = profile.expPoints {
+                            Spacer()
+                            Text("経験値 \(xp.formatted())").font(.caption.monospacedDigit()).foregroundStyle(.white.opacity(0.7))
+                        }
+                    }
+                }
+                grid(rows)
+            }
+        }
+    }
+
+    private func basicRows() -> [(String, String, Color)] {
+        var out: [(String, String, Color)] = []
+        if let v = profile.trioVictories { out.append(("3vs3 勝利数", v.formatted(), .cyan)) }
+        if let v = profile.soloVictories { out.append(("ソロ 勝利数", v.formatted(), .orange)) }
+        if let v = profile.duoVictories { out.append(("デュオ 勝利数", v.formatted(), .mint)) }
+        if let v = profile.bestRoboRumbleTime, v > 0 { out.append(("ロボットパニック最高", Self.time(v), .red)) }
+        if let v = profile.bestTimeAsBigBrawler, v > 0 { out.append(("ビッグブロウラー最高", Self.time(v), .purple)) }
+        return out
+    }
+
+    // MARK: 育成状況
+
+    @ViewBuilder
+    private var growthData: some View {
+        if let g = profile.growth {
+            section("育成状況") {
+                let t = totals
+                var rows: [(String, String, Color)] = [
+                    ("ブロウラー", fraction(g.owned, t?.brawlers), .yellow),
+                ]
+                if let v = g.gadgets { rows.append(("ガジェット", fraction(v, t?.gadgets), .green)) }
+                if let v = g.starPowers { rows.append(("スターパワー", fraction(v, t?.starPowers), .orange)) }
+                if let v = g.gears { rows.append(("ギア", "\(v)", .gray)) }
+                if let v = g.hyperCharges { rows.append(("ハイパーチャージ", "\(v)", .pink)) }
+                if let v = g.buffies { rows.append(("バフィー", "\(v)", .purple)) }
+                rows.append(("パワー11", "\(g.power11) / \(g.owned)", .blue))
+                if let a = g.averagePower { rows.append(("平均パワー", String(format: "%.2f", a), .cyan)) }
+                return grid(rows)
+            }
+        }
+    }
+
+    // MARK: 全キャラ
+
+    @ViewBuilder
+    private var brawlerGrid: some View {
+        let list = (profile.brawlers ?? profile.topBrawlers).sorted { ($0.trophies ?? 0) > ($1.trophies ?? 0) }
+        if !list.isEmpty {
+            section(profile.brawlers == nil ? "よく使うキャラ" : "全キャラのトロフィー（\(list.count)体）") {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 8) {
+                    ForEach(list) { b in
+                        VStack(spacing: 2) {
+                            BrawlerIcon(id: b.id, size: 46)
+                            if let t = b.trophies { TrophyLabel(trophies: t, size: 10) }
+                            if let p = b.power { Text("パワー\(p)").font(.system(size: 8)).foregroundStyle(.white.opacity(0.55)) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func extraData(_ extra: [String: String]) -> some View {
+        section("公式のその他の項目") {
+            ForEach(extra.keys.sorted(), id: \.self) { key in
+                HStack {
+                    Text(key).font(.caption.monospaced()).foregroundStyle(.white.opacity(0.6))
+                    Spacer()
+                    Text(extra[key] ?? "").font(.caption.weight(.semibold)).foregroundStyle(.white)
+                }
+            }
+        }
+    }
+
+    // MARK: 部品
+
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.caption.weight(.bold)).foregroundStyle(.white.opacity(0.6))
+            content()
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func grid(_ rows: [(String, String, Color)]) -> some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+            ForEach(rows.indices, id: \.self) { i in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(rows[i].0).font(.caption2).foregroundStyle(rows[i].2)
+                    Text(rows[i].1).font(.subheadline.weight(.heavy).monospacedDigit()).foregroundStyle(.white)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(8)
+                .background(Color.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+        }
+    }
+
+    private func fraction(_ owned: Int, _ total: Int?) -> String {
+        total.map { "\(owned) / \($0)" } ?? "\(owned)"
+    }
+
+    static func time(_ seconds: Int) -> String {
+        seconds >= 60 ? "\(seconds / 60)分\(seconds % 60)秒" : "\(seconds)秒"
     }
 
     private var dash: some View {
@@ -204,6 +341,17 @@ struct MyProfileView: View {
             draft = store.me
             editing = !store.me.isEmpty
         }
+        .task {
+            // 開くたびに、公式の最新の値へ更新（3 時間以内なら何もしない）
+            await store.refreshFromOfficial()
+            if editing, store.me.isComplete {
+                // 編集中の自分で入れた欄は残して、公式の値だけ差し替える
+                var merged = store.me
+                merged.bio = draft.bio; merged.friendLink = draft.friendLink
+                merged.discordName = draft.discordName; merged.discordInvite = draft.discordInvite
+                draft = merged
+            }
+        }
         .onChange(of: screenshotItem) { _, item in
             guard let item else { return }
             Task { await readScreenshot(item) }
@@ -288,29 +436,22 @@ struct MyProfileView: View {
 
     // MARK: 確認・編集
 
+    /// ブロスタ公式の値は取得専用（上のプレビューに出ているものはここでは変えられない）。
+    /// 自分で決めていいのは、ひとこと・フレンド招待リンク・Discord だけ。
     private var editCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("内容を確認して、違うところは直してください")
-                .font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
+            Label("名前・トロフィー・ランクなどはブロスタ公式のデータで、自分では変更できません。",
+                  systemImage: "lock.fill")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.65))
 
-            textField("ゲーム内の名前", text: $draft.name, limit: 20, icon: "person.fill")
-            textField("タグ（#から）", text: Binding(
-                get: { draft.tag },
-                set: { draft.tag = $0.isEmpty ? "" : ProfileLink.normalize($0) }
-            ), limit: 16, icon: "number")
-            HStack(spacing: 10) {
-                intField("総トロフィー", value: $draft.trophies)
-                intField("最高トロフィー", value: $draft.highestTrophies)
-            }
-            HStack(spacing: 10) {
-                intField("ガチバトル 最高pt", value: $draft.rankedHighest)
-                intField("ガチバトル 現在pt", value: $draft.rankedCurrent)
+            if draft.highestRank == nil && draft.rankedHighest == nil {
+                Text("ガチバトルの最高ランクは、Brawl Insights のプロフィール画像かブロスタのスクショを読み込むと入ります。")
+                    .font(.caption2).foregroundStyle(.white.opacity(0.5))
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("ガチバトルの最高ランク").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.7))
-                RankPicker(tier: Binding(get: { draft.highestRank ?? 0 }, set: { draft.highestRank = $0 }))
-            }
+            Divider().overlay(.white.opacity(0.1))
+            Text("自分で入れるもの").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
 
             textField("ひとこと（40文字まで）", text: $draft.bio, limit: 40, icon: "text.bubble")
 
@@ -341,7 +482,7 @@ struct MyProfileView: View {
             Task { await save() }
         } label: {
             Group {
-                if saving { ProgressView().tint(.black) } else { Text(draft.isComplete ? "この内容で保存" : "名前とタグを入れてください") }
+                if saving { ProgressView().tint(.black) } else { Text(draft.isComplete ? "この内容で保存" : "上の方法でプロフィールを読み込んでください") }
             }
             .font(.headline)
             .frame(maxWidth: .infinity)
@@ -363,21 +504,6 @@ struct MyProfileView: View {
                 }
         }
         .padding(12)
-        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
-    }
-
-    private func intField(_ title: String, value: Binding<Int?>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption2).foregroundStyle(.white.opacity(0.6))
-            TextField("0", text: Binding(
-                get: { value.wrappedValue.map(String.init) ?? "" },
-                set: { value.wrappedValue = Int($0.filter(\.isNumber)) }
-            ))
-            .keyboardType(.numberPad)
-            .font(.headline.monospacedDigit())
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
     }
 

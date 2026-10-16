@@ -279,6 +279,7 @@ private struct TeamPostCard: View {
         }
         .padding(14)
         .glassCard(tint: isMine ? .white : tint.opacity(0.7), cornerRadius: 20)
+        .background { AuraGlow(post: post, tint: isMine ? .white : tint) }
     }
 
     private func badge(_ text: String, color: Color) -> some View {
@@ -424,5 +425,54 @@ private struct TeamComposeView: View {
         } catch {
             errorText = TeamBoardStore.describe(error)
         }
+    }
+}
+
+// MARK: - 投稿直後のオーラ
+
+/// 投稿された直後に、カードの枠から光がにじみ出て、少しずつ静まっていく演出。
+/// 「あと1人」の募集は埋まる寸前＝急ぎなので、光が強く・長く続き、静まったあとも淡く脈打つ。
+private struct AuraGlow: View {
+    let post: TeamPost
+    let tint: Color
+
+    /// 光が出ている秒数（投稿からの経過）。あと1人は長め。
+    private var fadeSeconds: Double { post.slots == 1 ? 150 : 60 }
+    private var peak: Double { post.slots == 1 ? 1.0 : 0.5 }
+
+    var body: some View {
+        let age = Date().timeIntervalSince(post.createdAt)
+        // 光が完全に消えるのは、あと1人 以外だけ。あと1人は常に淡く残す。
+        if age < fadeSeconds || post.slots == 1 {
+            TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
+                glow(at: context.date)
+            }
+            .allowsHitTesting(false)
+        }
+    }
+
+    private func glow(at date: Date) -> some View {
+        let age = max(0, date.timeIntervalSince(post.createdAt))
+        let fresh = max(0, 1 - age / fadeSeconds)            // 1 → 0 に静まる
+        let floor = post.slots == 1 ? 0.22 : 0.0              // あと1人の最低ライン
+        let level = max(fresh * peak, floor)
+        let speed = post.slots == 1 ? 3.2 : 2.0               // 脈打つ速さ
+        let pulse = 0.78 + 0.22 * sin(date.timeIntervalSinceReferenceDate * speed)
+        let strength = level * pulse
+        let corner: CGFloat = 20
+
+        return ZStack {
+            // 外側のにじみ
+            RoundedRectangle(cornerRadius: corner, style: .continuous)
+                .strokeBorder(tint, lineWidth: 3)
+                .blur(radius: 6 + 10 * strength)
+                .opacity(0.9 * strength)
+            // 枠そのものの光
+            RoundedRectangle(cornerRadius: corner, style: .continuous)
+                .strokeBorder(tint.opacity(0.95), lineWidth: 1.5)
+                .opacity(strength)
+        }
+        .padding(-2)
+        .shadow(color: tint.opacity(0.7 * strength), radius: 10 + 22 * strength)
     }
 }

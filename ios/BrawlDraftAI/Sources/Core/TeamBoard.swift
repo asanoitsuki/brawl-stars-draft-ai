@@ -196,6 +196,24 @@ final class TeamBoardStore: ObservableObject {
     }
 
     func refresh() async {
+        #if DEBUG
+        // 見た目確認用: BDA_DEMO=1 で起動するとダミーの募集を表示する（iCloud を使わない）
+        if ProcessInfo.processInfo.environment["BDA_DEMO"] != nil {
+            let now = Date()
+            func demo(_ n: String, _ purpose: TeamPost.Purpose, _ slots: Int, _ ago: TimeInterval, _ c: String) -> TeamPost {
+                TeamPost(id: CKRecord.ID(recordName: n), playerName: n, purpose: purpose, mode: "Gem Grab",
+                         rank: 5, slots: slots, comment: c, inviteURL: nil, teamCode: "ABC12345",
+                         createdAt: now.addingTimeInterval(-ago), expiresAt: now.addingTimeInterval(900),
+                         creatorID: nil)
+            }
+            posts = [demo("あと1人・たった今", .ranked, 1, 5, "ミシック帯 VCなし"),
+                     demo("あと2人・たった今", .trophy, 2, 5, "トロ上げ行こう"),
+                     demo("あと2人・5分前", .casual, 2, 300, "まったり"),
+                     demo("あと1人・5分前", .ranked, 1, 300, "あと1人で出発")]
+            loadState = .loaded
+            return
+        }
+        #endif
         guard Self.isCloudEnabled else {
             loadState = .failed("チーム募集はサーバー（iCloud）の準備中です。もうしばらくお待ちください")
             return

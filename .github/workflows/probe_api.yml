@@ -1,0 +1,25 @@
+name: probe-api
+
+# 公式 API が返す項目を調べる診断用（手動実行のみ）。値ではなく項目の形を出力する。
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "調べるプレイヤータグ（空なら世界ランキング1位）"
+        required: false
+        default: ""
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 項目を調べる
+        env:
+          BRAWLSTARS_API_TOKEN: ${{ secrets.BRAWLSTARS_API_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: python scripts/probe_api.py $TAG

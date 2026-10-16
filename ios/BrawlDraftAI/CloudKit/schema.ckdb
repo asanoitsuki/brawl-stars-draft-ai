@@ -20,6 +20,7 @@ RECORD TYPE TeamPost (
     "profileRecordName" STRING,
     "iconID"        INT64,
     "trophies"      INT64,
+    "highestRank"   INT64,
     "discordURL"    STRING,
     GRANT READ   TO "_world",
     GRANT CREATE TO "_icloud",

@@ -57,6 +57,7 @@ MAP_NAMES_JA_PATH = DATA_DIR / "map_names_ja.json"
 ROLE_TIPS_PATH = DATA_DIR / "role_tips_ja.json"
 LOADOUT_NOTES_PATH = DATA_DIR / "loadout_notes.json"
 RANKED_STATS_PATH = DATA_DIR / "ranked_stats.json"   # scripts/ranked_stats.py が更新する
+EXCLUDED_PATH = DATA_DIR / "excluded_brawlers.json"  # 期間限定などでいま使えないキャラ
 
 # 実測勝率の扱い
 MIN_MAP_BATTLES = 25     # これ未満のマップはモード全体の集計で代用する
@@ -703,6 +704,10 @@ def main() -> int:
 
     print("▶ ブラウラー / マップ / モードを取得中 …")
     brawlers = fetch_json("brawlers")["list"]
+    excluded = set((load_json(EXCLUDED_PATH, {}) or {}).get("names", []))
+    if excluded:
+        brawlers = [b for b in brawlers if b["name"] not in excluded]
+        print(f"  除外キャラ（data/excluded_brawlers.json）: {', '.join(sorted(excluded))}")
     maps = fetch_json("maps")["list"]
     print(f"  ブラウラー {len(brawlers)} / マップ {len(maps)}")
 
@@ -901,7 +906,7 @@ def main() -> int:
              "tier": tiers.get(e["name"], 0.0),
              "starPowers": loadouts_by_id.get(e["id"], {}).get("starPowers", []),
              "gadgets": loadouts_by_id.get(e["id"], {}).get("gadgets", [])}
-            for e in roles_doc["brawlers"]
+            for e in roles_doc["brawlers"] if e["name"] not in excluded
         ],
         "maps": entries,
     }

@@ -15,6 +15,9 @@ struct TeamBoardView: View {
     @State private var toast: String?
     @State private var reporting: TeamPost?
     @State private var opened: TeamPost?
+    /// プロフィール未完成でも「先に見る」を選んだか（この画面を開いている間だけ）
+    @State private var browseOnly = false
+    @State private var showsProfileSheet = false
 
     private let refreshTimer = Timer.publish(every: 20, on: .main, in: .common).autoconnect()
 
@@ -31,6 +34,30 @@ struct TeamBoardView: View {
     }
 
     var body: some View {
+        Group {
+            if profiles.me.isComplete || browseOnly {
+                boardScreen
+            } else {
+                // 最初はプロフィール作成から。完成したらそのまま募集一覧へ切り替わる
+                MyProfileView()
+                    .safeAreaInset(edge: .bottom) {
+                        Button {
+                            browseOnly = true
+                        } label: {
+                            Text("先に募集を見る（投稿はプロフィール完成後）")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.white.opacity(0.75))
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity)
+                                .background(.ultraThinMaterial)
+                        }
+                    }
+            }
+        }
+        .animation(.easeInOut, value: profiles.me.isComplete)
+    }
+
+    private var boardScreen: some View {
         ZStack {
             SpaceBackdrop()
 
@@ -84,6 +111,11 @@ struct TeamBoardView: View {
             await board.refresh()
         }
         .onReceive(refreshTimer) { _ in Task { await board.refresh() } }
+        .sheet(isPresented: $showsProfileSheet) {
+            NavigationStack {
+                MyProfileView(onSaved: { showsProfileSheet = false })
+            }
+        }
         .sheet(isPresented: $showsComposer) {
             TeamComposeView(board: board, modes: modes) { message in
                 show(message)
@@ -199,9 +231,15 @@ struct TeamBoardView: View {
 
     private var composeButton: some View {
         Button {
-            showsComposer = true
+            if profiles.me.isComplete {
+                showsComposer = true
+            } else {
+                showsProfileSheet = true
+            }
         } label: {
-            Label(board.myPostID == nil ? "募集する" : "募集を出し直す", systemImage: "plus")
+            Label(!profiles.me.isComplete ? "プロフィールを作って募集する"
+                  : (board.myPostID == nil ? "募集する" : "募集を出し直す"),
+                  systemImage: profiles.me.isComplete ? "plus" : "person.crop.circle.badge.plus")
                 .font(.headline)
                 .padding(.horizontal, 22).padding(.vertical, 14)
                 .foregroundStyle(.black)
@@ -259,16 +297,19 @@ private struct TeamPostCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                ProfileAvatar(iconID: post.iconID, size: 38)
-                VStack(alignment: .leading, spacing: 2) {
+                ProfileAvatar(iconID: post.iconID, size: 44)
+                VStack(alignment: .leading, spacing: 3) {
                     Text(post.playerName)
-                        .font(.subheadline.weight(.bold))
+                        .font(.subheadline.weight(.heavy))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                    if let trophies = post.trophies {
-                        Label(trophies.formatted(), systemImage: "trophy.fill")
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.yellow)
+                    HStack(spacing: 10) {
+                        if let trophies = post.trophies {
+                            TrophyLabel(trophies: trophies, size: 12)
+                        }
+                        if let rank = post.highestRank, rank > 0 {
+                            RankBadge(tier: rank, size: 18)
+                        }
                     }
                 }
                 Spacer()

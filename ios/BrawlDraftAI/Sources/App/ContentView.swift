@@ -128,14 +128,7 @@ struct ContentView: View {
         VStack(spacing: 8) {
             // 球体（背景の CosmosView）のぶんの余白
             Color.clear.frame(height: orbSpace)
-            Text("Brawl Board")
-                .font(.system(size: 38, weight: .black, design: .rounded))
-                .foregroundStyle(
-                    LinearGradient(colors: [.white, Color(red: 1, green: 0.86, blue: 0.3)],
-                                   startPoint: .top, endPoint: .bottom)
-                )
-                .shadow(color: .black.opacity(0.9), radius: 0, x: 0, y: 3)
-                .shadow(color: .purple.opacity(0.7), radius: 16)
+            BrandTitle()
             dataPill
         }
     }
@@ -359,5 +352,60 @@ struct WinRateBadge: View {
                     .foregroundStyle(games < 30 ? .orange : .secondary)
             }
         }
+    }
+}
+
+/// ロゴ。背景の宇宙（球の水色〜紫の光）と同じ色で、細い「BRAWL」と太い「BOARD」を並べ、
+/// ときどき光がすっと横切る。
+struct BrandTitle: View {
+    @State private var sweep = false
+
+    private var letters: some View {
+        HStack(spacing: 12) {
+            Text("BRAWL")
+                .font(.system(size: 30, weight: .light))
+                .tracking(7)
+            Text("BOARD")
+                .font(.system(size: 30, weight: .black))
+                .tracking(3)
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            letters
+                .foregroundStyle(
+                    LinearGradient(colors: [.white,
+                                            Color(red: 0.62, green: 0.86, blue: 1),
+                                            Color(red: 0.74, green: 0.6, blue: 1)],
+                                   startPoint: .leading, endPoint: .trailing)
+                )
+                .overlay {
+                    // 光の帯が文字の上だけを横切る
+                    GeometryReader { geo in
+                        LinearGradient(colors: [.clear, .white.opacity(0.95), .clear],
+                                       startPoint: .leading, endPoint: .trailing)
+                            .frame(width: geo.size.width * 0.35)
+                            .offset(x: sweep ? geo.size.width * 1.1 : -geo.size.width * 0.45)
+                    }
+                    .mask(letters)
+                }
+                .shadow(color: Color.cyan.opacity(0.55), radius: 10)
+                .shadow(color: Color.purple.opacity(0.45), radius: 22)
+
+            // ロゴの下の細い光の線
+            Capsule()
+                .fill(LinearGradient(colors: [.clear, .cyan.opacity(0.8), .purple.opacity(0.8), .clear],
+                                     startPoint: .leading, endPoint: .trailing))
+                .frame(width: 210, height: 1.5)
+                .shadow(color: .cyan, radius: 4)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.4).delay(0.8).repeatForever(autoreverses: false)) {
+                sweep = true
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Brawl Board")
     }
 }

@@ -58,11 +58,15 @@ struct PlayerProfile: Codable, Equatable {
     var discordName: String?
     var discordInvite: String?
     var bio: String = ""
-    /// ガチバトルのランク帯（自己申告。TeamPost.ranks の添字）
+    /// 旧版の自己申告ランク帯（TeamPost.ranks の添字）。今は highestRank を使う
     var rank: Int = 0
     var fetchedAt: Date?
+    /// ガチバトルの最高ランク（RankTier: 1 = ブロンズⅠ … 22 = プロ）。古い保存データには無いので任意
+    var highestRank: Int?
 
     var isEmpty: Bool { name.isEmpty }
+    /// 募集に出せる状態か（名前とタグがそろっている）
+    var isComplete: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty && tag.count >= 4 }
 
     /// ブロスタのプロフィールアイコン画像（Brawlify の CDN）
     var iconURL: URL? { iconID.flatMap(PlayerProfile.iconURL(for:)) }
@@ -112,7 +116,7 @@ enum ProfileAPI {
             switch self {
             case .invalidTag: return "タグの形式が正しくありません（例: #2PP0Y8LQ）"
             case .notFound: return "このタグのプレイヤーが見つかりません"
-            case .notConfigured: return "プロフィール取得サーバーの準備中です。手入力で作成できます"
+            case .notConfigured: return "自動取得サーバーの準備中です。プロフィール画面のスクショか手入力で作れます"
             case .rateLimited: return "混み合っています。少し待ってからもう一度試してください"
             case .network: return "サーバーに接続できません"
             case .server(let code): return "取得に失敗しました（\(code)）"
@@ -155,10 +159,15 @@ enum ProfileAPI {
             throw LookupError.network
         }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        // 自分たちのサーバーは必ず {"error": ...} の JSON で返す。それ以外の 404 は
+        // 「サーバー自体がまだ無い」（Vercel の DEPLOYMENT_NOT_FOUND など）なので、
+        // 「タグが見つからない」と取り違えないよう区別する。
+        let serverError = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
         switch status {
         case 200: break
         case 400: throw LookupError.invalidTag
-        case 404: throw LookupError.notFound
+        case 404 where serverError == "not_found": throw LookupError.notFound
+        case 404: throw LookupError.notConfigured
         case 429: throw LookupError.rateLimited
         case 503: throw LookupError.notConfigured
         default: throw LookupError.server(status)
@@ -236,7 +245,7 @@ final class ProfileStore: ObservableObject {
                                                .init(id: 16000001, name: "COLT", trophies: 1180),
                                                .init(id: 16000002, name: "BULL", trophies: 1102)],
                                  friendLink: "https://link.brawlstars.com/invite/friend/ja?tag=2PP0Y8LQ",
-                                 discordName: "brawler_jp", bio: "ミシック帯。ガス・ベル得意", rank: 5)
+                                 discordName: "brawler_jp", bio: "ミシック帯。ガス・ベル得意", rank: 5, highestRank: 20)
         }
         #endif
         guard Cloud.isEnabled else { return nil }

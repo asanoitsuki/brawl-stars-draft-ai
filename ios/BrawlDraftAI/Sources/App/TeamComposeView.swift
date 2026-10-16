@@ -9,7 +9,6 @@ struct TeamComposeView: View {
 
     @ObservedObject private var profiles = ProfileStore.shared
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("teamPlayerName") private var manualName = ""
     @AppStorage("teamAgreedRules") private var agreedRules = false
     @State private var purpose: TeamPost.Purpose = .ranked
     @State private var mode = ""
@@ -23,13 +22,11 @@ struct TeamComposeView: View {
 
     private var profile: PlayerProfile { profiles.me }
     private var parsed: (url: String?, code: String?) { TeamInvite.parse(inviteText) }
-    private var playerName: String {
-        profile.isEmpty ? manualName.trimmingCharacters(in: .whitespacesAndNewlines) : profile.name
-    }
+    private var playerName: String { profile.name }
 
     private var problems: [String] {
         var out: [String] = []
-        if playerName.isEmpty { out.append("名前を入れるか、プロフィールを作ってください") }
+        if !profile.isComplete { out.append("先にプロフィールを完成させてください") }
         if parsed.url == nil && parsed.code == nil { out.append("招待リンクかチームコードを貼ってください") }
         if !discordText.isEmpty && TeamInvite.discordURL(from: discordText) == nil {
             out.append("Discord のリンクの形式が違います（https://discord.gg/…）")
@@ -45,33 +42,19 @@ struct TeamComposeView: View {
         NavigationStack {
             Form {
                 Section {
-                    if profile.isEmpty {
-                        NavigationLink {
-                            MyProfileView()
-                        } label: {
-                            HStack(spacing: 12) {
-                                ProfileAvatar(iconID: nil, size: 40)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("ブロスタと連携してプロフィールを作る").font(.subheadline.weight(.semibold))
-                                    Text("トロフィーやよく使うキャラが募集に表示されます").font(.caption).foregroundStyle(.secondary)
-                                }
+                    HStack(spacing: 12) {
+                        ProfileAvatar(iconID: profile.iconID, size: 44)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(profile.name).font(.headline)
+                            HStack(spacing: 10) {
+                                if let t = profile.trophies { TrophyLabel(trophies: t, size: 12) }
+                                if let r = profile.highestRank, r > 0 { RankBadge(tier: r, size: 18) }
                             }
                         }
-                        TextField("ゲーム内の名前", text: $manualName)
-                            .onChange(of: manualName) { _, v in if v.count > 20 { manualName = String(v.prefix(20)) } }
-                    } else {
-                        HStack(spacing: 12) {
-                            ProfileAvatar(iconID: profile.iconID, size: 40)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(profile.name).font(.headline)
-                                if let t = profile.trophies {
-                                    Label(t.formatted(), systemImage: "trophy.fill").font(.caption).foregroundStyle(.yellow)
-                                }
-                            }
-                            Spacer()
-                            Text("このプロフィールで投稿").font(.caption2).foregroundStyle(.secondary)
-                        }
+                        Spacer()
+                        Text("このプロフィールで投稿").font(.caption2).foregroundStyle(.secondary)
                     }
+                    .listRowBackground(Color.black.opacity(0.35))
                 } header: {
                     Text("投稿者")
                 }
@@ -181,11 +164,10 @@ struct TeamComposeView: View {
             creatorID: nil
         )
         post.discordURL = TeamInvite.discordURL(from: discordText)
-        if !profile.isEmpty {
-            post.iconID = profile.iconID
-            post.trophies = profile.trophies
-            post.profileRecordName = await profiles.myProfileRecordName()
-        }
+        post.iconID = profile.iconID
+        post.trophies = profile.trophies
+        post.highestRank = profile.highestRank
+        post.profileRecordName = await profiles.myProfileRecordName()
         do {
             try await board.publish(post)
             onDone("募集を出しました")

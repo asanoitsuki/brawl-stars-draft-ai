@@ -42,6 +42,8 @@ struct TeamPost: Identifiable, Equatable {
     /// 投稿時点のプロフィールの写し（一覧で毎回プロフィールを引かずに済むように）
     var iconID: Int? = nil
     var trophies: Int? = nil
+    /// 投稿者のガチバトル最高ランク（RankTier）
+    var highestRank: Int? = nil
     /// Discord のサーバー招待やボイスチャンネルのリンク
     var discordURL: String? = nil
 
@@ -72,6 +74,7 @@ extension TeamPost {
         self.profileRecordName = record["profileRecordName"] as? String
         self.iconID = (record["iconID"] as? Int64).map(Int.init)
         self.trophies = (record["trophies"] as? Int64).map(Int.init)
+        self.highestRank = (record["highestRank"] as? Int64).map(Int.init)
         self.discordURL = record["discordURL"] as? String
     }
 
@@ -90,6 +93,7 @@ extension TeamPost {
         if let profileRecordName { record["profileRecordName"] = profileRecordName as CKRecordValue }
         if let iconID { record["iconID"] = Int64(iconID) as CKRecordValue }
         if let trophies { record["trophies"] = Int64(trophies) as CKRecordValue }
+        if let highestRank, highestRank > 0 { record["highestRank"] = Int64(highestRank) as CKRecordValue }
         if let discordURL { record["discordURL"] = discordURL as CKRecordValue }
         return record
     }
@@ -219,7 +223,7 @@ final class TeamBoardStore: ObservableObject {
                          rank: 5, slots: slots, comment: c, inviteURL: nil, teamCode: "ABC12345",
                          createdAt: now.addingTimeInterval(-ago), expiresAt: now.addingTimeInterval(900),
                          creatorID: nil, profileRecordName: "demo", iconID: 28000000, trophies: 38_420,
-                         discordURL: "https://discord.gg/example")
+                         highestRank: slots == 1 ? 20 : 15, discordURL: "https://discord.gg/example")
             }
             posts = [demo("あと1人・たった今", .ranked, 1, 5, "ミシック帯 VCなし"),
                      demo("あと2人・たった今", .trophy, 2, 5, "トロ上げ行こう"),

@@ -191,6 +191,7 @@ struct ProfileShareButton: View {
 
     var body: some View {
         VStack(spacing: 10) {
+            Color.clear.frame(height: 0).task { await autoMakeForScreenshots() }
             if let image {
                 Image(uiImage: image)
                     .resizable()
@@ -224,6 +225,14 @@ struct ProfileShareButton: View {
                 }
             }
         }
+    }
+
+    @MainActor
+    private func autoMakeForScreenshots() async {
+        #if DEBUG
+        // 見た目確認・スクリーンショット撮影用（BDA_DEMO_CARD=1 のとき開いた時点で画像を作る）
+        if ProcessInfo.processInfo.environment["BDA_DEMO_CARD"] != nil, image == nil { await make() }
+        #endif
     }
 
     @MainActor

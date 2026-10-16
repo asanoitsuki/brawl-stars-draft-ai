@@ -9,7 +9,7 @@ App Store Connect にそのまま貼れる文面と、提出前にあなたが�
 
 | # | やること | 理由 |
 |---|---|---|
-| 1 | **バンドルIDを自分のものに変える**（`com.example.brawldraftai` → 例 `jp.itsuki.brawlboard`） | `com.example.*` は誰でも使える仮の名前で、App Store には出せない。変えると iCloud コンテナも `iCloud.<新ID>` になる |
+| 1 | ✅ バンドルID `jp.asanoitsuki.brawlboard` に変更済み（iCloud コンテナ `iCloud.jp.asanoitsuki.brawlboard`） | — |
 | 2 | **新しいコンテナにスキーマを登録して本番へ反映**（下の手順） | 本番（App Store/TestFlight）は CloudKit の「本番環境」を使う。開発環境のままだと一覧が読めない |
 | 3 | **連絡先メールを決める**（任意だが推奨） | 今はサポート窓口が GitHub Issues のみ。App Review が連絡できる窓口として、App Store Connect の「連絡先」にはメールか電話が必須 |
 | 4 | **Vercel のプロフィール取得サーバーを動かす**（`brawl-board-api` は作成済み・動作確認済み） | 無いと「プロフィール自動作成」がスクショ読み取りだけになる |
@@ -35,7 +35,7 @@ $(xcrun --find cktool) import-schema --team-id <チームID> --container-id iClo
 |---|---|
 | アプリ名（30字まで） | `Brawl Board` |
 | サブタイトル（30字まで） | `チーム募集とガチバトル実戦データ` |
-| プライマリカテゴリ | ユーティリティ（またはエンターテインメント） |
+| プライマリカテゴリ | App Store Connect の設定に従う |
 | 価格 | 無料（広告なし・課金なし） |
 | サポートURL | https://asanoitsuki.github.io/brawl-stars-draft-ai/support.html |
 | プライバシーポリシーURL | https://asanoitsuki.github.io/brawl-stars-draft-ai/privacy-policy.html |

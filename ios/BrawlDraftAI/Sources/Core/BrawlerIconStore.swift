@@ -1,94 +1,42 @@
 import SwiftUI
-import UIKit
 
-/// バンドル同梱のキャラアイコン（`assets/brawler_icons/borders/*.png` → `sync_ios_resources.sh` が
-/// `Resources/BrawlerIcons/<id>.png` としてコピーしたもの）を読み込んでキャッシュする。
-///
-/// ディスク I/O は初回だけ。一覧のスクロールで毎回読み直さないよう、
-/// メモリキャッシュに載せてから返す。
-enum BrawlerIconStore {
-    private static var cache: [Int: UIImage] = [:]
-
-    static func image(for brawlerID: Int) -> UIImage? {
-        if let cached = cache[brawlerID] { return cached }
-        // xcodegen はフォルダ内の個別ファイルをバンドル直下へフラットに展開するため、
-        // サブディレクトリ指定では見つからない（rules.json 等と同じ扱い）。
-        guard let url = Bundle.main.url(forResource: "\(brawlerID)", withExtension: "png"),
-              let image = UIImage(contentsOfFile: url.path) else {
-            return nil
-        }
-        cache[brawlerID] = image
-        return image
-    }
+/// キャラ ID → 英語名。アイコンの頭文字に使う（RulesStore がルール読み込み時に入れる）。
+enum BrawlerNameRegistry {
+    static var names: [Int: String] = [:]
 }
 
-/// 同梱されていない新キャラのアイコンを、Brawlify の CDN から取ってディスクに残す。
-/// 一度取れれば次回からは通信しない。まだ CDN に無いキャラ（404）は、起動中に何度も取りに行かない。
-enum RemoteBrawlerIcon {
-    private static var memory: [Int: UIImage] = [:]
-    private static var missing: Set<Int> = []
-
-    private static func cacheURL(_ id: Int) -> URL? {
-        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("brawler-icon-\(id).png")
-    }
-
-    static func cached(_ id: Int) -> UIImage? {
-        if let m = memory[id] { return m }
-        if let url = cacheURL(id), let img = UIImage(contentsOfFile: url.path) {
-            memory[id] = img
-            return img
-        }
-        return nil
-    }
-
-    static func fetch(_ id: Int) async -> UIImage? {
-        if let c = cached(id) { return c }
-        guard !missing.contains(id),
-              let url = URL(string: "https://cdn.brawlify.com/brawlers/borders/\(id).png") else { return nil }
-        guard let (data, resp) = try? await URLSession.shared.data(from: url),
-              (resp as? HTTPURLResponse)?.statusCode == 200,
-              let img = UIImage(data: data) else {
-            missing.insert(id)
-            return nil
-        }
-        if let file = cacheURL(id) { try? data.write(to: file) }
-        memory[id] = img
-        return img
-    }
-}
-
-/// キャラアイコンを丸角の正方形で出す共通パーツ。
-/// 同梱が無いキャラ（新キャラ）は CDN から取る。CDN にもまだ無ければプレースホルダー。
+/// キャラを表す自作の丸角アイコン。ゲームの画像は使わず、ID から決まる色と頭文字で描く。
+/// （同じキャラは常に同じ色になる。）
 struct BrawlerIcon: View {
     let id: Int
     var size: CGFloat = 40
-    @State private var remote: UIImage?
 
-    private var image: UIImage? {
-        BrawlerIconStore.image(for: id) ?? remote ?? RemoteBrawlerIcon.cached(id)
+    private var hue: Double {
+        // ID を散らして、隣り合うキャラでも色が離れるようにする
+        Double((id &* 2_654_435_761) % 360) / 360
+    }
+
+    private var initial: String {
+        guard let name = BrawlerNameRegistry.names[id], let first = name.first else { return "?" }
+        return String(first).uppercased()
     }
 
     var body: some View {
-        Group {
-            if let image {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                ZStack {
-                    Color(.tertiarySystemFill)
-                    Image(systemName: "questionmark")
-                        .foregroundStyle(.secondary)
-                        .font(.system(size: size * 0.4))
-                }
-            }
+        ZStack {
+            LinearGradient(colors: [Color(hue: hue, saturation: 0.55, brightness: 0.95),
+                                    Color(hue: hue, saturation: 0.75, brightness: 0.55)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+            Circle()
+                .fill(.white.opacity(0.14))
+                .frame(width: size * 0.9, height: size * 0.9)
+                .offset(x: size * 0.28, y: -size * 0.3)
+            Text(initial)
+                .font(.system(size: size * 0.5, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.35), radius: 0, x: 0, y: size * 0.03)
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.22))
-        .task(id: id) {
-            guard BrawlerIconStore.image(for: id) == nil, remote == nil else { return }
-            remote = await RemoteBrawlerIcon.fetch(id)
-        }
+        .overlay(RoundedRectangle(cornerRadius: size * 0.22).strokeBorder(.black.opacity(0.35), lineWidth: 1))
     }
 }

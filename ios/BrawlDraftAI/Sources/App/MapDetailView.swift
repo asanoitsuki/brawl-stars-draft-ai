@@ -96,12 +96,6 @@ struct MapDetailView: View {
             }
 
             Section("出典・データについて") {
-                if let urlString = map.imageUrl, let url = URL(string: urlString) {
-                    Link(destination: url) {
-                        Label("画像の出典（Brawlify）", systemImage: "link")
-                    }
-                    .font(.footnote)
-                }
                 LabeledContent("ルールデータ生成日時", value: RulesStore.displayDate(rules.generatedAt))
                 switch rules.document.dataQuality.confidence {
                 case .measured:

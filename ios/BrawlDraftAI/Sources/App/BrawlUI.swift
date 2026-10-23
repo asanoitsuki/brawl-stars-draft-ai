@@ -1,23 +1,45 @@
 import SwiftUI
 import UIKit
 
-extension RankTier {
-    private static var cache: [Int: UIImage] = [:]
+/// ランクを表す自作のエンブレム（盾の形＋段位の色＋ローマ数字）。ゲームの画像は使わない。
+struct RankEmblem: View {
+    let tier: Int
+    var height: CGFloat = 22
 
-    /// ブロスタ実物のランクアイコン（cdn.brawlify.com/ranked/tiered/58000000〜58000021.png を
-    /// `Resources/RankIcons/rank_<id>.png` として同梱）。
-    static func image(_ tier: Int) -> UIImage? {
-        guard (1...count).contains(tier) else { return nil }
-        if let cached = cache[tier] { return cached }
-        let id = 58_000_000 + tier - 1
-        guard let url = Bundle.main.url(forResource: "rank_\(id)", withExtension: "png"),
-              let image = UIImage(contentsOfFile: url.path) else { return nil }
-        cache[tier] = image
-        return image
+    private static let palette: [(Color, Color)] = [
+        (Color(red: 0.80, green: 0.50, blue: 0.28), Color(red: 0.50, green: 0.28, blue: 0.14)),   // ブロンズ
+        (Color(red: 0.85, green: 0.88, blue: 0.93), Color(red: 0.55, green: 0.60, blue: 0.70)),   // シルバー
+        (Color(red: 1.00, green: 0.85, blue: 0.30), Color(red: 0.80, green: 0.55, blue: 0.10)),   // ゴールド
+        (Color(red: 0.45, green: 0.80, blue: 1.00), Color(red: 0.20, green: 0.45, blue: 0.85)),   // ダイヤモンド
+        (Color(red: 0.95, green: 0.45, blue: 0.55), Color(red: 0.65, green: 0.15, blue: 0.35)),   // ミシック
+        (Color(red: 1.00, green: 0.62, blue: 0.25), Color(red: 0.80, green: 0.30, blue: 0.10)),   // レジェンド
+        (Color(red: 0.70, green: 0.50, blue: 1.00), Color(red: 0.38, green: 0.20, blue: 0.80)),   // マスター
+    ]
+
+    var body: some View {
+        let group = min((max(tier, 1) - 1) / 3, Self.palette.count - 1)
+        let colors = tier == RankTier.count
+            ? (Color(red: 0.25, green: 0.25, blue: 0.3), Color.black)
+            : Self.palette[group]
+        let numeral = tier == RankTier.count ? "P" : ["Ⅰ", "Ⅱ", "Ⅲ"][(max(tier, 1) - 1) % 3]
+        ZStack {
+            Image(systemName: "shield.fill")
+                .resizable().scaledToFit()
+                .foregroundStyle(LinearGradient(colors: [colors.0, colors.1], startPoint: .top, endPoint: .bottom))
+            Image(systemName: "shield")
+                .resizable().scaledToFit()
+                .foregroundStyle(.black.opacity(0.85))
+            Text(numeral)
+                .font(.system(size: height * 0.4, weight: .black, design: .rounded))
+                .foregroundStyle(tier == RankTier.count ? Color.yellow : .white)
+                .shadow(color: .black.opacity(0.5), radius: 0, x: 0, y: 1)
+                .offset(y: -height * 0.03)
+        }
+        .frame(width: height * 0.9, height: height)
     }
 }
 
-/// ランクのアイコン（ブロスタの実物）＋名前。
+/// ランクのアイコン（自作）＋名前。
 struct RankBadge: View {
     let tier: Int
     var size: CGFloat = 22
@@ -25,11 +47,8 @@ struct RankBadge: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            if let image = RankTier.image(tier) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: size)
+            if (1...RankTier.count).contains(tier) {
+                RankEmblem(tier: tier, height: size)
             }
             if showsLabel {
                 Text(RankTier.label(tier))
@@ -40,7 +59,7 @@ struct RankBadge: View {
     }
 }
 
-/// ブロスタ風のトロフィー数（黒フチの金色トロフィー＋太字の数字）。
+/// トロフィー数（黒フチの金色トロフィー＋太字の数字）。
 struct TrophyLabel: View {
     let trophies: Int
     var size: CGFloat = 13
@@ -67,7 +86,7 @@ struct TrophyLabel: View {
     }
 }
 
-/// ランクをアイコンの一覧から選ぶ（ブロスタのランク画面のように並べる）。
+/// ランクをアイコンの一覧から選ぶ。
 struct RankPicker: View {
     @Binding var tier: Int
 

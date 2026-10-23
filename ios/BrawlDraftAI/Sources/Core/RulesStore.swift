@@ -226,6 +226,7 @@ final class RulesStore: ObservableObject {
         let roleByName = Dictionary(uniqueKeysWithValues: document.brawlers.map { ($0.name, $0.role) })
         let roleByID = Dictionary(uniqueKeysWithValues: document.brawlers.map { ($0.id, $0.role) })
         let nameByID = Dictionary(uniqueKeysWithValues: document.brawlers.map { ($0.id, $0.name) })
+        BrawlerNameRegistry.names = nameByID
 
         let brawlerMatcher = TemplateMatcher(
             grayDim: pack.graySize * pack.graySize,

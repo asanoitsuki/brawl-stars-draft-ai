@@ -239,11 +239,7 @@ struct ProfileShareButton: View {
     private func make() async {
         making = true
         defer { making = false }
-        var icon: UIImage?
-        if let url = profile.iconURL, let (data, _) = try? await URLSession.shared.data(from: url) {
-            icon = UIImage(data: data)
-        }
-        let renderer = ImageRenderer(content: ProfileCardImage(profile: profile, icon: icon))
+        let renderer = ImageRenderer(content: ProfileCardImage(profile: profile, icon: nil))
         renderer.scale = 2
         image = renderer.uiImage
     }

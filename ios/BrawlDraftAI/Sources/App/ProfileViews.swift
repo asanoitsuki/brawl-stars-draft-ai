@@ -14,17 +14,7 @@ struct ProfileAvatar: View {
                 .fill(LinearGradient(colors: [Color(red: 0.42, green: 0.25, blue: 0.95),
                                               Color(red: 0.25, green: 0.45, blue: 1)],
                                      startPoint: .topLeading, endPoint: .bottomTrailing))
-            if let url = iconID.flatMap(PlayerProfile.iconURL(for:)) {
-                AsyncImage(url: url) { phase in
-                    if let image = phase.image {
-                        image.resizable().scaledToFit().padding(size * 0.06)
-                    } else {
-                        placeholder
-                    }
-                }
-            } else {
-                placeholder
-            }
+            placeholder
         }
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))

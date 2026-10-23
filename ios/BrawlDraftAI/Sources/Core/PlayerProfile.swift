@@ -118,12 +118,6 @@ struct PlayerProfile: Codable, Equatable {
     /// 募集に出せる状態か（名前とタグがそろっている）
     var isComplete: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty && tag.count >= 4 }
 
-    /// ブロスタのプロフィールアイコン画像（Brawlify の CDN）
-    var iconURL: URL? { iconID.flatMap(PlayerProfile.iconURL(for:)) }
-
-    static func iconURL(for id: Int) -> URL? {
-        URL(string: "https://cdn.brawlify.com/profile-icons/regular/\(id).png")
-    }
 }
 
 // MARK: - 入力の読み取り

@@ -100,8 +100,7 @@ struct BrawlerDetailView: View {
                 }
             } else {
                 Section {
-                    Text("名前・説明は Brawlify のデータそのまま（英語）です。画像は現在の"
-                         + "ネットワーク環境で取得できなかったものがあります。")
+                    Text("名前・説明は Brawlify のデータそのまま（英語）です。")
                         .font(.caption2).foregroundStyle(.secondary)
                     if brawler.starPowers.contains(where: { $0.measuredWinRate != nil })
                         || brawler.gadgets.contains(where: { $0.measuredWinRate != nil }) {

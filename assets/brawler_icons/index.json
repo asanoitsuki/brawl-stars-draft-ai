@@ -5,10 +5,7 @@
     "borders",
     "borderless"
   ],
-  "iconsUnavailable": [
-    "Cosmo",
-    "Vince"
-  ],
+  "iconsUnavailable": [],
   "brawlers": [
     {
       "id": 16000000,
@@ -1193,7 +1190,10 @@
       "hash": "Cosmo",
       "rarity": "Mythic",
       "tip": "Controller",
-      "files": {}
+      "files": {
+        "borders": "borders/16000109.png",
+        "borderless": "borderless/16000109.png"
+      }
     },
     {
       "id": 16000110,
@@ -1201,7 +1201,10 @@
       "hash": "Vince",
       "rarity": "Mythic",
       "tip": "Damage Dealer",
-      "files": {}
+      "files": {
+        "borders": "borders/16000110.png",
+        "borderless": "borderless/16000110.png"
+      }
     }
   ]
 }

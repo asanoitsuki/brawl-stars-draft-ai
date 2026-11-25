@@ -60,6 +60,12 @@ enum ModeRecognizer {
         return (mode, map)
     }
 
+    /// 領域内の文字をまとめて返す（読めなければ空文字）。
+    static func recognizeText(in raster: ImageRaster, region: NRect) -> String {
+        guard let cgImage = makeCGImage(raster: raster, region: region) else { return "" }
+        return (recognizeLines(cgImage) ?? []).joined()
+    }
+
     // MARK: - Vision 呼び出し
 
     /// OCR で読めた行を、画面に表示されている上から順に返す。

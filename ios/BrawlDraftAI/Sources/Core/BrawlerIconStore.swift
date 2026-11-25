@@ -1,11 +1,6 @@
 import SwiftUI
 
-/// キャラ ID → 英語名。アイコンの頭文字に使う（RulesStore がルール読み込み時に入れる）。
-enum BrawlerNameRegistry {
-    static var names: [Int: String] = [:]
-}
-
-/// キャラを表す自作の丸角アイコン。ゲームの画像は使わず、ID から決まる色と頭文字で描く。
+/// キャラの丸角アイコン。既定は自作（ID から決まる色と頭文字）。個人用ビルドは本物の画像を重ねる。
 /// （同じキャラは常に同じ色になる。）
 struct BrawlerIcon: View {
     let id: Int
@@ -36,6 +31,7 @@ struct BrawlerIcon: View {
                 .shadow(color: .black.opacity(0.35), radius: 0, x: 0, y: size * 0.03)
         }
         .frame(width: size, height: size)
+        .gameArt("brawlers/borders/\(id)")
         .clipShape(RoundedRectangle(cornerRadius: size * 0.22))
         .overlay(RoundedRectangle(cornerRadius: size * 0.22).strokeBorder(.black.opacity(0.35), lineWidth: 1))
     }

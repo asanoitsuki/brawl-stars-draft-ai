@@ -33,16 +33,14 @@ struct AnalyzeDraftIntent: AppIntent {
         }
     }
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        AppSettings.speechEnabled = speak
-
-        let recommendation: Recommendation
+    /// 結果はアプリ自身の通知で出す。ダイアログを返すとゲーム中の画面を二重にふさぐので返さない。
+    func perform() async throws -> some IntentResult {
         if let screenshot {
-            recommendation = try await DraftService.analyze(data: screenshot.data)
+            try await DraftService.analyze(data: screenshot.data, speak: speak)
         } else {
-            recommendation = try await DraftService.analyzeLatestScreenshot()
+            try await DraftService.analyzeLatestScreenshot()
         }
-        return .result(dialog: IntentDialog(stringLiteral: recommendation.title))
+        return .result()
     }
 }
 
@@ -56,9 +54,9 @@ struct AnalyzeLatestScreenshotIntent: AppIntent {
     )
     static var openAppWhenRun: Bool = false
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        let recommendation = try await DraftService.analyzeLatestScreenshot()
-        return .result(dialog: IntentDialog(stringLiteral: recommendation.title))
+    func perform() async throws -> some IntentResult {
+        try await DraftService.analyzeLatestScreenshot()
+        return .result()
     }
 }
 

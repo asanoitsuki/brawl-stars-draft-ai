@@ -78,7 +78,8 @@ enum Recommender {
             headline = "N/A"  // blindPick は上で makeBlind() に分岐済みのためここには来ない
 
         case .ban:
-            advices = fromPrecomputed(map.bans, rules: rules, taken: taken, limit: 3)
+            // BAN は自分が持っていないキャラでも指定できるので、所持の絞り込みはしない
+            advices = fromPrecomputed(map.bans, rules: rules, taken: taken, limit: 3, ownedOnly: false)
             headline = "BAN推奨"
 
         case .first:
@@ -334,15 +335,18 @@ enum Recommender {
     }
 
     private static func fromPrecomputed(_ list: [PickSuggestion], rules: LoadedRules,
-                                        taken: Set<Int>, limit: Int) -> [PickAdvice] {
-        list.filter { !taken.contains($0.id) && AppSettings.isOwned($0.id) }.prefix(limit).map { s in
+                                        taken: Set<Int>, limit: Int,
+                                        ownedOnly: Bool = true) -> [PickAdvice] {
+        list.filter { !taken.contains($0.id) && (!ownedOnly || AppSettings.isOwned($0.id)) }.prefix(limit).map { s in
             PickAdvice(
                 id: s.id, name: s.name,
                 nameJa: rules.document.brawlers.first { $0.id == s.id }?.nameJa,
                 role: s.role,
                 roleJa: s.roleJa ?? rules.japaneseRole(s.role),
                 score: s.score,
-                reason: s.reason ?? "",
+                // BAN は一目で比べられるように使用率だけにする（勝率と試合数は横に出る）
+                reason: ownedOnly ? s.reason ?? ""
+                    : s.useRate.map { "使用率 \(String(format: "%.1f", $0))%" } ?? s.reason ?? "",
                 winRate: s.winRate,
                 games: s.games
             )

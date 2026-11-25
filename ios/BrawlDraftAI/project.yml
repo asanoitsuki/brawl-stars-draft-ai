@@ -1,5 +1,13 @@
 name: BrawlDraftAI
 
+# Personal は自分の端末に入れる専用の構成（中身は Release と同じ最適化）。
+# この構成だけ REAL_ICONS が有効になり、ゲーム本物のキャラ・マップ画像を表示する。
+# App Store に出すのは Release だけ（審査 4.1(a) で本物の画像は却下されたため）。
+configs:
+  Debug: debug
+  Release: release
+  Personal: release
+
 options:
   bundleIdPrefix: com.example
   deploymentTarget:
@@ -10,10 +18,6 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    # チーム募集（CloudKit）は Apple Developer 側で iCloud を有効にしてから
-    # Local.xcconfig で切り替える（README「チーム募集のセットアップ」）。未設定でもビルドは通る。
-    BDA_ENTITLEMENTS: Sources/BrawlDraftAI.entitlements
-    BDA_SWIFT_FLAGS: ""
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     SWIFT_STRICT_CONCURRENCY: minimal
 
@@ -30,27 +34,27 @@ targets:
     configFiles:
       Debug: Local.xcconfig
       Release: Local.xcconfig
+      Personal: Local.xcconfig
     settings:
       base:
         PRODUCT_NAME: BrawlDraftAI
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "1.1"
+        CURRENT_PROJECT_VERSION: "3"
         TARGETED_DEVICE_FAMILY: "1"   # v1.0 は iPhone のみ（iPad 用の画面と審査用スクリーンショットは未対応）
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/Info.plist
-        CODE_SIGN_ENTITLEMENTS: $(BDA_ENTITLEMENTS)
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) $(BDA_SWIFT_FLAGS)
+        CODE_SIGN_ENTITLEMENTS: Sources/BrawlDraftAI.entitlements
         SWIFT_OPTIMIZATION_LEVEL: "-O"
       configs:
         Debug:
           SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Personal:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) REAL_ICONS"
     dependencies:
       - sdk: AppIntents.framework
       - sdk: Photos.framework
       - sdk: AVFoundation.framework
       - sdk: UserNotifications.framework
       - sdk: Accelerate.framework
-      - sdk: Speech.framework
-      - sdk: CloudKit.framework
       - sdk: MetalKit.framework

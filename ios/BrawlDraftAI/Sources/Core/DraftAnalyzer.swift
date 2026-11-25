@@ -15,7 +15,7 @@ import Foundation
 ///     選択状態を表さない）、下部に自チーム 3 枠＋相手チーム 3 枠（相手は常に「?」で伏せ）。
 ///     BAN も無い。→ グリッドは走査しない（全キャラがヒットして無意味）。
 ///   * エリート以上（`kind == .draftPick`）: BAN フェーズ後に順番へ公開。
-///     ⚠️ まだ実機スクショが無く、既定プロファイルは提供していない。
+///     ステージ名と「BAN の番かどうか」は文字で読む。
 enum DraftAnalyzer {
     /// 解析用に縮小する長辺サイズ。小さくするほど速いが、枠が小さいと精度が落ちる。
     static let workingMaxSide = 1600
@@ -36,10 +36,30 @@ enum DraftAnalyzer {
                                  elapsed: CFAbsoluteTimeGetCurrent() - started)
         }
         let size = CGSize(width: raster.width, height: raster.height)
-        let layout = layoutOverride
-            ?? LayoutStore.load().best(for: size)
-            ?? (size.width >= size.height ? .builtInLandscape : .builtInPortrait)
+        if let layoutOverride {
+            return analyze(raster: raster, size: size, layout: layoutOverride, rules: rules, started: started)
+        }
+        // ブラインドピックと BAN ありの画面は見た目がまったく違うので、
+        // 画面の種類ごとにいちばん縦横比が近い配置を試して、よく読めた方を採用する。
+        var layouts = LayoutStore.load().candidates(for: size)
+        if layouts.isEmpty {
+            layouts = [size.width >= size.height ? .builtInLandscape : .builtInPortrait]
+        }
+        let results = layouts.map {
+            analyze(raster: raster, size: size, layout: $0, rules: rules, started: started)
+        }
+        return results.max { confidence($0) < confidence($1) }!
+    }
 
+    /// どれだけ読めたか。キャラの一致度の合計に、ステージ・モードが読めた分を足す。
+    private static func confidence(_ s: DraftSnapshot) -> Float {
+        (s.bans + s.allies + s.enemies).reduce(0) { $0 + $1.score }
+            + (s.map != nil ? 1.5 : 0) + (s.mode != nil ? 1 : 0)
+            + (s.phase == .ban ? 2 : 0)
+    }
+
+    private static func analyze(raster: ImageRaster, size: CGSize, layout: ScreenLayout,
+                                rules: LoadedRules, started: CFAbsoluteTime) -> DraftSnapshot {
         switch layout.kind {
         case .blindPick:
             return analyzeBlindPick(raster: raster, size: size, layout: layout,
@@ -96,10 +116,21 @@ enum DraftAnalyzer {
 
     private static func analyzeDraftPick(raster: ImageRaster, size: CGSize, layout: ScreenLayout,
                                          rules: LoadedRules, started: CFAbsoluteTime) -> DraftSnapshot {
+        var mode: String?
         var map: MapRules?
         var mapScore: Float = 0
         var mapMargin: Float = 0
-        if let mapRect = layout.mapPreview {
+        // 画面上部の文字（モード名・ステージ名）が読めれば、絵の照合より確実
+        if let region = layout.modeTextRegion {
+            let stage = ModeRecognizer.recognizeStage(in: raster, region: region, rules: rules)
+            mode = stage.map?.mode ?? stage.mode
+            if let m = stage.map {
+                map = m
+                mapScore = 1
+                mapMargin = 1
+            }
+        }
+        if map == nil, let mapRect = layout.mapPreview {
             let hit = search(raster: raster, size: size, rect: mapRect,
                              matcher: rules.mapMatcher, excluding: [])
             if let m = hit.result, m.score >= TemplateMatcher.acceptScore {
@@ -118,12 +149,18 @@ enum DraftAnalyzer {
             ? detect(slots: layout.enemySlots, raster: raster, size: size, rules: rules, taken: &taken)
             : []
 
-        let phase = DraftPhase.from(pickedCount: allies.count + enemies.count,
-                                    banCount: bans.count,
-                                    expectedBans: layout.banSlots.count)
+        let isBanTurn = layout.phaseTextRegion.map {
+            ModeRecognizer.recognizeText(in: raster, region: $0).contains("禁止")
+        } ?? false
+        let phase = isBanTurn
+            ? .ban
+            : DraftPhase.from(pickedCount: allies.count + enemies.count,
+                              banCount: bans.count,
+                              expectedBans: layout.banSlots.count)
 
         return DraftSnapshot(
-            kind: .draftPick, mode: nil, modeJa: map?.modeJa,
+            kind: .draftPick, mode: mode,
+            modeJa: map?.modeJa ?? mode.flatMap { rules.document.modes[$0]?.ja },
             map: map, mapScore: mapScore, mapMargin: mapMargin,
             bans: bans, allies: allies, enemies: enemies,
             phase: phase, layoutName: layout.name,

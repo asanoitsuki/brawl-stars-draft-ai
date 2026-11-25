@@ -1,6 +1,11 @@
 import CoreGraphics
 import Foundation
 
+/// キャラ ID → 英語名。アイコンの頭文字に使う（RulesStore がルール読み込み時に入れる）。
+enum BrawlerNameRegistry {
+    static var names: [Int: String] = [:]
+}
+
 /// 解析に必要なものを全部束ねた、読み込み済みの状態。
 struct LoadedRules {
     let document: RulesDocument

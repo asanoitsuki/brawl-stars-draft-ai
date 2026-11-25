@@ -37,10 +37,14 @@ final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
     func present(_ recommendation: Recommendation) async {
         guard AppSettings.notificationEnabled else { return }
 
+        // 対戦中に一目で読めるように、順位・名前・勝率だけに絞る（詳しくは通知を開いて画面で見る）
         let content = UNMutableNotificationContent()
         content.title = recommendation.title
-        content.body = recommendation.caution.map { "\(recommendation.body)\n⚠️ \($0)" }
-            ?? recommendation.body
+        if let map = recommendation.map { content.subtitle = "\(map.nameJa ?? map.name)・\(map.modeJa)" }
+        let lines = zip(["◎", "○", "△"], recommendation.advices).map { mark, a in
+            "\(mark) \(a.nameJa ?? a.name)" + (a.winRate.map { "　\(String(format: "%.1f", $0))%" } ?? "")
+        }
+        content.body = lines.isEmpty ? recommendation.body : lines.joined(separator: "\n")
         content.interruptionLevel = .timeSensitive
         content.relevanceScore = 1.0
         content.sound = nil  // 読み上げと被るので無音
@@ -51,6 +55,16 @@ final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
         let request = UNNotificationRequest(identifier: Self.identifier,
                                             content: content, trigger: nil)
         try? await center.add(request)
+    }
+
+    /// 設定画面の確認用
+    func presentTest() async {
+        let content = UNMutableNotificationContent()
+        content.title = "テスト通知"
+        content.body = "解析結果はこの形で出ます。\n◎ キャラ名　55.0%"
+        content.interruptionLevel = .timeSensitive
+        try? await center.add(UNNotificationRequest(identifier: Self.identifier + ".test",
+                                                    content: content, trigger: nil))
     }
 
     func presentError(_ message: String) async {

@@ -29,8 +29,7 @@ enum ScreenKind: String, Codable {
     /// 相手の選択は対戦開始まで常に「?」で伏せられている（実機スクショで確認済み）。
     case blindPick
     /// エリート以上: BAN フェーズの後、順番にピックが公開されていく。
-    /// ⚠️ この画面のレイアウトはまだ実機スクショで確認できていない。
-    /// 既定プロファイルは用意していないので、使うには枠合わせで自分の画面に合わせること。
+    /// 左に味方 3 行と相手 3 枠、右にキャラ一覧、上の中央にモード名とステージ名が出る。
     case draftPick
 }
 
@@ -46,8 +45,10 @@ struct ScreenLayout: Codable, Identifiable {
     var kind: ScreenKind = .blindPick
     /// この配置を合わせたスクリーンショットの縦横比（幅 / 高さ）。
     var aspectRatio: Double
-    /// モード名の文字が書かれている領域（Vision OCR で読む）。blindPick で使用。
+    /// モード名とステージ名の文字が書かれている領域（Vision OCR で読む）。
     var modeTextRegion: NRect?
+    /// 「使用禁止キャラクターを指定してください」などの指示文の領域（draftPick のみ）。
+    var phaseTextRegion: NRect? = nil
     /// マップのプレビュー画像。draftPick 画面にのみ存在する。
     var mapPreview: NRect?
     /// BAN されたキャラのアイコン（draftPick のみ）。
@@ -75,6 +76,14 @@ struct LayoutProfiles: Codable {
     func best(for size: CGSize) -> ScreenLayout? {
         profiles.min { $0.aspectDistance(for: size) < $1.aspectDistance(for: size) }
     }
+
+    /// 画面の種類（ブラインド / BAN あり）ごとに、縦横比がいちばん近い配置を 1 つずつ返す。
+    func candidates(for size: CGSize) -> [ScreenLayout] {
+        Dictionary(grouping: profiles, by: \.kind).values.compactMap { group in
+            group.min { $0.aspectDistance(for: size) < $1.aspectDistance(for: size) }
+        }
+        .filter { $0.aspectDistance(for: size) < 0.25 }
+    }
 }
 
 enum LayoutStore {
@@ -82,16 +91,15 @@ enum LayoutStore {
 
     /// 端末にキャリブレーション結果があればそれを、無ければバンドル同梱の既定値を返す。
     static func load() -> LayoutProfiles {
+        let builtIn: [ScreenLayout] = [.builtInLandscape, .builtInDraft]
         if let url = overrideURL, let data = try? Data(contentsOf: url),
-           let doc = try? JSONDecoder().decode(LayoutProfiles.self, from: data) {
+           var doc = try? JSONDecoder().decode(LayoutProfiles.self, from: data) {
+            // 以前の版で保存した調整には片方の画面しか無いことがあるので、足りない種類を補う
+            let kinds = Set(doc.profiles.map(\.kind))
+            doc.profiles += builtIn.filter { !kinds.contains($0.kind) }
             return doc
         }
-        if let url = Bundle.main.url(forResource: "screen_layout", withExtension: "json"),
-           let data = try? Data(contentsOf: url),
-           let doc = try? JSONDecoder().decode(LayoutProfiles.self, from: data) {
-            return doc
-        }
-        return LayoutProfiles(schema: 1, profiles: [.builtInLandscape])
+        return LayoutProfiles(schema: 1, profiles: builtIn)
     }
 
     static func save(_ profiles: LayoutProfiles) throws {
@@ -144,6 +152,31 @@ extension ScreenLayout {
             NRect(x: 0.7266, y: 0.7363, w: 0.0797, h: 0.1410)
         ],
         enemyVisible: false
+    )
+
+    /// エリート以上の BAN + 順番ピック画面（横持ち iPhone）。
+    ///
+    /// 実機スクショ（19.5:9、2026-11 の画面）の位置を比率化したもの。
+    /// 味方は左上に 3 行で並び、選んだキャラの大きな絵が出る。相手は左下の 3 枠。
+    static let builtInDraft = ScreenLayout(
+        name: "iPhone 横持ち・BAN あり (19.5:9)",
+        kind: .draftPick,
+        aspectRatio: 2000.0 / 920.0,
+        modeTextRegion: NRect(x: 0.420, y: 0.000, w: 0.165, h: 0.098),
+        phaseTextRegion: NRect(x: 0.040, y: 0.015, w: 0.250, h: 0.075),
+        mapPreview: nil,
+        banSlots: [],
+        allySlots: [
+            NRect(x: 0.047, y: 0.117, w: 0.100, h: 0.180),
+            NRect(x: 0.047, y: 0.308, w: 0.100, h: 0.180),
+            NRect(x: 0.047, y: 0.500, w: 0.100, h: 0.176)
+        ],
+        enemySlots: [
+            NRect(x: 0.079, y: 0.754, w: 0.071, h: 0.153),
+            NRect(x: 0.165, y: 0.754, w: 0.071, h: 0.153),
+            NRect(x: 0.251, y: 0.754, w: 0.071, h: 0.153)
+        ],
+        enemyVisible: true
     )
 
     /// 縦持ちスクリーンショットの保険。

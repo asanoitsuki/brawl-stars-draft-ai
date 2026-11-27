@@ -106,7 +106,7 @@ var times: [Double] = []
 var snapshot: DraftSnapshot!
 for _ in 0..<5 {
     let s = CFAbsoluteTimeGetCurrent()
-    snapshot = DraftAnalyzer.analyze(image: synthetic, rules: rules, layoutOverride: layout)
+    snapshot = try! DraftAnalyzer.analyze(image: synthetic, rules: rules, layoutOverride: layout)
     times.append((CFAbsoluteTimeGetCurrent() - s) * 1000)
 }
 

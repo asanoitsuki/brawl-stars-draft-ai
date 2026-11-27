@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// マップを表す自作のサムネイル。ゲームの画像は使わず、ID から決まる色と格子で描く。
+/// マップのサムネイル。既定は自作（ID から決まる色と格子）。個人用ビルドは本物の画像を重ねる。
 struct MapThumbnail: View {
     let id: Int
     var cornerRadius: CGFloat = 8
@@ -31,6 +31,7 @@ struct MapThumbnail: View {
                     .foregroundStyle(.white.opacity(0.75))
             }
             .frame(width: w, height: h)
+            .gameArt("maps/regular/\(id)", fit: fit)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .frame(width: geo.size.width, height: geo.size.height)
         }

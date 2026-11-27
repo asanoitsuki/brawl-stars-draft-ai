@@ -57,12 +57,9 @@ enum Recommender {
         guard let map = snapshot.map else {
             return Recommendation(
                 phase: snapshot.phase, map: nil,
-                title: "マップを判別できませんでした",
-                body: """
-                ドラフト画面のスクリーンショットか確認してください。
-                合っているのに外す場合は、アプリの「枠合わせ」でマップ画像の位置を調整してください。
-                """,
-                speech: [.init(text: "マップを判別できませんでした", isJapanese: true)],
+                title: "ステージ名を読み取れませんでした",
+                body: "推測では出しません。アプリを開いて、結果の上のステージ名からステージを選んでください。",
+                speech: [.init(text: "ステージ名を読み取れませんでした", isJapanese: true)],
                 advices: [],
                 caution: nil
             )
@@ -78,7 +75,8 @@ enum Recommender {
             headline = "N/A"  // blindPick は上で makeBlind() に分岐済みのためここには来ない
 
         case .ban:
-            advices = fromPrecomputed(map.bans, rules: rules, taken: taken, limit: 3)
+            // BAN は自分が持っていないキャラでも指定できるので、所持の絞り込みはしない
+            advices = fromPrecomputed(map.bans, rules: rules, taken: taken, limit: 3, ownedOnly: false)
             headline = "BAN推奨"
 
         case .first:
@@ -210,7 +208,7 @@ enum Recommender {
         let title = advices.isEmpty
             ? "候補が見つかりません"
             : "おすすめ：\(displayName(advices[0], rules: rules))"
-        let hype = HypeCommentary.comment(for: advices)
+        let hype: String? = nil  // 根拠のない一言は出さない
 
         var bodyLines: [String] = []
         if let stageLabel {
@@ -334,15 +332,18 @@ enum Recommender {
     }
 
     private static func fromPrecomputed(_ list: [PickSuggestion], rules: LoadedRules,
-                                        taken: Set<Int>, limit: Int) -> [PickAdvice] {
-        list.filter { !taken.contains($0.id) && AppSettings.isOwned($0.id) }.prefix(limit).map { s in
+                                        taken: Set<Int>, limit: Int,
+                                        ownedOnly: Bool = true) -> [PickAdvice] {
+        list.filter { !taken.contains($0.id) && (!ownedOnly || AppSettings.isOwned($0.id)) }.prefix(limit).map { s in
             PickAdvice(
                 id: s.id, name: s.name,
                 nameJa: rules.document.brawlers.first { $0.id == s.id }?.nameJa,
                 role: s.role,
                 roleJa: s.roleJa ?? rules.japaneseRole(s.role),
                 score: s.score,
-                reason: s.reason ?? "",
+                // BAN は一目で比べられるように使用率だけにする（勝率と試合数は横に出る）
+                reason: ownedOnly ? s.reason ?? ""
+                    : s.useRate.map { "使用率 \(String(format: "%.1f", $0))%" } ?? s.reason ?? "",
                 winRate: s.winRate,
                 games: s.games
             )
@@ -499,9 +500,11 @@ enum Recommender {
         if snapshot.mapScore < 0.75 {
             notes.append("マップ判定の一致度が低め（\(String(format: "%.2f", snapshot.mapScore))）")
         }
-        let shaky = (snapshot.allies + snapshot.enemies).filter { !$0.isConfident }
-        if !shaky.isEmpty {
-            notes.append("認識が曖昧: \(shaky.map(\.name).joined(separator: ", "))")
+        if snapshot.phase != .ban {
+            if snapshot.allies.isEmpty && snapshot.enemies.isEmpty {
+                notes.append("味方・相手のキャラは画面から読み取れていません。このステージの実測データだけで判断しています")
+            }
+            notes.append("BAN されたキャラは読み取っていないため、候補に入っていることがあります")
         }
         return notes.isEmpty ? nil : notes.joined(separator: " / ")
     }

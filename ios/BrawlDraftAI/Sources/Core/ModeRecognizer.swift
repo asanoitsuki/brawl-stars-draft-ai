@@ -60,6 +60,38 @@ enum ModeRecognizer {
         return (mode, map)
     }
 
+    /// 読めた 1 行と、その位置（画像全体に対する 0〜1、左上原点）。
+    struct Line {
+        let text: String
+        let box: CGRect
+    }
+
+    /// 領域内の文字を、位置付きの行で返す。
+    static func recognizeBoxedLines(in raster: ImageRaster, region: NRect) -> [Line] {
+        guard let cgImage = makeCGImage(raster: raster, region: region) else { return [] }
+        let request = VNRecognizeTextRequest()
+        request.recognitionLanguages = ["ja-JP", "en-US"]
+        request.usesLanguageCorrection = false
+        request.recognitionLevel = .accurate
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        guard (try? handler.perform([request])) != nil, let results = request.results else { return [] }
+        return results.compactMap { o in
+            guard let text = o.topCandidates(1).first?.string else { return nil }
+            // Vision は左下原点・切り出し内の比率なので、画像全体の左上原点に直す
+            let b = o.boundingBox
+            let box = CGRect(x: region.x + b.minX * region.w,
+                             y: region.y + (1 - b.maxY) * region.h,
+                             width: b.width * region.w, height: b.height * region.h)
+            return Line(text: text, box: box)
+        }
+    }
+
+    /// 領域内の文字をまとめて返す（読めなければ空文字）。
+    static func recognizeText(in raster: ImageRaster, region: NRect) -> String {
+        guard let cgImage = makeCGImage(raster: raster, region: region) else { return "" }
+        return (recognizeLines(cgImage) ?? []).joined()
+    }
+
     // MARK: - Vision 呼び出し
 
     /// OCR で読めた行を、画面に表示されている上から順に返す。

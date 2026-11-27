@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// ホーム画面から外した「たまにしか触らないもの」をまとめた画面。
-/// データの出どころ・読み上げ設定・背面タップの手順・規約類。
+/// データの出どころ・読み上げ設定・背面タップの設定・規約類。
 struct SettingsView: View {
     @EnvironmentObject private var store: RulesStore
     @State private var showsAdvanced = false
@@ -16,26 +16,13 @@ struct SettingsView: View {
                 } label: {
                     Label("枠合わせ（スクショ解析の初回のみ）", systemImage: "viewfinder.rectangular")
                 }
-                DisclosureGroup("背面タップで解析する手順") {
-                    Text("""
-                    1. ショートカットアプリで新規ショートカットを作る
-                    2. アクション「最新スクショでドラフト解析」を追加
-                    3. 設定 > アクセシビリティ > タッチ > 背面タップ を開く
-                    4.「ダブルタップ」→「スクリーンショット」を選ぶ
-                    5.「トリプルタップ」→ さっき作ったショートカットを選ぶ
-                    6. 対戦中: 背面ダブルタップ（撮影）→ 背面トリプルタップ（解析）
-                    """)
-                    .font(.footnote)
+                NavigationLink {
+                    BackTapSetupView()
+                } label: {
+                    Label("背面タップの設定", systemImage: "hand.tap")
                 }
             } header: {
                 Text("スクショ解析")
-            }
-            Section {
-                DeleteMyDataButton()
-            } header: {
-                Text("プライバシー")
-            } footer: {
-                Text("チーム募集で公開したプロフィール・募集・チャットのメッセージを、端末と iCloud から削除します。")
             }
             legalSection
             Section {
@@ -45,16 +32,6 @@ struct SettingsView: View {
                         TextField("https://raw.githubusercontent.com/…", text: Binding(
                             get: { AppSettings.rulesURL },
                             set: { AppSettings.rulesURL = $0 }
-                        ))
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .font(.footnote)
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("プロフィール取得サーバー").font(.caption).foregroundStyle(.secondary)
-                        TextField("https://brawl-board-api.vercel.app", text: Binding(
-                            get: { AppSettings.profileAPIBase },
-                            set: { AppSettings.profileAPIBase = $0 }
                         ))
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -156,7 +133,7 @@ struct SettingsView: View {
                 Label("サポート・お問い合わせ", systemImage: "questionmark.circle")
             }
             Text("Brawl Board は Brawl Stars（Supercell社）の非公式ファンツールです。"
-                 + "Supercell社とは一切関係ありません。ゲーム内の画像・名称はSupercell社に帰属します。")
+                 + "Supercell社とは一切関係ありません。ゲーム内の名称はSupercell社に帰属します。")
                 .font(.caption2).foregroundStyle(.secondary)
         }
     }

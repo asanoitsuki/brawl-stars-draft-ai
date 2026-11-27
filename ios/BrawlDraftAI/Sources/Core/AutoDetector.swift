@@ -35,9 +35,11 @@ enum AutoDetector {
         }
         let size = CGSize(width: raster.width, height: raster.height)
 
-        let allies = base.allySlots.map {
-            snap(rect: $0, raster: raster, size: size, matcher: rules.brawlerMatcher)
-        }
+        // BAN ありの画面の味方欄は大きなキャラ絵で、アイコンとは絵が違う。
+        // 照合で動かすとかえってずれるので、実測済みの既定位置のままにする。
+        let allies = base.kind == .draftPick
+            ? base.allySlots.map { SlotResult(rect: $0, matchedName: nil, score: 0) }
+            : base.allySlots.map { snap(rect: $0, raster: raster, size: size, matcher: rules.brawlerMatcher) }
         let enemies = base.enemyVisible
             ? base.enemySlots.map { snap(rect: $0, raster: raster, size: size, matcher: rules.brawlerMatcher) }
             : base.enemySlots.map { SlotResult(rect: $0, matchedName: nil, score: 0) }

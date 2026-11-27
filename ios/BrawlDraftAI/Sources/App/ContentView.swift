@@ -5,71 +5,46 @@ import SwiftUI
 /// 常時描画する重いビューを抱える画面があるため、行が見えた時点で遷移先が
 /// 先読み構築されると描画ループが裏で回り続けてアプリ全体が固まる（実機で確認済み）。
 enum HomeRoute: Hashable {
-    /// 対話モード（未搭載。ホームからは外してある）
-    case voiceAssistant
-    case teamBoard
-    case profile
     case maps
     case brawlers
     case roster
     case settings
+    case setup
 }
 
-/// ホーム（Brawl Board）。スクロールさせず 1 画面に収める。
-/// 主役はチーム募集。ドラフト用のデータ類は下段の小さなタイルにまとめた。
+/// ホーム。主役はスクショ解析で、結果もこの画面にそのまま出す。
+/// 入りきる端末ではスクロールさせない。
 struct ContentView: View {
     @EnvironmentObject private var store: RulesStore
-    @ObservedObject private var profiles = ProfileStore.shared
+    @ObservedObject private var analysis = AnalysisStore.shared
+    @AppStorage("backTapReady") private var backTapReady = false
     @State private var path = NavigationPath()
     @State private var pickedItem: PhotosPickerItem?
-    @State private var showsPhotoPicker = false
-    @State private var showsAnalyzeOptions = false
     @State private var busy = false
     @State private var errorText: String?
-    @State private var result: (snapshot: DraftSnapshot, recommendation: Recommendation)?
-    @State private var showsResult = false
 
     var body: some View {
         NavigationStack(path: $path) {
             GeometryReader { geo in
-                // iPhone SE のような背の低い画面では余白と球を詰めて、必ず 1 画面に収める
                 let compact = geo.size.height < 640
                 ZStack {
                     CosmosView(mode: .idle,
                                center: CGPoint(x: 0.5, y: compact ? 0.13 : 0.16),
                                radius: compact ? 0.11 : 0.13,
                                framesPerSecond: 30,
-                               isPaused: !path.isEmpty)
+                               isPaused: !path.isEmpty || analysis.current != nil)
                         .ignoresSafeArea()
+                        // 結果を読むときは背景を沈める
+                        .opacity(analysis.current == nil ? 1 : 0.35)
+                        .background(Color.black.ignoresSafeArea())
 
-                    VStack(spacing: compact ? 10 : 14) {
-                        hero(orbSpace: compact ? 96 : 140)
-                        // 大きい画面では余った高さをタイルの上下に配り、下に偏った空白を作らない
-                        Spacer(minLength: compact ? 4 : 10)
-                        teamCard
-                        HStack(spacing: 12) {
-                            profileTile
-                            analyzeTile
-                        }
-                        HStack(spacing: 10) {
-                            smallTile(.maps, icon: "map.fill", title: "マップ")
-                            smallTile(.brawlers, icon: "person.crop.square.fill", title: "キャラ")
-                            smallTile(.roster, icon: "checklist", title: "持ちキャラ")
-                        }
-                        Spacer(minLength: 0)
-                        Spacer(minLength: 0)
+                    ViewThatFits(in: .vertical) {
+                        content(compact: compact)
+                        ScrollView { content(compact: compact) }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink(value: HomeRoute.profile) {
-                        ProfileAvatar(iconID: profiles.me.iconID, size: 32)
-                    }
-                    .accessibilityLabel("プロフィール")
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink(value: HomeRoute.settings) {
                         Image(systemName: "gearshape.fill")
@@ -77,32 +52,27 @@ struct ContentView: View {
                     }
                     .accessibilityLabel("設定")
                 }
+                if analysis.current != nil {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("閉じる") { analysis.clear() }
+                    }
+                }
             }
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: HomeRoute.self) { route in
                 switch route {
-                case .voiceAssistant: VoiceAssistantView()
-                case .teamBoard: TeamBoardView()
-                case .profile: MyProfileView()
                 case .maps: MapListView()
                 case .brawlers: BrawlerListView()
                 case .roster: BrawlerRosterView()
                 case .settings: SettingsView()
+                case .setup: BackTapSetupView()
                 }
             }
-            .confirmationDialog("スクショ解析", isPresented: $showsAnalyzeOptions) {
-                Button("最新のスクリーンショットを解析") { Task { await analyzeLatest() } }
-                Button("写真から選ぶ") { showsPhotoPicker = true }
-            }
-            .photosPicker(isPresented: $showsPhotoPicker, selection: $pickedItem, matching: .screenshots)
             .onChange(of: pickedItem) { _, item in
                 guard let item else { return }
                 Task { await analyze(item) }
             }
-            .sheet(isPresented: $showsResult) {
-                if let result { resultSheet(result) }
-            }
-            .alert("エラー", isPresented: .constant(errorText != nil)) {
+            .alert("解析できませんでした", isPresented: .constant(errorText != nil)) {
                 Button("OK") { errorText = nil }
             } message: {
                 Text(errorText ?? "")
@@ -111,26 +81,54 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .tint(.cyan)
         #if DEBUG
-        // 見た目確認用: SIMCTL_CHILD_BDA_ROUTE=team などで起動すると直接その画面を開く
+        // 見た目確認用: SIMCTL_CHILD_BDA_ROUTE=setup などで起動すると直接その画面を開く
         .task {
-            let routes: [String: HomeRoute] = ["voice": .voiceAssistant, "team": .teamBoard, "profile": .profile,
-                                               "maps": .maps, "settings": .settings]
+            let routes: [String: HomeRoute] = ["maps": .maps, "settings": .settings, "setup": .setup]
             if let key = ProcessInfo.processInfo.environment["BDA_ROUTE"], let route = routes[key] {
                 path.append(route)
+            }
+            // BDA_ANALYZE=<画像のパス> で起動すると、その画像を解析した状態で開く
+            if let file = ProcessInfo.processInfo.environment["BDA_ANALYZE"],
+               let image = try? ScreenshotSource.image(atPath: file) {
+                do {
+                    try await DraftService.analyze(image: image, announce: false)
+                } catch {
+                    errorText = error.localizedDescription
+                }
             }
         }
         #endif
     }
 
-    // MARK: - ヒーロー
+    @ViewBuilder
+    private func content(compact: Bool) -> some View {
+        VStack(spacing: compact ? 10 : 14) {
+            if let current = analysis.current, case .ready(let rules) = store.state {
+                ResultCard(analysis: current, rules: rules)
+                Spacer(minLength: 0)
+            } else {
+                // 球体（背景の CosmosView）のぶんの余白
+                Color.clear.frame(height: compact ? 96 : 150)
+                BrandTitle()
+                dataPill
+                Spacer(minLength: compact ? 4 : 10)
+                Text("ドラフト画面のスクショから、次に取るキャラを判定します")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .multilineTextAlignment(.center)
+                Spacer(minLength: 0)
+            }
 
-    private func hero(orbSpace: CGFloat) -> some View {
-        VStack(spacing: 8) {
-            // 球体（背景の CosmosView）のぶんの余白
-            Color.clear.frame(height: orbSpace)
-            BrandTitle()
-            dataPill
+            analyzeButtons
+            if !backTapReady { setupCard }
+            HStack(spacing: 10) {
+                smallTile(.maps, icon: "map.fill", title: "マップ")
+                smallTile(.brawlers, icon: "person.crop.square.fill", title: "キャラ")
+                smallTile(.roster, icon: "checklist", title: "持ちキャラ")
+            }
         }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 
     @ViewBuilder
@@ -157,85 +155,61 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - タイル
+    // MARK: - 解析ボタン（親指が届く下側に大きく置く）
 
-    private var teamCard: some View {
-        NavigationLink(value: HomeRoute.teamBoard) {
-            HStack(spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(LinearGradient(colors: [.mint, .cyan], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 58, height: 58)
-                        .shadow(color: .mint.opacity(0.7), radius: 14)
-                    Image(systemName: "person.3.fill")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(.black.opacity(0.8))
+    private var analyzeButtons: some View {
+        HStack(spacing: 10) {
+            Button {
+                Task { await analyzeLatest() }
+            } label: {
+                HStack(spacing: 10) {
+                    if busy {
+                        ProgressView().tint(.black)
+                    } else {
+                        Image(systemName: "bolt.fill")
+                    }
+                    Text(busy ? "解析中…" : "最新のスクショを解析")
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("チーム募集")
-                        .font(.title3.weight(.heavy))
-                        .foregroundStyle(.white)
-                    Text("募集を見て、ブロスタで即参加")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.headline)
-                    .foregroundStyle(.white.opacity(0.5))
+                .font(.headline)
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity, minHeight: 58)
+                .background(LinearGradient(colors: [.mint, .cyan], startPoint: .leading, endPoint: .trailing),
+                            in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .shadow(color: .cyan.opacity(0.45), radius: 14, y: 4)
             }
-            .padding(18)
-            .glassCard(tint: .mint, cornerRadius: 24)
+            PhotosPicker(selection: $pickedItem, matching: .screenshots) {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 58, height: 58)
+                    .glassCard(tint: .cyan, cornerRadius: 18)
+            }
+            .accessibilityLabel("写真から選ぶ")
         }
-        .buttonStyle(.plain)
-    }
-
-    private var profileTile: some View {
-        NavigationLink(value: HomeRoute.profile) {
-            tile(icon: "person.crop.circle.badge.checkmark",
-                 title: "プロフィール",
-                 subtitle: profiles.me.isEmpty ? "ブロスタと連携" : profiles.me.name,
-                 tint: .purple)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var analyzeTile: some View {
-        Button {
-            showsAnalyzeOptions = true
-        } label: {
-            tile(icon: busy ? nil : "camera.viewfinder",
-                 title: busy ? "解析中…" : "スクショ解析",
-                 subtitle: "ドラフトで次のピック",
-                 tint: .cyan)
-        }
-        .buttonStyle(.plain)
         .disabled(busy)
     }
 
-    private func tile(icon: String?, title: String, subtitle: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Group {
-                if let icon {
-                    Image(systemName: icon)
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(tint)
-                } else {
-                    ProgressView().tint(tint)
+    private var setupCard: some View {
+        NavigationLink(value: HomeRoute.setup) {
+            HStack(spacing: 12) {
+                Image(systemName: "hand.tap.fill")
+                    .font(.title3)
+                    .foregroundStyle(.purple)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("背面タップで解析できるようにする")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(.white)
+                    Text("ゲームを閉じずに、2回たたくだけ（設定は1回）")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.65))
                 }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").foregroundStyle(.white.opacity(0.5))
             }
-            .frame(height: 24)
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(.white)
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.65))
-                .lineLimit(1)
+            .padding(14)
+            .glassCard(tint: .purple, cornerRadius: 18)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .glassCard(tint: tint, cornerRadius: 22)
+        .buttonStyle(.plain)
     }
 
     private func smallTile(_ route: HomeRoute, icon: String, title: String) -> some View {
@@ -255,36 +229,14 @@ struct ContentView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - 解析結果（固定レイアウトを崩さないようシートで出す）
-
-    private func resultSheet(_ value: (snapshot: DraftSnapshot, recommendation: Recommendation)) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("解析結果").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                Text(value.recommendation.title).font(.title3.weight(.bold))
-                ForEach(value.recommendation.advices) { advice in
-                    AdviceRow(advice: advice)
-                }
-                if let caution = value.recommendation.caution {
-                    Text(caution).font(.caption2).foregroundStyle(.orange.opacity(0.9))
-                }
-            }
-            .padding(20)
-        }
-        .presentationDetents([.medium, .large])
-        .preferredColorScheme(.dark)
-    }
-
-    // MARK: - 実行
+    // MARK: - 実行（画面で結果を見ているので、通知と読み上げは出さない）
 
     private func analyze(_ item: PhotosPickerItem) async {
         busy = true
         defer { busy = false; pickedItem = nil }
         do {
             guard let data = try await item.loadTransferable(type: Data.self) else { return }
-            _ = try await DraftService.analyze(data: data)
-            result = DraftService.lastResult
-            showsResult = result != nil
+            try await DraftService.analyze(data: data, announce: false)
         } catch {
             errorText = error.localizedDescription
         }
@@ -294,11 +246,139 @@ struct ContentView: View {
         busy = true
         defer { busy = false }
         do {
-            _ = try await DraftService.analyzeLatestScreenshot()
-            result = DraftService.lastResult
-            showsResult = result != nil
+            try await DraftService.analyzeLatestScreenshot(announce: false)
         } catch {
             errorText = error.localizedDescription
+        }
+    }
+}
+
+/// 解析結果。1 位を大きく出し、読み違えたステージはその場で直せる。
+struct ResultCard: View {
+    let analysis: AnalysisStore.Analysis
+    let rules: LoadedRules
+
+    private var snapshot: DraftSnapshot { analysis.snapshot }
+    private var recommendation: Recommendation { analysis.recommendation }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            header
+
+            if let top = recommendation.advices.first {
+                topPick(top)
+                ForEach(recommendation.advices.dropFirst()) { advice in
+                    AdviceRow(advice: advice)
+                        .padding(.horizontal, 4)
+                }
+            } else {
+                Text(recommendation.title).font(.title3.weight(.bold))
+                Text(recommendation.body).font(.footnote).foregroundStyle(.secondary)
+            }
+
+            detected
+
+            if let caution = recommendation.caution {
+                Text(caution).font(.caption2).foregroundStyle(.orange.opacity(0.9))
+            }
+        }
+        .padding(16)
+        .glassCard(tint: .cyan, cornerRadius: 24)
+    }
+
+    private var header: some View {
+        HStack(spacing: 8) {
+            Menu {
+                ForEach(mapsByMode, id: \.mode) { group in
+                    Menu(group.mode) {
+                        ForEach(group.maps, id: \.id) { map in
+                            Button(map.nameJa ?? map.name) {
+                                AnalysisStore.shared.correct(map: map, rules: rules)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "map.fill")
+                    Text(stageText).lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption2)
+                }
+                .font(.subheadline.weight(.bold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.1), in: Capsule())
+                .foregroundStyle(snapshot.map == nil ? .orange : .white)
+            }
+            Spacer(minLength: 0)
+            Text(analysis.date, style: .time)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var stageText: String {
+        if let map = snapshot.map { return "\(map.nameJa ?? map.name)・\(map.modeJa)" }
+        if let mode = snapshot.modeJa { return "\(mode)（ステージを選ぶ）" }
+        return "ステージを選ぶ"
+    }
+
+    private var mapsByMode: [(mode: String, maps: [MapRules])] {
+        Dictionary(grouping: rules.document.maps.filter(\.inRotation), by: \.modeJa)
+            .map { (mode: $0.key, maps: $0.value.sorted { ($0.nameJa ?? $0.name) < ($1.nameJa ?? $1.name) }) }
+            .sorted { $0.mode < $1.mode }
+    }
+
+    private func topPick(_ advice: PickAdvice) -> some View {
+        HStack(spacing: 14) {
+            BrawlerIcon(id: advice.id, size: 64)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(snapshot.phase == .ban ? "BAN おすすめ" : "おすすめ")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.mint)
+                Text(advice.nameJa ?? advice.name)
+                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text(advice.reason.isEmpty ? advice.roleJa : advice.reason)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 0)
+            if let wr = advice.winRate {
+                WinRateBadge(winRate: wr, games: advice.games)
+            }
+        }
+        .padding(12)
+        .background(Color.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// 画面から読み取ったキャラ。読み違いにすぐ気づけるように並べる。
+    @ViewBuilder
+    private var detected: some View {
+        let groups = [("味方", snapshot.allies), ("相手", snapshot.enemies), ("BAN", snapshot.bans)]
+            .filter { !$0.1.isEmpty }
+        if groups.isEmpty {
+            Text("画面からキャラは読み取れていません")
+                .font(.caption2).foregroundStyle(.secondary)
+        } else {
+            HStack(spacing: 14) {
+                ForEach(groups, id: \.0) { label, list in
+                    HStack(spacing: 4) {
+                        Text(label).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                        ForEach(list) { b in
+                            BrawlerIcon(id: b.id, size: 26)
+                                .overlay(alignment: .topTrailing) {
+                                    if !b.isConfident {
+                                        Circle().fill(.orange).frame(width: 7, height: 7)
+                                    }
+                                }
+                                .accessibilityLabel(b.name)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -316,7 +396,7 @@ struct AdviceRow: View {
                     Text(advice.roleJa).font(.caption2).foregroundStyle(.secondary)
                 }
                 if !advice.reason.isEmpty {
-                    Text(advice.reason).font(.caption).foregroundStyle(.secondary)
+                    Text(advice.reason).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
             }
             Spacer(minLength: 4)

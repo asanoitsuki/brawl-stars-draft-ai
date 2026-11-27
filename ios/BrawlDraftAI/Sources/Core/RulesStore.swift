@@ -41,7 +41,7 @@ struct LoadedRules {
     func findMap(inOCRText text: String) -> MapRules? {
         let cleaned = text.replacingOccurrences(of: " ", with: "")
         if let id = mapIDByJapaneseName[cleaned] { return mapsByID[id] }
-        for (name, id) in mapIDByJapaneseName where cleaned.contains(name) {
+        for (name, id) in mapIDByJapaneseName where name.count >= 3 && cleaned.contains(name) {
             return mapsByID[id]
         }
         return nil

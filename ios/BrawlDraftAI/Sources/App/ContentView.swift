@@ -90,7 +90,11 @@ struct ContentView: View {
             // BDA_ANALYZE=<画像のパス> で起動すると、その画像を解析した状態で開く
             if let file = ProcessInfo.processInfo.environment["BDA_ANALYZE"],
                let image = try? ScreenshotSource.image(atPath: file) {
-                _ = try? await DraftService.analyze(image: image, announce: false)
+                do {
+                    try await DraftService.analyze(image: image, announce: false)
+                } catch {
+                    errorText = error.localizedDescription
+                }
             }
         }
         #endif

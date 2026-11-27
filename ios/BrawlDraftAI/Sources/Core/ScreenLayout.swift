@@ -91,7 +91,8 @@ enum LayoutStore {
 
     /// 端末にキャリブレーション結果があればそれを、無ければバンドル同梱の既定値を返す。
     static func load() -> LayoutProfiles {
-        let builtIn: [ScreenLayout] = [.builtInLandscape, .builtInDraft]
+        // いまのブロスタは BAN ありの画面が基本なので、そちらを先頭（枠合わせの初期表示）にする
+        let builtIn: [ScreenLayout] = [.builtInDraft, .builtInLandscape]
         if let url = overrideURL, let data = try? Data(contentsOf: url),
            var doc = try? JSONDecoder().decode(LayoutProfiles.self, from: data) {
             // 以前の版で保存した調整には片方の画面しか無いことがあるので、足りない種類を補う

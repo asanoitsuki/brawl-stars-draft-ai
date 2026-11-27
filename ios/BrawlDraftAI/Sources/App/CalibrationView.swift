@@ -268,6 +268,17 @@ struct CalibrationView: View {
         defer { autoDetecting = false }
         do {
             let rules = try await RulesStore.shared.rules()
+            // まず上部の文字を読んで、どちらの画面か（BAN あり / ブラインド）を決め、合う配置に切り替える
+            let header = await Task.detached(priority: .userInitiated) { () -> DraftAnalyzer.Header? in
+                guard let raster = ImageDescriptor.rasterize(cg, maxSide: DraftAnalyzer.workingMaxSide) else { return nil }
+                return DraftAnalyzer.readHeader(raster: raster, rules: rules)
+            }.value
+            if let header, header.recognized {
+                let isDraft = header.isBanTurn || header.isPickTurn || (header.stageCenterX ?? 0) > 0.33
+                if let i = profiles.profiles.firstIndex(where: { $0.kind == (isDraft ? .draftPick : .blindPick) }) {
+                    profileIndex = i
+                }
+            }
             let base = layout
             let result = await Task.detached(priority: .userInitiated) {
                 AutoDetector.refine(image: cg, base: base, rules: rules)
@@ -283,9 +294,16 @@ struct CalibrationView: View {
             layout = l
 
             let matched = (result.allySlots + result.enemySlots).compactMap(\.matchedName)
-            autoDetectNote = matched.isEmpty
+            guard let header, header.recognized else {
+                autoDetectNote = "ブロスタのドラフト画面だと確認できませんでした（モード名・ステージ名・指示文が読めません）。"
+                return
+            }
+            let stage = header.map.map { "\($0.nameJa ?? $0.name)（\($0.modeJa)）" }
+                ?? header.mode.flatMap { rules.document.modes[$0]?.ja } ?? "ステージ不明"
+            let turn = header.isBanTurn ? "・BAN の番" : header.isPickTurn ? "・ピックの番" : ""
+            autoDetectNote = "読み取り: \(stage)\(turn)\n" + (matched.isEmpty
                 ? "自動検出: 一致するキャラが見つかりませんでした（誰も選んでいない画面か、画角が違う可能性）。手で微調整してください。"
-                : "自動検出: \(matched.joined(separator: "、")) を認識してスナップしました。ズレていたら微調整してください。"
+                : "自動検出: \(matched.joined(separator: "、")) を認識してスナップしました。ズレていたら微調整してください。")
         } catch {
             autoDetectNote = "自動検出に失敗: \(error.localizedDescription)"
         }
@@ -370,7 +388,7 @@ struct CalibrationView: View {
         Task {
             do {
                 let rules = try await RulesStore.shared.rules()
-                let snapshot = DraftAnalyzer.analyze(image: cg, rules: rules, layoutOverride: current)
+                let snapshot = try DraftAnalyzer.analyze(image: cg, rules: rules, layoutOverride: current)
                 let recommendation = Recommender.make(from: snapshot, rules: rules)
                 await MainActor.run {
                     testSummary = snapshot.diagnosticSummary + "\n→ " + recommendation.title

@@ -51,10 +51,12 @@ targets:
           SWIFT_OPTIMIZATION_LEVEL: "-Onone"
         Personal:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) REAL_ICONS"
+          CODE_SIGN_ENTITLEMENTS: Sources/BrawlDraftAI-Personal.entitlements
     dependencies:
       - sdk: AppIntents.framework
       - sdk: Photos.framework
       - sdk: AVFoundation.framework
       - sdk: UserNotifications.framework
+      - sdk: Intents.framework
       - sdk: Accelerate.framework
       - sdk: MetalKit.framework

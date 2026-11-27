@@ -20,6 +20,29 @@ extension View {
     }
 }
 
+/// 通知など、SwiftUI の外で画像そのものが要るとき用。
+enum GameArtLoader {
+    /// 本物の画像（Personal 構成のみ）。取れなければ nil。
+    @MainActor
+    static func image(_ path: String) async -> UIImage? {
+        #if REAL_ICONS
+        return await GameArtCache.load(path)
+        #else
+        return nil
+        #endif
+    }
+
+    /// 背面タップの解析は数秒で終わらせたいので、全キャラのアイコンを先に端末へ取っておく。
+    @MainActor
+    static func prefetchBrawlerIcons(_ ids: [Int]) async {
+        #if REAL_ICONS
+        for id in ids where GameArtCache.cached("brawlers/borders/\(id)") == nil {
+            _ = await GameArtCache.load("brawlers/borders/\(id)")
+        }
+        #endif
+    }
+}
+
 #if REAL_ICONS
 /// 一度取った画像は端末のキャッシュに残し、次からは通信しない。取れないときは何も重ねない。
 @MainActor

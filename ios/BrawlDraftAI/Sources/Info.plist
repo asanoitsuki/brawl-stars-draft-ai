@@ -15,6 +15,10 @@
   <key>NSPhotoLibraryUsageDescription</key>
   <string>ドラフト画面のスクリーンショットを読み取って、おすすめのピックを判定するために使います。写真がアプリの外へ送られることはありません。</string>
 
+  <!-- Personal 構成のメッセージ通知（左端にキャラのアイコン）で使う -->
+  <key>NSUserActivityTypes</key>
+  <array><string>INSendMessageIntent</string></array>
+
   <key>CFBundleURLTypes</key>
   <array>
     <dict>

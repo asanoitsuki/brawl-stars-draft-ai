@@ -57,12 +57,9 @@ enum Recommender {
         guard let map = snapshot.map else {
             return Recommendation(
                 phase: snapshot.phase, map: nil,
-                title: "マップを判別できませんでした",
-                body: """
-                ドラフト画面のスクリーンショットか確認してください。
-                合っているのに外す場合は、アプリの「枠合わせ」でマップ画像の位置を調整してください。
-                """,
-                speech: [.init(text: "マップを判別できませんでした", isJapanese: true)],
+                title: "ステージ名を読み取れませんでした",
+                body: "推測では出しません。アプリを開いて、結果の上のステージ名からステージを選んでください。",
+                speech: [.init(text: "ステージ名を読み取れませんでした", isJapanese: true)],
                 advices: [],
                 caution: nil
             )
@@ -211,7 +208,7 @@ enum Recommender {
         let title = advices.isEmpty
             ? "候補が見つかりません"
             : "おすすめ：\(displayName(advices[0], rules: rules))"
-        let hype = HypeCommentary.comment(for: advices)
+        let hype: String? = nil  // 根拠のない一言は出さない
 
         var bodyLines: [String] = []
         if let stageLabel {
@@ -503,9 +500,11 @@ enum Recommender {
         if snapshot.mapScore < 0.75 {
             notes.append("マップ判定の一致度が低め（\(String(format: "%.2f", snapshot.mapScore))）")
         }
-        let shaky = (snapshot.allies + snapshot.enemies).filter { !$0.isConfident }
-        if !shaky.isEmpty {
-            notes.append("認識が曖昧: \(shaky.map(\.name).joined(separator: ", "))")
+        if snapshot.phase != .ban {
+            if snapshot.allies.isEmpty && snapshot.enemies.isEmpty {
+                notes.append("味方・相手のキャラは画面から読み取れていません。このステージの実測データだけで判断しています")
+            }
+            notes.append("BAN されたキャラは読み取っていないため、候補に入っていることがあります")
         }
         return notes.isEmpty ? nil : notes.joined(separator: " / ")
     }

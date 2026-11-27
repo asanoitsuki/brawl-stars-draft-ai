@@ -12,7 +12,7 @@ enum DraftService {
     @discardableResult
     static func analyze(image: CGImage, announce: Bool = true, speak: Bool? = nil) async throws -> Recommendation {
         let rules = try await RulesStore.shared.rules()
-        let snapshot = DraftAnalyzer.analyze(image: image, rules: rules)
+        let snapshot = try DraftAnalyzer.analyze(image: image, rules: rules)
         let recommendation = Recommender.make(from: snapshot, rules: rules)
 
         await AnalysisStore.shared.publish(snapshot, recommendation)
@@ -40,7 +40,9 @@ enum DraftService {
     static func warmUp() {
         Task { @MainActor in
             RulesStore.shared.preload()
-            _ = try? await RulesStore.shared.rules()
+            if let rules = try? await RulesStore.shared.rules() {
+                Task { await GameArtLoader.prefetchBrawlerIcons(rules.document.brawlers.map(\.id)) }
+            }
             await AnalysisStore.shared.restoreLastIfNeeded()
             await RulesStore.shared.refreshFromRemote()
         }
@@ -86,8 +88,8 @@ final class AnalysisStore: ObservableObject {
         guard current == nil, let saved = LastScreenshot.load(),
               Date().timeIntervalSince(saved.date) < 6 * 3600,
               let rules = try? await RulesStore.shared.rules() else { return }
-        let snapshot = DraftAnalyzer.analyze(image: saved.image, rules: rules)
-        guard current == nil else { return }
+        guard let snapshot = try? DraftAnalyzer.analyze(image: saved.image, rules: rules),
+              current == nil else { return }
         publish(snapshot, Recommender.make(from: snapshot, rules: rules), date: saved.date)
     }
 }

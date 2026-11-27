@@ -132,8 +132,12 @@ struct SettingsView: View {
             Link(destination: URL(string: "https://asanoitsuki.github.io/brawl-stars-draft-ai/support.html")!) {
                 Label("サポート・お問い合わせ", systemImage: "questionmark.circle")
             }
-            Text("Brawl Board は Brawl Stars（Supercell社）の非公式ファンツールです。"
-                 + "Supercell社とは一切関係ありません。ゲーム内の名称はSupercell社に帰属します。")
+            // Supercell のファンコンテンツポリシーが求める表記（英語の原文どおり）と、その日本語の要約
+            Text("This material is unofficial and is not endorsed by Supercell. "
+                 + "For more information see Supercell's Fan Content Policy: www.supercell.com/fan-content-policy.")
+                .font(.caption2).foregroundStyle(.secondary)
+            Text("Draft Scan は非公式のファンツールで、Supercell の承認・協賛は受けていません。"
+                 + "キャラクター・マップの画像と名称は Supercell に帰属し、ファンコンテンツポリシーに基づいて表示しています。")
                 .font(.caption2).foregroundStyle(.secondary)
         }
     }

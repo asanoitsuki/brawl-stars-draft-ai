@@ -1,8 +1,9 @@
 name: BrawlDraftAI
 
-# Personal は自分の端末に入れる専用の構成（中身は Release と同じ最適化）。
-# この構成だけ REAL_ICONS が有効になり、ゲーム本物のキャラ・マップ画像を表示する。
-# App Store に出すのは Release だけ（審査 4.1(a) で本物の画像は却下されたため）。
+# REAL_ICONS: ゲーム内のキャラ・マップ画像を、起動後に Brawlify の配信元から読み込んで表示する
+#   （アプリには同梱しない）。Supercell のファンコンテンツポリシーの範囲で使う。
+# Personal は自分の端末に入れる専用の構成。メッセージ通知の形（左端に 1 位のアイコン）は
+#   この構成だけ（COMM_NOTIFICATIONS）。App Store に出すのは Release。
 configs:
   Debug: debug
   Release: release
@@ -38,8 +39,8 @@ targets:
     settings:
       base:
         PRODUCT_NAME: BrawlDraftAI
-        MARKETING_VERSION: "1.1"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "1.2"
+        CURRENT_PROJECT_VERSION: "4"
         TARGETED_DEVICE_FAMILY: "1"   # v1.0 は iPhone のみ（iPad 用の画面と審査用スクリーンショットは未対応）
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: NO
@@ -49,8 +50,10 @@ targets:
       configs:
         Debug:
           SWIFT_OPTIMIZATION_LEVEL: "-Onone"
-        Personal:
+        Release:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) REAL_ICONS"
+        Personal:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) REAL_ICONS COMM_NOTIFICATIONS"
           CODE_SIGN_ENTITLEMENTS: Sources/BrawlDraftAI-Personal.entitlements
     dependencies:
       - sdk: AppIntents.framework

@@ -39,7 +39,7 @@ final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
     /// 結果をバナーとして出す。直前の提案は消してから出す（古い手が残らないように）。
     ///
     /// 提案した 3 体のアイコンを左から並べた画像を付ける（通知を長押しすると大きく出る）。
-    /// Personal 構成では、メッセージ通知の形にして 1 位のアイコンをバナーの左端に出す。
+    /// 自分用（Personal）構成では、メッセージ通知の形にして 1 位のアイコンをバナーの左端に出す。
     func present(_ recommendation: Recommendation) async {
         guard AppSettings.notificationEnabled else { return }
 
@@ -75,7 +75,7 @@ final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
         }
 
         var final: UNNotificationContent = content
-        #if REAL_ICONS
+        #if COMM_NOTIFICATIONS
         if let first = icons.first {
             let name = ([heading, stage].compactMap { $0 }).joined(separator: "｜")
             if let updated = await Self.asMessage(content, sender: name, avatar: first) { final = updated }
@@ -157,7 +157,7 @@ final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    #if REAL_ICONS
+    #if COMM_NOTIFICATIONS
     /// メッセージ通知の形にすると、送り主の画像がバナーの左端に出る。
     private static func asMessage(_ content: UNMutableNotificationContent, sender name: String,
                                   avatar: UIImage) async -> UNNotificationContent? {

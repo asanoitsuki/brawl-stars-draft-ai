@@ -435,17 +435,17 @@ struct WinRateBadge: View {
     }
 }
 
-/// ロゴ。背景の宇宙（球の水色〜紫の光）と同じ色で、細い「BRAWL」と太い「BOARD」を並べ、
+/// ロゴ。背景の宇宙（球の水色〜紫の光）と同じ色で、細い「DRAFT」と太い「SCAN」を並べ、
 /// ときどき光がすっと横切る。
 struct BrandTitle: View {
     @State private var sweep = false
 
     private var letters: some View {
         HStack(spacing: 12) {
-            Text("BRAWL")
+            Text("DRAFT")
                 .font(.system(size: 30, weight: .light))
                 .tracking(7)
-            Text("BOARD")
+            Text("SCAN")
                 .font(.system(size: 30, weight: .black))
                 .tracking(3)
         }
@@ -486,6 +486,6 @@ struct BrandTitle: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Brawl Board")
+        .accessibilityLabel("Draft Scan")
     }
 }

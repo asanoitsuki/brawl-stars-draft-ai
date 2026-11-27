@@ -3,8 +3,8 @@ import UIKit
 
 /// ゲーム本物の画像（Brawlify の CDN）を、自作の表示の上に重ねる。
 ///
-/// **自分の端末に入れる Personal 構成だけ**で有効。App Store に出す Release 構成では
-/// このコードごと含まれず、何もしない（審査 4.1(a) の指摘に合わせるため）。
+/// 画像はアプリに同梱せず、使うときに読み込んで端末のキャッシュに置く。
+/// Debug 構成では読み込まない（自作の表示だけで動作を確かめるため）。
 extension View {
     @ViewBuilder
     func gameArt(_ path: String?, fit: Bool = false, background: Color? = nil) -> some View {
